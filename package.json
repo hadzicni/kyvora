@@ -10,7 +10,13 @@
     "test": "npm run test --workspaces --if-present",
     "dev": "npm run dev --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:api": "cd apps/api && gradle bootRun",
+    "dev:agent": "cd apps/agent && go run ./cmd/kyvora-agent",
+    "db:up": "docker compose -f infrastructure/docker-compose.yml up -d",
+    "db:down": "docker compose -f infrastructure/docker-compose.yml down",
+    "db:logs": "docker compose -f infrastructure/docker-compose.yml logs -f postgres"
   },
   "keywords": [],
   "author": "",
