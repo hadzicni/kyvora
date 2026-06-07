@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: kyvora-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kyvora
+      POSTGRES_USER: kyvora
+      POSTGRES_PASSWORD: kyvora
+    ports:
+      - "5432:5432"
+    volumes:
+      - kyvora-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  kyvora-postgres-data:

@@ -1,0 +1,24 @@
+.DS_Store
+node_modules
+.next
+out
+dist
+build
+.env
+.env.*
+!.env.example
+
+# Java / Gradle
+.gradle
+apps/api/build
+
+# Go
+apps/agent/bin
+coverage.out
+
+# IDE
+.idea
+.vscode
+
+# Docker
+*.log
