@@ -4,11 +4,15 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,8 +20,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import dev.kyvora.api.serverinventory.dto.ServerInventoryCreateRequest;
+import dev.kyvora.api.serverinventory.dto.ServerInventoryFilter;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryResponse;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryUpdateRequest;
+import dev.kyvora.api.serverinventory.entity.ServerStatus;
 import dev.kyvora.api.serverinventory.service.ServerInventoryService;
 import jakarta.validation.Valid;
 
@@ -33,8 +39,15 @@ public class ServerInventoryController {
 	}
 
 	@GetMapping
-	public ResponseEntity<List<ServerInventoryResponse>> findAll() {
-		return ResponseEntity.ok(service.findAll());
+	public ResponseEntity<Page<ServerInventoryResponse>> findAll(
+			@RequestParam(required = false) String name,
+			@RequestParam(required = false) String hostname,
+			@RequestParam(required = false) String ipAddress,
+			@RequestParam(required = false) ServerStatus status,
+			@RequestParam(required = false, name = "tags") List<String> tags,
+			@PageableDefault(size = 20) Pageable pageable) {
+		ServerInventoryFilter filter = new ServerInventoryFilter(name, hostname, ipAddress, status, tags);
+		return ResponseEntity.ok(service.findAll(filter, pageable));
 	}
 
 	@GetMapping("/{id}")

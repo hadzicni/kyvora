@@ -1,5 +1,8 @@
 package dev.kyvora.api.serverinventory.dto;
 
+import java.time.Instant;
+import java.util.List;
+
 import dev.kyvora.api.serverinventory.entity.ServerStatus;
 
 public record ServerInventoryResponse(
@@ -7,5 +10,11 @@ public record ServerInventoryResponse(
 		String name,
 		String hostname,
 		String ipAddress,
-		ServerStatus status) {
+		String description,
+		List<String> tags,
+		String operatingSystem,
+ 		ServerStatus status,
+		Instant lastSeenAt,
+		Instant createdAt,
+		Instant updatedAt) {
 }

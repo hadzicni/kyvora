@@ -48,11 +48,23 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(
 			DataIntegrityViolationException exception,
 			HttpServletRequest request) {
-		return buildResponse(HttpStatus.CONFLICT, "Request conflicts with existing data", request.getRequestURI(), List.of());
+		return buildResponse(HttpStatus.CONFLICT, "Request conflicts with existing data", request.getRequestURI(), List.of(detectConflictDetail(exception)));
+	}
+
+	@ExceptionHandler(DuplicateServerInventoryException.class)
+	public ResponseEntity<ApiErrorResponse> handleDuplicate(
+			DuplicateServerInventoryException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of(exception.getField() + ": " + exception.getValue()));
 	}
 
 	private static String formatFieldError(FieldError fieldError) {
 		return fieldError.getField() + ": " + fieldError.getDefaultMessage();
+	}
+
+	private static String detectConflictDetail(DataIntegrityViolationException exception) {
+		String message = exception.getMostSpecificCause() != null ? exception.getMostSpecificCause().getMessage() : exception.getMessage();
+		return message == null ? "duplicate or conflicting data" : message;
 	}
 
 	private ResponseEntity<ApiErrorResponse> buildResponse(

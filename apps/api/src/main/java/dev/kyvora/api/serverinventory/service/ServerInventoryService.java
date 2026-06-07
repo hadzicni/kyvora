@@ -1,15 +1,18 @@
 package dev.kyvora.api.serverinventory.service;
 
-import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import dev.kyvora.api.serverinventory.dto.ServerInventoryCreateRequest;
+import dev.kyvora.api.serverinventory.dto.ServerInventoryFilter;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryResponse;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryUpdateRequest;
 
 public interface ServerInventoryService {
 
-	List<ServerInventoryResponse> findAll();
+	Page<ServerInventoryResponse> findAll(ServerInventoryFilter filter, Pageable pageable);
 
 	ServerInventoryResponse findById(UUID id);
 
