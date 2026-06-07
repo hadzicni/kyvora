@@ -1,29 +1,24 @@
 <div align="center">
 
-<h1>Project Name</h1>
+<h1>Kyvora</h1>
 
 <img src="./docs/banner.png" alt="Project banner" width="100%" />
-
-> [!NOTE]
-> Create a `/docs` directory in the project root and place the project banner, screenshots, diagrams, and other documentation assets inside it.
->
-> Recommended banner size: **2400 × 720 px** (`docs/banner.png`).
 
 <br />
 
 Short, clear description of the project in one sentence.
 
-[![License](https://img.shields.io/badge/license-license-green.svg)](#license)
-[![Status](https://img.shields.io/badge/status-active-success.svg)](#overview)
-[![Language](https://img.shields.io/badge/language-language-blue.svg)](#overview)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
+[![Status](https://img.shields.io/badge/status-development-success.svg)](#overview)
+[![Language](https://img.shields.io/badge/language-NextJS/SpringBoot-blue.svg)](#overview)
 
 <!-- Optional GitHub badges -->
 <!-- Replace USERNAME and REPOSITORY -->
 
-[![Release](https://img.shields.io/github/v/release/USERNAME/REPOSITORY)](https://github.com/USERNAME/REPOSITORY/releases)
-[![Stars](https://img.shields.io/github/stars/USERNAME/REPOSITORY)](https://github.com/USERNAME/REPOSITORY/stargazers)
-[![Issues](https://img.shields.io/github/issues/USERNAME/REPOSITORY)](https://github.com/USERNAME/REPOSITORY/issues)
-[![Last Commit](https://img.shields.io/github/last-commit/USERNAME/REPOSITORY)](https://github.com/USERNAME/REPOSITORY/commits)
+[![Release](https://img.shields.io/github/v/release/hadzicni/kyvora)](https://github.com/hadzicni/kyvora/releases)
+[![Stars](https://img.shields.io/github/stars/hadzicni/kyvora)](https://github.com/hadzicni/kyvora/stargazers)
+[![Issues](https://img.shields.io/github/issues/hadzicni/kyvora)](https://github.com/hadzicni/kyvora/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/hadzicni/kyvora)](https://github.com/hadzicni/kyvora/commits)
 
 <br />
 
@@ -36,20 +31,20 @@ Short, clear description of the project in one sentence.
 
 ## Table of Contents
 
-* [Overview](#overview)
-* [Tech Stack](#tech-stack)
-* [Features](#features)
-* [Prerequisites](#prerequisites)
-* [Installation](#installation)
-* [Configuration](#configuration)
-* [Usage](#usage)
-* [Development](#development)
-* [Build and Deployment](#build-and-deployment)
-* [Security](#security)
-* [Contributing](#contributing)
-* [Maintainers](#maintainers)
-* [Contact](#contact)
-* [License](#license)
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Development](#development)
+- [Build and Deployment](#build-and-deployment)
+- [Security](#security)
+- [Contributing](#contributing)
+- [Maintainers](#maintainers)
+- [Contact](#contact)
+- [License](#license)
 
 ## Overview
 
@@ -63,13 +58,13 @@ You can also mention here:
 
 ## Tech Stack
 
-| Category | Technology |
-|-----------|-----------|
-| Language | [Technology] |
-| Framework | [Technology] |
-| Database | [Technology] |
-| Testing | [Technology] |
-| CI/CD | [Technology] |
+| Category   | Technology   |
+| ---------- | ------------ |
+| Language   | [Technology] |
+| Framework  | [Technology] |
+| Database   | [Technology] |
+| Testing    | [Technology] |
+| CI/CD      | [Technology] |
 | Deployment | [Technology] |
 
 ## Features
@@ -91,8 +86,8 @@ You can also mention here:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/USERNAME/REPOSITORY.git
-cd REPOSITORY
+git clone https://github.com/hadzicni/kyvora.git
+cd kyvora
 ```
 
 ### 2. Install dependencies
@@ -202,10 +197,10 @@ We will investigate and provide updates as quickly as possible.
 
 ### Supported Versions
 
-| Version | Supported |
-|----------|----------|
-| Latest | ✅ |
-| Older versions | ❌ |
+| Version        | Supported |
+| -------------- | --------- |
+| Latest         | ✅        |
+| Older versions | ❌        |
 
 ## Contributing
 
@@ -225,10 +220,10 @@ If the project has its own rules, link to `CONTRIBUTING.md` here.
 <table>
 	<tr>
 		<td align="center" width="180">
-			<a href="https://github.com/USERNAME">
-			    <img src="https://github.com/USERNAME.png?size=160" width="96" height="96" alt="USERNAME" />
+			<a href="https://github.com/hadzicni">
+			    <img src="https://github.com/hadzicni.png?size=160" width="96" height="96" alt="hadzicni" />
 			    <br />
-			    <strong>USERNAME</strong>
+			    <strong>Nikola Hadzic</strong>
 			</a>
 			<br />
 			Core maintainer
@@ -238,12 +233,12 @@ If the project has its own rules, link to `CONTRIBUTING.md` here.
 
 ## Contact
 
-- Contact person: [name or team]
-- Email: [email address]
-- Project page: [link]
+- Contact person: Nikola Hadzic
+- Email: nikolahadzic7@icloud.com
+- Project page: https://github.com/hadzicni/kyvora
 
 ## License
 
-This project is licensed under the [LICENSE NAME] License.
+This project is licensed under the MIT License.
 
 See [LICENSE](LICENSE) for details.
