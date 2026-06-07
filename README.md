@@ -6,7 +6,7 @@
 
 <br />
 
-Short, clear description of the project in one sentence.
+An open-source Homelab Control Plane for managing, monitoring, and operating self-hosted infrastructure from one modern dashboard.
 
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
 [![Status](https://img.shields.io/badge/status-development-success.svg)](#overview)
