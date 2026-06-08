@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/layout/site-header"
 import { ArchitectureSection } from "@/components/marketing/architecture-section"
 import { CtaSection } from "@/components/marketing/cta-section"
 import { FeatureSection } from "@/components/marketing/feature-section"
+import { GitHubStatsSection } from "@/components/marketing/github-stats-section"
 import { HeroSection } from "@/components/marketing/hero-section"
 import { UseCasesSection } from "@/components/marketing/use-cases-section"
 
@@ -13,6 +14,7 @@ export default function Home() {
       <main>
         <HeroSection />
         <FeatureSection />
+        <GitHubStatsSection />
         <UseCasesSection />
         <ArchitectureSection />
         <CtaSection />
