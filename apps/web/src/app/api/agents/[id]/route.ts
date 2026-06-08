@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import {
   agentApiUnavailableResponse,
   apiBaseUrl,
-  createAuthorizationHeader,
+  backendFetch,
   createBackendResponse,
 } from "../_lib";
 
@@ -26,13 +26,14 @@ async function createBackendUrl(request: NextRequest, context: RouteContext) {
 
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const response = await fetch(await createBackendUrl(request, context), {
-      headers: {
-        Accept: "application/json",
-        ...createAuthorizationHeader(),
-      },
-      cache: "no-store",
-    });
+    const response = await backendFetch(
+      await createBackendUrl(request, context),
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      }
+    );
 
     const body = await response.text();
 

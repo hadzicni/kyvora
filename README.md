@@ -149,6 +149,29 @@ KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME=Kyvora Admin
 The bootstrap defaults are development-only. Do not use a weak JWT secret or
 the default admin email/password in production.
 
+Local web API proxy configuration:
+
+```env
+API_BASE_URL=http://localhost:8080
+API_LOGIN_EMAIL=admin@kyvora.local
+API_LOGIN_PASSWORD=admin-password
+```
+
+The web app uses these server-only values from Next.js API routes to login,
+refresh JWTs, and proxy protected backend requests. Browser code should keep
+calling local `/api/...` routes and must not store backend JWTs.
+
+Local agent API configuration:
+
+```env
+KYVORA_API_URL=http://localhost:8080
+KYVORA_API_LOGIN_EMAIL=admin@kyvora.local
+KYVORA_API_LOGIN_PASSWORD=admin-password
+```
+
+The Go agent keeps JWTs in memory only and uses Bearer authentication for
+registration and heartbeat requests.
+
 ## Usage
 
 Describe the main use cases or commands here.

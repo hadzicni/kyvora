@@ -25,11 +25,11 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if cfg.Version != defaultAgentVersion {
 		t.Fatalf("Version = %q, want %q", cfg.Version, defaultAgentVersion)
 	}
-	if cfg.APIUsername != defaultAPIUsername {
-		t.Fatalf("APIUsername = %q, want %q", cfg.APIUsername, defaultAPIUsername)
+	if cfg.APILoginEmail != defaultAPILoginEmail {
+		t.Fatalf("APILoginEmail = %q, want %q", cfg.APILoginEmail, defaultAPILoginEmail)
 	}
-	if cfg.APIPassword != defaultAPIPassword {
-		t.Fatalf("APIPassword = %q, want %q", cfg.APIPassword, defaultAPIPassword)
+	if cfg.APILoginPassword != defaultAPILoginPassword {
+		t.Fatalf("APILoginPassword = %q, want %q", cfg.APILoginPassword, defaultAPILoginPassword)
 	}
 	if cfg.HeartbeatInterval != defaultHeartbeatInterval {
 		t.Fatalf("HeartbeatInterval = %s, want %s", cfg.HeartbeatInterval, defaultHeartbeatInterval)
@@ -42,8 +42,8 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 		"KYVORA_AGENT_NAME":                 "agent-01",
 		"KYVORA_AGENT_HOSTNAME":             "node01.example.test",
 		"KYVORA_AGENT_VERSION":              "1.2.3",
-		"KYVORA_API_USERNAME":               "alice",
-		"KYVORA_API_PASSWORD":               "secret",
+		"KYVORA_API_LOGIN_EMAIL":            "alice@example.test",
+		"KYVORA_API_LOGIN_PASSWORD":         "secret",
 		"KYVORA_HEARTBEAT_INTERVAL_SECONDS": "5",
 	}
 
@@ -58,8 +58,8 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 		cfg.Name != env["KYVORA_AGENT_NAME"] ||
 		cfg.Hostname != env["KYVORA_AGENT_HOSTNAME"] ||
 		cfg.Version != env["KYVORA_AGENT_VERSION"] ||
-		cfg.APIUsername != env["KYVORA_API_USERNAME"] ||
-		cfg.APIPassword != env["KYVORA_API_PASSWORD"] {
+		cfg.APILoginEmail != env["KYVORA_API_LOGIN_EMAIL"] ||
+		cfg.APILoginPassword != env["KYVORA_API_LOGIN_PASSWORD"] {
 		t.Fatalf("config did not use environment values: %#v", cfg)
 	}
 	if cfg.HeartbeatInterval != 5*time.Second {

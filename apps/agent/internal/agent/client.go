@@ -16,10 +16,14 @@ import (
 const requestTimeout = 10 * time.Second
 
 type Client struct {
-	baseURL    *url.URL
-	username   string
-	password   string
-	httpClient *http.Client
+	baseURL       *url.URL
+	loginEmail    string
+	loginPassword string
+	accessToken   string
+	refreshToken  string
+	tokenType     string
+	expiresAt     time.Time
+	httpClient    *http.Client
 }
 
 type Agent struct {
@@ -39,6 +43,22 @@ type registerRequest struct {
 type heartbeatRequest struct {
 	Status  string `json:"status"`
 	Version string `json:"version"`
+}
+
+type loginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type refreshRequest struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
+type tokenResponse struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	TokenType    string `json:"tokenType"`
+	ExpiresIn    int64  `json:"expiresIn"`
 }
 
 type apiErrorResponse struct {
@@ -88,11 +108,16 @@ func NewClient(cfg Config) (*Client, error) {
 	}
 
 	return &Client{
-		baseURL:    baseURL,
-		username:   cfg.APIUsername,
-		password:   cfg.APIPassword,
-		httpClient: &http.Client{},
+		baseURL:       baseURL,
+		loginEmail:    cfg.APILoginEmail,
+		loginPassword: cfg.APILoginPassword,
+		tokenType:     "Bearer",
+		httpClient:    &http.Client{},
 	}, nil
+}
+
+func (c *Client) Authenticate(ctx context.Context) error {
+	return c.login(ctx)
 }
 
 func (c *Client) Register(ctx context.Context, cfg Config) (Agent, error) {
@@ -128,39 +153,134 @@ func (c *Client) Heartbeat(ctx context.Context, agentID, version string) (Agent,
 }
 
 func (c *Client) doJSON(ctx context.Context, method, path string, body any, out any) error {
-	requestCtx, cancel := context.WithTimeout(ctx, requestTimeout)
-	defer cancel()
-
 	payload, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("encode request: %w", err)
 	}
 
+	if err := c.ensureAuthenticated(ctx); err != nil {
+		return err
+	}
+
+	statusCode, responseBody, err := c.sendJSON(ctx, method, path, payload, true)
+	if err != nil {
+		return err
+	}
+
+	if statusCode == http.StatusUnauthorized {
+		if err := c.refreshOrLogin(ctx); err != nil {
+			return err
+		}
+		statusCode, responseBody, err = c.sendJSON(ctx, method, path, payload, true)
+		if err != nil {
+			return err
+		}
+	}
+
+	return decodeAPIResponse(statusCode, responseBody, out)
+}
+
+func (c *Client) ensureAuthenticated(ctx context.Context) error {
+	if c.accessToken != "" && time.Now().Before(c.expiresAt) {
+		return nil
+	}
+	if c.refreshToken != "" {
+		return c.refreshOrLogin(ctx)
+	}
+	return c.login(ctx)
+}
+
+func (c *Client) refreshOrLogin(ctx context.Context) error {
+	if c.refreshToken != "" {
+		if err := c.refresh(ctx); err == nil {
+			return nil
+		}
+	}
+	return c.login(ctx)
+}
+
+func (c *Client) login(ctx context.Context) error {
+	return c.requestTokens(ctx, "/api/v1/auth/login", loginRequest{
+		Email:    c.loginEmail,
+		Password: c.loginPassword,
+	})
+}
+
+func (c *Client) refresh(ctx context.Context) error {
+	return c.requestTokens(ctx, "/api/v1/auth/refresh", refreshRequest{
+		RefreshToken: c.refreshToken,
+	})
+}
+
+func (c *Client) requestTokens(ctx context.Context, path string, body any) error {
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("encode auth request: %w", err)
+	}
+
+	statusCode, responseBody, err := c.sendJSON(ctx, http.MethodPost, path, payload, false)
+	if err != nil {
+		return err
+	}
+	if statusCode < 200 || statusCode >= 300 {
+		apiErr := &apiError{statusCode: statusCode, rawBody: strings.TrimSpace(string(responseBody))}
+		_ = json.Unmarshal(responseBody, &apiErr.body)
+		return apiErr
+	}
+
+	var tokens tokenResponse
+	if err := json.Unmarshal(responseBody, &tokens); err != nil {
+		return fmt.Errorf("decode auth response: %w", err)
+	}
+	c.cacheTokens(tokens)
+	return nil
+}
+
+func (c *Client) cacheTokens(tokens tokenResponse) {
+	tokenType := tokens.TokenType
+	if tokenType == "" {
+		tokenType = "Bearer"
+	}
+	c.accessToken = tokens.AccessToken
+	c.refreshToken = tokens.RefreshToken
+	c.tokenType = tokenType
+	c.expiresAt = time.Now().Add(time.Duration(tokens.ExpiresIn)*time.Second - 30*time.Second)
+}
+
+func (c *Client) sendJSON(ctx context.Context, method, path string, payload []byte, protected bool) (int, []byte, error) {
+	requestCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
 	req, err := http.NewRequestWithContext(requestCtx, method, c.resolve(path), bytes.NewReader(payload))
 	if err != nil {
-		return fmt.Errorf("create request: %w", err)
+		return 0, nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(c.username, c.password)
+	if protected {
+		req.Header.Set("Authorization", c.tokenType+" "+c.accessToken)
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("send request: %w", err)
+		return 0, nil, fmt.Errorf("send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	responseBody, err := io.ReadAll(io.LimitReader(resp.Body, 1_048_576))
 	if err != nil {
-		return fmt.Errorf("read response: %w", err)
+		return 0, nil, fmt.Errorf("read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &apiError{statusCode: resp.StatusCode, rawBody: strings.TrimSpace(string(responseBody))}
+	return resp.StatusCode, responseBody, nil
+}
+
+func decodeAPIResponse(statusCode int, responseBody []byte, out any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		apiErr := &apiError{statusCode: statusCode, rawBody: strings.TrimSpace(string(responseBody))}
 		_ = json.Unmarshal(responseBody, &apiErr.body)
 		return apiErr
 	}
-
 	if len(responseBody) == 0 {
 		return nil
 	}

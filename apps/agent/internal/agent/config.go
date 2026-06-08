@@ -11,8 +11,8 @@ const (
 	defaultAPIURL            = "http://localhost:8080"
 	defaultAgentName         = "local-agent"
 	defaultAgentVersion      = "0.1.0"
-	defaultAPIUsername       = "user"
-	defaultAPIPassword       = "dev-password"
+	defaultAPILoginEmail     = "admin@kyvora.local"
+	defaultAPILoginPassword  = "admin-password"
 	defaultHeartbeatInterval = 30 * time.Second
 )
 
@@ -21,8 +21,8 @@ type Config struct {
 	Name              string
 	Hostname          string
 	Version           string
-	APIUsername       string
-	APIPassword       string
+	APILoginEmail     string
+	APILoginPassword  string
 	HeartbeatInterval time.Duration
 }
 
@@ -41,8 +41,8 @@ func loadConfig(getenv func(string) string, hostname func() (string, error)) (Co
 		Name:              envOrDefault(getenv, "KYVORA_AGENT_NAME", defaultAgentName),
 		Hostname:          envOrDefault(getenv, "KYVORA_AGENT_HOSTNAME", osHostname),
 		Version:           envOrDefault(getenv, "KYVORA_AGENT_VERSION", defaultAgentVersion),
-		APIUsername:       envOrDefault(getenv, "KYVORA_API_USERNAME", defaultAPIUsername),
-		APIPassword:       envOrDefault(getenv, "KYVORA_API_PASSWORD", defaultAPIPassword),
+		APILoginEmail:     envOrDefault(getenv, "KYVORA_API_LOGIN_EMAIL", defaultAPILoginEmail),
+		APILoginPassword:  envOrDefault(getenv, "KYVORA_API_LOGIN_PASSWORD", defaultAPILoginPassword),
 		HeartbeatInterval: defaultHeartbeatInterval,
 	}
 

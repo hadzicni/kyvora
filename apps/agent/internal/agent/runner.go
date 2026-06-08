@@ -13,6 +13,10 @@ func Run(ctx context.Context, cfg Config, logger *slog.Logger) error {
 		return err
 	}
 
+	if err := client.Authenticate(ctx); err != nil {
+		return err
+	}
+
 	logger.Info("registering agent", "api_url", cfg.APIURL, "name", cfg.Name, "hostname", cfg.Hostname, "version", cfg.Version)
 	registered, err := client.Register(ctx, cfg)
 	if err != nil {

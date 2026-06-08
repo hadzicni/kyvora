@@ -1,27 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const apiBaseUrl = process.env.API_BASE_URL ?? "http://localhost:8080";
+import {
+  apiBaseUrl,
+  backendFetch,
+  createBackendResponse,
+} from "../../_lib/backend";
 
 type RouteContext = {
   params: Promise<{
     id: string;
   }>;
 };
-
-function createAuthorizationHeader(): Record<string, string> {
-  const username = process.env.API_USERNAME;
-  const password = process.env.API_PASSWORD;
-
-  if (!username || !password) {
-    return {};
-  }
-
-  return {
-    Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString(
-      "base64"
-    )}`,
-  };
-}
 
 async function createBackendUrl(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
@@ -34,32 +23,16 @@ async function createBackendUrl(request: NextRequest, context: RouteContext) {
   return backendUrl;
 }
 
-function createBackendResponse(response: Response, body: string) {
-  if ([204, 205, 304].includes(response.status)) {
-    return new NextResponse(null, {
-      status: response.status,
-      statusText: response.statusText,
-    });
-  }
-
-  return new NextResponse(body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: {
-      "Content-Type": response.headers.get("Content-Type") ?? "application/json",
-    },
-  });
-}
-
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const response = await fetch(await createBackendUrl(request, context), {
-      headers: {
-        Accept: "application/json",
-        ...createAuthorizationHeader(),
-      },
-      cache: "no-store",
-    });
+    const response = await backendFetch(
+      await createBackendUrl(request, context),
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      }
+    );
 
     const body = await response.text();
 
@@ -74,16 +47,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
 export async function PUT(request: NextRequest, context: RouteContext) {
   try {
-    const response = await fetch(await createBackendUrl(request, context), {
-      method: "PUT",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        ...createAuthorizationHeader(),
-      },
-      body: await request.text(),
-      cache: "no-store",
-    });
+    const response = await backendFetch(
+      await createBackendUrl(request, context),
+      {
+        method: "PUT",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: await request.text(),
+      }
+    );
 
     const body = await response.text();
 
@@ -98,14 +72,15 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const response = await fetch(await createBackendUrl(request, context), {
-      method: "DELETE",
-      headers: {
-        Accept: "application/json",
-        ...createAuthorizationHeader(),
-      },
-      cache: "no-store",
-    });
+    const response = await backendFetch(
+      await createBackendUrl(request, context),
+      {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+        },
+      }
+    );
 
     const body = await response.text();
 
