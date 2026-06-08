@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import dev.kyvora.api.agent.exception.AgentEnrollmentCancellationException;
 import dev.kyvora.api.agent.exception.AgentNotFoundException;
 import dev.kyvora.api.agent.exception.AgentTokenAuthenticationException;
 import dev.kyvora.api.agent.exception.AgentTokenForbiddenException;
@@ -97,6 +98,13 @@ public class GlobalExceptionHandler {
 			DuplicateAgentException exception,
 			HttpServletRequest request) {
 		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of(exception.getField() + ": " + exception.getValue()));
+	}
+
+	@ExceptionHandler(AgentEnrollmentCancellationException.class)
+	public ResponseEntity<ApiErrorResponse> handleAgentEnrollmentCancellation(
+			AgentEnrollmentCancellationException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
 	private static String formatFieldError(FieldError fieldError) {

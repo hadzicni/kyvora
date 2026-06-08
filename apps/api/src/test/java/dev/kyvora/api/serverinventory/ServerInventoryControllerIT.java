@@ -27,6 +27,7 @@ import org.springframework.web.context.WebApplicationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.kyvora.api.serverinventory.entity.ServerStatus;
 import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
 
 @SpringBootTest
@@ -70,7 +71,7 @@ class ServerInventoryControllerIT {
 				.andExpect(jsonPath("$.ipAddress", is("10.0.0.10")))
 				.andExpect(jsonPath("$.description", is("Primary web server")))
 				.andExpect(jsonPath("$.operatingSystem", is("Linux")))
-				.andExpect(jsonPath("$.status", is("ONLINE")))
+				.andExpect(jsonPath("$.status", is("UNKNOWN")))
 				.andExpect(jsonPath("$.tags", hasSize(2)))
 				.andExpect(jsonPath("$.createdAt", notNullValue()))
 				.andExpect(jsonPath("$.updatedAt", notNullValue()));
@@ -80,6 +81,8 @@ class ServerInventoryControllerIT {
 	void listSupportsPaginationAndFilters() throws Exception {
 		createServer("App 01", "app01.example.com", "10.0.0.11", List.of("prod", "app"), "ONLINE");
 		createServer("DB 01", "db01.example.com", "10.0.0.12", List.of("prod", "db"), "OFFLINE");
+		setStoredStatus("app01.example.com", ServerStatus.ONLINE);
+		setStoredStatus("db01.example.com", ServerStatus.OFFLINE);
 
 		mockMvc.perform(get("/api/v1/servers")
 				.param("page", "0")
@@ -196,6 +199,7 @@ class ServerInventoryControllerIT {
 				.andExpect(jsonPath("$.ipAddress", is("10.0.0.31")))
 				.andExpect(jsonPath("$.description", is("Updated description")))
 				.andExpect(jsonPath("$.operatingSystem", is("Ubuntu")))
+				.andExpect(jsonPath("$.status", is("UNKNOWN")))
 				.andExpect(jsonPath("$.tags", hasSize(2)));
 
 		mockMvc.perform(delete("/api/v1/servers/{id}", id))
@@ -225,6 +229,15 @@ class ServerInventoryControllerIT {
 						status,
 						null))))
 				.andExpect(status().isCreated());
+	}
+
+	private void setStoredStatus(String hostname, ServerStatus status) {
+		var server = repository.findAll().stream()
+				.filter(item -> item.getHostname().equals(hostname))
+				.findFirst()
+				.orElseThrow();
+		server.setStatus(status);
+		repository.save(server);
 	}
 
 	private Map<String, Object> createPayload(

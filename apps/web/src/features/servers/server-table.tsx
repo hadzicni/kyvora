@@ -61,7 +61,14 @@ export function ServerTable({ servers }: { servers: ServerInventoryItem[] }) {
             <TableCell className="font-mono text-xs">{server.hostname}</TableCell>
             <TableCell className="font-mono text-xs">{server.ipAddress}</TableCell>
             <TableCell>
-              <ServerStatusBadge status={server.status} />
+              <div className="grid gap-1">
+                <ServerStatusBadge status={server.status} />
+                {server.status === "OFFLINE" ? (
+                  <span className="text-xs text-amber-300/80">
+                    No recent heartbeat
+                  </span>
+                ) : null}
+              </div>
             </TableCell>
             <TableCell>{server.operatingSystem || "Unknown"}</TableCell>
             <TableCell>
@@ -81,7 +88,8 @@ export function ServerTable({ servers }: { servers: ServerInventoryItem[] }) {
               </div>
             </TableCell>
             <TableCell className="text-muted-foreground">
-              {formatDateTime(server.lastSeenAt)}
+              <div>{formatDateTime(server.lastSeenAt)}</div>
+              <div className="text-xs">Agent-managed status</div>
             </TableCell>
             <TableCell
               onClick={(event) => event.stopPropagation()}

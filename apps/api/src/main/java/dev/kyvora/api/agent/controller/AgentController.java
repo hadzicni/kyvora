@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -95,6 +96,43 @@ public class AgentController {
 	public ResponseEntity<AgentEnrollmentResponse> enroll(@Valid @RequestBody AgentRegisterRequest request) {
 		AgentEnrollmentResponse enrolled = service.enroll(request);
 		return ResponseEntity.created(java.net.URI.create("/api/v1/agents/" + enrolled.agent().id())).body(enrolled);
+	}
+
+	@DeleteMapping("/{id}")
+	@Operation(
+			summary = "Cancel a pending agent enrollment",
+			description = "Deletes a pending, never-connected agent and revokes its one-time token by removing the agent row. Connected agents cannot be deleted through this endpoint.",
+			responses = {
+					@ApiResponse(responseCode = "204", description = "Pending enrollment canceled"),
+					@ApiResponse(responseCode = "401", description = "Authentication is required",
+							content = @Content),
+					@ApiResponse(responseCode = "404", description = "Agent was not found",
+							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					@ApiResponse(responseCode = "409", description = "Agent has already connected",
+							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+			})
+	public ResponseEntity<Void> cancelPendingEnrollment(
+			@Parameter(description = "Agent identifier.", example = "00000000-0000-0000-0000-000000000001")
+			@PathVariable UUID id) {
+		service.cancelPendingEnrollment(id);
+		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping("/{id}/rotate-token")
+	@Operation(
+			summary = "Rotate an agent token",
+			description = "Generates a new one-time plaintext agent token, stores only its SHA-256 hash, and invalidates the previous token immediately.",
+			responses = {
+					@ApiResponse(responseCode = "200", description = "Agent token rotated"),
+					@ApiResponse(responseCode = "401", description = "Authentication is required",
+							content = @Content),
+					@ApiResponse(responseCode = "404", description = "Agent was not found",
+							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+			})
+	public ResponseEntity<AgentEnrollmentResponse> rotateToken(
+			@Parameter(description = "Agent identifier.", example = "00000000-0000-0000-0000-000000000001")
+			@PathVariable UUID id) {
+		return ResponseEntity.ok(service.rotateToken(id));
 	}
 
 	@PostMapping("/{id}/heartbeat")

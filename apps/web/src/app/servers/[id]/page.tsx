@@ -10,10 +10,12 @@ import {
   RefreshCw,
   Server,
   TagsIcon,
+  Terminal,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import type { ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -26,17 +28,29 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AgentEnrollmentToken } from "@/features/agents/agent-enrollment-token";
 import { AgentStatusBadge } from "@/features/agents/agent-status-badge";
 import { RegisterAgentDialog } from "@/features/agents/register-agent-dialog";
-import { useAgents } from "@/features/agents/use-agents";
+import {
+  useAgents,
+  useCancelAgentEnrollment,
+  useRotateAgentToken,
+} from "@/features/agents/use-agents";
 import { DeleteServerDialog } from "@/features/servers/delete-server-dialog";
 import { EditServerDialog } from "@/features/servers/edit-server-dialog";
 import { ServerErrorState } from "@/features/servers/server-error-state";
 import { ServerStatusBadge } from "@/features/servers/server-status-badge";
 import { useServer } from "@/features/servers/use-servers";
-import type { Agent } from "@/lib/api/agents";
+import type { Agent, AgentEnrollment } from "@/lib/api/agents";
 import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 function getParamId(id: string | string[] | undefined) {
   return Array.isArray(id) ? id[0] : (id ?? "");
@@ -187,22 +201,114 @@ function formatDetailDateTime(value: string | null | undefined) {
   }).format(new Date(value));
 }
 
+function formatRelativeLastSeen(value: string | null | undefined) {
+  if (!value) {
+    return "Never";
+  }
+
+  const elapsedMs = Date.now() - new Date(value).getTime();
+  const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60_000));
+
+  if (elapsedMinutes < 1) {
+    return "Just now";
+  }
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} min ago`;
+  }
+
+  const elapsedHours = Math.round(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours} hr ago`;
+  }
+
+  const elapsedDays = Math.round(elapsedHours / 24);
+  return `${elapsedDays} d ago`;
+}
+
 function AgentSection({
   agent,
   isLoading,
+  server,
 }: {
   agent?: Agent;
   isLoading: boolean;
+  server: ServerInventoryItem;
 }) {
+  const [enrollment, setEnrollment] = useState<AgentEnrollment | null>(null);
+  const [agentConnected, setAgentConnected] = useState(false);
+  const rotateAgentToken = useRotateAgentToken();
+  const cancelAgentEnrollment = useCancelAgentEnrollment();
+  const handleAgentConnectionChange = useCallback((connected: boolean) => {
+    setAgentConnected(connected);
+  }, []);
+  const pending = agent?.status === "PENDING" && agent.lastSeenAt === null;
+  const offline = agent?.status === "OFFLINE";
+
+  async function rotateToken() {
+    if (!agent) {
+      return;
+    }
+
+    try {
+      const rotated = await rotateAgentToken.mutateAsync(agent.id);
+      setAgentConnected(false);
+      setEnrollment(rotated);
+      toast.success("Agent token rotated.", {
+        description: rotated.agent.name,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to rotate the agent token right now.";
+      toast.error("Unable to rotate token.", {
+        description: message,
+      });
+    }
+  }
+
+  async function cancelEnrollment() {
+    if (!agent) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "This will revoke the token and remove the pending agent. You can enroll a new agent later."
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await cancelAgentEnrollment.mutateAsync(agent.id);
+      toast.success("Enrollment canceled.", {
+        description: agent.name,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to cancel enrollment right now.";
+      toast.error("Unable to cancel enrollment.", {
+        description: message,
+      });
+    }
+  }
+
+  function closeTokenDialog() {
+    setEnrollment(null);
+    setAgentConnected(false);
+  }
+
   return (
     <Card>
       <CardHeader className="border-b">
         <CardTitle className="flex items-center gap-2">
           <Bot className="size-4" />
-          Agent
+          Agent Setup
         </CardTitle>
         <CardDescription>
-          Software agent assigned to this server.
+          Install and operate the Kyvora Agent for live server status.
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
@@ -213,28 +319,141 @@ function AgentSection({
           </div>
         ) : null}
         {!isLoading && agent ? (
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <Field label="Name" value={agent.name} />
-            <Field
-              label="Status"
-              value={<AgentStatusBadge status={agent.status} />}
-            />
-            <Field label="Agent hostname" value={agent.hostname} mono />
-            <Field label="Version" value={agent.version} mono />
-            <Field
-              label="Last heartbeat"
-              value={formatDetailDateTime(agent.lastSeenAt)}
-              muted={!agent.lastSeenAt}
-            />
-            <Field label="Agent ID" value={agent.id} mono />
-          </dl>
+          <div className="grid gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <AgentStatusBadge status={agent.status} />
+                  <span className="text-sm font-medium">{agent.name}</span>
+                </div>
+                {pending ? (
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    The one-time token is no longer visible. Rotate token to
+                    generate a new setup command.
+                  </p>
+                ) : null}
+                {offline ? (
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    No heartbeat has been received recently. Check whether the
+                    agent process and server are running.
+                  </p>
+                ) : null}
+                {agent.status === "ONLINE" ? (
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    The linked agent is reporting live status for this server.
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  variant={pending ? "default" : "outline"}
+                  disabled={rotateAgentToken.isPending}
+                  onClick={() => void rotateToken()}
+                >
+                  {rotateAgentToken.isPending ? (
+                    <RefreshCw className="size-4 animate-spin" />
+                  ) : (
+                    <Terminal className="size-4" />
+                  )}
+                  {pending ? "Generate setup token" : "Rotate token"}
+                </Button>
+                {pending ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={cancelAgentEnrollment.isPending}
+                    onClick={() => void cancelEnrollment()}
+                  >
+                    {cancelAgentEnrollment.isPending ? (
+                      <RefreshCw className="size-4 animate-spin" />
+                    ) : null}
+                    Cancel enrollment
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <Field label="Agent hostname" value={agent.hostname} mono />
+              <Field label="Version" value={agent.version} mono />
+              <Field
+                label="Last heartbeat"
+                value={
+                  <span>
+                    {formatDetailDateTime(agent.lastSeenAt)}
+                    {agent.lastSeenAt ? (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {formatRelativeLastSeen(agent.lastSeenAt)}
+                      </span>
+                    ) : null}
+                  </span>
+                }
+                muted={!agent.lastSeenAt}
+              />
+              <Field
+                label="Linked server"
+                value={`${server.name} / ${server.hostname}`}
+              />
+              <Field label="Agent ID" value={agent.id} mono />
+            </dl>
+          </div>
         ) : null}
         {!isLoading && !agent ? (
-          <p className="text-sm leading-6 text-muted-foreground">
-            No agent is assigned to this server.
-          </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-6 text-muted-foreground">
+              Install a Kyvora Agent on this server to report live status and
+              heartbeats.
+            </p>
+            <RegisterAgentDialog
+              initialServer={server}
+              triggerLabel="Enroll Agent"
+            />
+          </div>
         ) : null}
       </CardContent>
+      <Dialog
+        open={Boolean(enrollment)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && enrollment && !agentConnected) {
+            return;
+          }
+          if (!nextOpen) {
+            closeTokenDialog();
+          }
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-2xl"
+          showCloseButton={!enrollment || agentConnected}
+          onEscapeKeyDown={(event) => {
+            if (enrollment && !agentConnected) {
+              event.preventDefault();
+            }
+          }}
+          onPointerDownOutside={(event) => {
+            if (enrollment && !agentConnected) {
+              event.preventDefault();
+            }
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Agent token</DialogTitle>
+            <DialogDescription>This token is shown only once.</DialogDescription>
+          </DialogHeader>
+          {enrollment ? (
+            <AgentEnrollmentToken
+              allowCancelEnrollment={
+                enrollment.agent.status === "PENDING" &&
+                enrollment.agent.lastSeenAt === null
+              }
+              enrollment={enrollment}
+              onClose={closeTokenDialog}
+              onConnectionChange={handleAgentConnectionChange}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -271,12 +490,6 @@ function ServerDetails({
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              {!linkedAgent && !linkedAgentLoading ? (
-                <RegisterAgentDialog
-                  initialServer={server}
-                  triggerLabel="Enroll Agent"
-                />
-              ) : null}
               <EditServerDialog server={server} triggerLabel="Edit" />
               <DeleteServerDialog server={server} triggerLabel="Delete" />
               <Button asChild variant="outline">
@@ -304,7 +517,14 @@ function ServerDetails({
           <Field label="Name" value={server.name} />
           <Field
             label="Status"
-            value={<ServerStatusBadge status={server.status} />}
+            value={
+              <div className="grid gap-2">
+                <ServerStatusBadge status={server.status} />
+                <span className="text-xs text-muted-foreground">
+                  Status is managed by the linked agent.
+                </span>
+              </div>
+            }
           />
           <Field
             label="Description"
@@ -337,6 +557,7 @@ function ServerDetails({
         <AgentSection
           agent={linkedAgent}
           isLoading={linkedAgentLoading}
+          server={server}
         />
 
         <DetailSection

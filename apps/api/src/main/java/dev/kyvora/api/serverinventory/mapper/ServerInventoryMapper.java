@@ -12,6 +12,7 @@ import dev.kyvora.api.serverinventory.dto.ServerInventoryCreateRequest;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryResponse;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryUpdateRequest;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;
+import dev.kyvora.api.serverinventory.entity.ServerStatus;
 
 @Component
 public class ServerInventoryMapper {
@@ -24,7 +25,7 @@ public class ServerInventoryMapper {
 				request.description(),
 				request.tags() == null ? null : new LinkedHashSet<>(request.tags()),
 				request.operatingSystem(),
-				request.status(),
+				ServerStatus.UNKNOWN,
 				null);
 	}
 
@@ -35,7 +36,6 @@ public class ServerInventoryMapper {
 		entity.setDescription(request.description());
 		entity.setTags(request.tags() == null ? null : new LinkedHashSet<>(request.tags()));
 		entity.setOperatingSystem(request.operatingSystem());
-		entity.setStatus(request.status());
 	}
 
 	public ServerInventoryResponse toResponse(ServerInventory entity) {

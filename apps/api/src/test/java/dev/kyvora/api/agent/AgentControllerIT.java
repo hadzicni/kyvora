@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -215,6 +216,105 @@ class AgentControllerIT {
 	}
 
 	@Test
+	void pendingAgentCanBeCanceledAndTokenCanNoLongerHeartbeat() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
+
+		mockMvc.perform(delete("/api/v1/agents/{id}", id)
+				.with(user("alice")))
+				.andExpect(status().isNoContent());
+
+		org.assertj.core.api.Assertions.assertThat(agentRepository.findById(UUID.fromString(id))).isEmpty();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void linkedServerCanEnrollNewAgentAfterCancellation() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+
+		mockMvc.perform(delete("/api/v1/agents/{id}", id)
+				.with(user("alice")))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(post("/api/v1/agents")
+				.with(user("alice"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(registerPayload(server.getId(), "Agent 02", "0.1.0"))))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.agent.serverId", is(server.getId().toString())))
+				.andExpect(jsonPath("$.agent.name", is("Agent 02")));
+	}
+
+	@Test
+	void connectedAgentCannotBeCanceled() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(delete("/api/v1/agents/{id}", id)
+				.with(user("alice")))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message", is("Connected agents cannot be deleted through enrollment cancellation.")));
+	}
+
+	@Test
+	void rotateTokenInvalidatesOldTokenAndKeepsServerAssignment() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+		String oldToken = created.get("agentToken").asText();
+
+		String rotatedJson = mockMvc.perform(post("/api/v1/agents/{id}/rotate-token", id)
+				.with(user("alice")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.agent.id", is(id)))
+				.andExpect(jsonPath("$.agent.serverId", is(server.getId().toString())))
+				.andExpect(jsonPath("$.agentToken", notNullValue()))
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		JsonNode rotated = objectMapper.readTree(rotatedJson);
+		String newToken = rotated.get("agentToken").asText();
+		org.assertj.core.api.Assertions.assertThat(newToken).isNotEqualTo(oldToken);
+
+		Agent stored = agentRepository.findById(UUID.fromString(id)).orElseThrow();
+		org.assertj.core.api.Assertions.assertThat(stored.getServer().getId()).isEqualTo(server.getId());
+		org.assertj.core.api.Assertions.assertThat(stored.getTokenHash()).isNotEqualTo(oldToken);
+		org.assertj.core.api.Assertions.assertThat(stored.getTokenHash()).isNotEqualTo(newToken);
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", oldToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message", is("Invalid agent token")));
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", newToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status", is("ONLINE")));
+	}
+
+	@Test
 	void heartbeatFailsWithMissingToken() throws Exception {
 		String createdJson = registerAgent(
 				createServer("Node 01", "node01.example.com", "10.0.0.11").getId(),
@@ -330,6 +430,12 @@ class AgentControllerIT {
 		mockMvc.perform(post("/api/v1/agents")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(UUID.randomUUID(), "Agent 01", "0.1.0"))))
+				.andExpect(status().isUnauthorized());
+
+		mockMvc.perform(delete("/api/v1/agents/{id}", UUID.randomUUID()))
+				.andExpect(status().isUnauthorized());
+
+		mockMvc.perform(post("/api/v1/agents/{id}/rotate-token", UUID.randomUUID()))
 				.andExpect(status().isUnauthorized());
 	}
 

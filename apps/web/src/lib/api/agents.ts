@@ -129,6 +129,21 @@ export async function registerAgent(
   });
 }
 
+export async function cancelAgentEnrollment(id: string): Promise<void> {
+  await request<void>(`/api/agents/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function rotateAgentToken(id: string): Promise<AgentEnrollment> {
+  return request<AgentEnrollment>(
+    `/api/agents/${encodeURIComponent(id)}/rotate-token`,
+    {
+      method: "POST",
+    }
+  );
+}
+
 export const agentKeys = {
   all: ["agents"] as const,
   list: (params: ListAgentsParams = {}) =>

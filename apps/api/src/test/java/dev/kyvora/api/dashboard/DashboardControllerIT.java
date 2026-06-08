@@ -23,6 +23,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.kyvora.api.serverinventory.entity.ServerStatus;
 import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
 
 @SpringBootTest
@@ -78,6 +79,12 @@ class DashboardControllerIT {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(createPayload(name, hostname, ipAddress, status))))
 				.andExpect(status().isCreated());
+		var server = repository.findAll().stream()
+				.filter(item -> item.getHostname().equals(hostname))
+				.findFirst()
+				.orElseThrow();
+		server.setStatus(ServerStatus.valueOf(status));
+		repository.save(server);
 	}
 
 	private Map<String, Object> createPayload(String name, String hostname, String ipAddress, String status) {

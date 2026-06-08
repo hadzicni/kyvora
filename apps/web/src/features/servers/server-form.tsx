@@ -120,7 +120,7 @@ export function toServerInput(payload: ServerFormPayload): CreateServerInput {
     description: payload.description,
     tags: payload.tags,
     operatingSystem: payload.operatingSystem,
-    status: payload.status as ServerStatus,
+    status: "UNKNOWN",
   };
 }
 

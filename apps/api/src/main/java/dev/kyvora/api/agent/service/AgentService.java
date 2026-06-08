@@ -18,6 +18,10 @@ public interface AgentService {
 
 	AgentEnrollmentResponse enroll(AgentRegisterRequest request);
 
+	void cancelPendingEnrollment(UUID id);
+
+	AgentEnrollmentResponse rotateToken(UUID id);
+
 	AgentResponse heartbeat(UUID id, String agentToken, AgentHeartbeatRequest request);
 
 	int markStaleOnlineAgentsOffline();

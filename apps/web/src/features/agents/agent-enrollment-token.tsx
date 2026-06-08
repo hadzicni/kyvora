@@ -2,6 +2,7 @@
 
 import { Check, Copy, Loader2, Terminal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { formatDateTime } from "@/features/servers/format";
 import type { AgentEnrollment } from "@/lib/api/agents";
 
-import { useAgent } from "./use-agents";
+import { useAgent, useCancelAgentEnrollment } from "./use-agents";
 
 const defaultAgentApiUrl = "http://localhost:8080";
 const agentPollIntervalMs = 3000;
@@ -21,15 +22,18 @@ export function isAgentConnected(
 }
 
 export function AgentEnrollmentToken({
+  allowCancelEnrollment = true,
   enrollment,
   onClose,
   onConnectionChange,
 }: {
+  allowCancelEnrollment?: boolean;
   enrollment: AgentEnrollment;
   onConnectionChange?: (connected: boolean) => void;
-  onClose: (mode: "connected" | "later") => void;
+  onClose: (mode: "connected" | "canceled") => void;
 }) {
   const [copied, setCopied] = useState<"token" | "command" | null>(null);
+  const cancelEnrollment = useCancelAgentEnrollment();
   const agentQuery = useAgent(enrollment.agent.id, {
     enabled: !isAgentConnected(enrollment.agent),
     refetchInterval: (query) =>
@@ -68,13 +72,29 @@ npm run dev:agent`,
     window.setTimeout(() => setCopied(null), 1500);
   }
 
-  function confirmConnectLater() {
+  async function confirmCancelEnrollment() {
     const confirmed = window.confirm(
-      "Close this dialog without confirming the agent connection? The token will not be shown again."
+      "This will revoke the token and remove the pending agent. You can enroll a new agent later."
     );
 
-    if (confirmed) {
-      onClose("later");
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await cancelEnrollment.mutateAsync(enrollment.agent.id);
+      toast.success("Enrollment canceled.", {
+        description: enrollment.agent.name,
+      });
+      onClose("canceled");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to cancel enrollment right now.";
+      toast.error("Unable to cancel enrollment.", {
+        description: message,
+      });
     }
   }
 
@@ -159,9 +179,21 @@ npm run dev:agent`,
       )}
 
       <DialogFooter className="sm:justify-between">
-        <Button type="button" variant="outline" onClick={confirmConnectLater}>
-          I&apos;ll connect it later
-        </Button>
+        {allowCancelEnrollment ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={cancelEnrollment.isPending}
+            onClick={() => void confirmCancelEnrollment()}
+          >
+            {cancelEnrollment.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : null}
+            Cancel enrollment
+          </Button>
+        ) : (
+          <div />
+        )}
         <Button
           type="button"
           disabled={!connected}

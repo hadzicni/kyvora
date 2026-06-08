@@ -12,9 +12,11 @@ import { auditLogKeys } from "@/lib/api/audit-logs";
 import {
   agentKeys,
   AgentApiError,
+  cancelAgentEnrollment,
   getAgent,
   listAgents,
   registerAgent,
+  rotateAgentToken,
   type ListAgentsParams,
   type Agent,
   type RegisterAgentInput,
@@ -54,6 +56,38 @@ export function useRegisterAgent() {
 
   return useMutation({
     mutationFn: (input: RegisterAgentInput) => registerAgent(input),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: agentKeys.all }),
+        queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+        queryClient.invalidateQueries({ queryKey: serverKeys.all }),
+      ]);
+    },
+  });
+}
+
+export function useCancelAgentEnrollment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => cancelAgentEnrollment(id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: agentKeys.all }),
+        queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+        queryClient.invalidateQueries({ queryKey: serverKeys.all }),
+      ]);
+    },
+  });
+}
+
+export function useRotateAgentToken() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => rotateAgentToken(id),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: agentKeys.all }),

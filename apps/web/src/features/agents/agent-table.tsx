@@ -15,6 +15,29 @@ import type { Agent } from "@/lib/api/agents";
 
 import { AgentStatusBadge } from "./agent-status-badge";
 
+function formatRelativeLastSeen(value: string | null) {
+  if (!value) {
+    return "Never";
+  }
+
+  const elapsedMs = Date.now() - new Date(value).getTime();
+  const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60_000));
+
+  if (elapsedMinutes < 1) {
+    return "Just now";
+  }
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} min ago`;
+  }
+
+  const elapsedHours = Math.round(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours} hr ago`;
+  }
+
+  return `${Math.round(elapsedHours / 24)} d ago`;
+}
+
 export function AgentTable({ agents }: { agents: Agent[] }) {
   return (
     <Table>
@@ -61,7 +84,15 @@ export function AgentTable({ agents }: { agents: Agent[] }) {
               <AgentStatusBadge status={agent.status} />
             </TableCell>
             <TableCell className="text-muted-foreground">
-              {formatDateTime(agent.lastSeenAt)}
+              <div>{formatRelativeLastSeen(agent.lastSeenAt)}</div>
+              <div className="text-xs">
+                {formatDateTime(agent.lastSeenAt)}
+              </div>
+              {agent.status === "OFFLINE" ? (
+                <div className="mt-1 max-w-48 text-xs text-amber-300/80">
+                  Check the agent process and host.
+                </div>
+              ) : null}
             </TableCell>
             <TableCell className="text-muted-foreground">
               {formatDateTime(agent.registeredAt)}

@@ -133,12 +133,18 @@ export function EditServerDialog({
         </DialogHeader>
 
         <ServerForm
+          childrenBeforeFooter={
+            <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+              Status is managed by the linked agent.
+            </div>
+          }
           form={form}
           formError={formError}
           idPrefix={`edit-server-${server.id}`}
           isPending={updateServer.isPending}
           onCancel={() => handleOpenChange(false)}
           onSubmit={onSubmit}
+          showStatusField={false}
           submitIcon={<Pencil className="size-4" />}
           submitLabel="Save changes"
         />

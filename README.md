@@ -281,6 +281,20 @@ The token is shown only once immediately after creation. Store it securely and
 do not commit it to Git. Successful heartbeats update the assigned agent status
 and the linked server status and last-seen timestamp.
 
+Pending enrollments can be canceled before the agent connects. Canceling a
+pending enrollment deletes the pending agent record, revokes the setup token,
+and frees the server so a new agent can be enrolled later.
+
+Agent tokens can be rotated from the server detail Agent Setup section. Rotation
+returns a new one-time plaintext token and immediately invalidates the previous
+token. Kyvora still stores only the SHA-256 token hash and never re-shows old
+plaintext tokens after the setup dialog is closed.
+
+Server operational status is managed by agent heartbeats and offline detection,
+not manual editing. A server starts as `UNKNOWN`, becomes `ONLINE` when its
+linked agent reports a heartbeat, and becomes `OFFLINE` when the backend has
+not received a heartbeat recently.
+
 ## Development
 
 Useful commands:

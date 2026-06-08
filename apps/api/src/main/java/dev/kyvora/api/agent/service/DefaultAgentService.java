@@ -17,6 +17,7 @@ import dev.kyvora.api.agent.entity.Agent;
 import dev.kyvora.api.agent.entity.AgentStatus;
 import dev.kyvora.api.agent.event.AgentChangedEvent;
 import dev.kyvora.api.agent.event.AgentEventType;
+import dev.kyvora.api.agent.exception.AgentEnrollmentCancellationException;
 import dev.kyvora.api.agent.exception.AgentNotFoundException;
 import dev.kyvora.api.agent.exception.AgentTokenAuthenticationException;
 import dev.kyvora.api.agent.exception.AgentTokenForbiddenException;
@@ -89,6 +90,29 @@ public class DefaultAgentService implements AgentService {
 
 		Agent saved = repository.save(agent);
 		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_REGISTERED, saved));
+		return new AgentEnrollmentResponse(mapper.toResponse(saved), token);
+	}
+
+	@Override
+	public void cancelPendingEnrollment(UUID id) {
+		Agent agent = getRequiredEntity(id);
+		if (agent.getStatus() != AgentStatus.PENDING || agent.getLastSeenAt() != null) {
+			throw new AgentEnrollmentCancellationException();
+		}
+		repository.delete(agent);
+	}
+
+	@Override
+	public AgentEnrollmentResponse rotateToken(UUID id) {
+		Agent agent = getRequiredEntity(id);
+		String token = agentTokenService.generateToken();
+		Instant rotatedAt = Instant.now();
+		agent.setTokenHash(agentTokenService.hash(token));
+		agent.setTokenCreatedAt(rotatedAt);
+		agent.setTokenLastUsedAt(null);
+		agent.setTokenRevokedAt(null);
+
+		Agent saved = repository.save(agent);
 		return new AgentEnrollmentResponse(mapper.toResponse(saved), token);
 	}
 
