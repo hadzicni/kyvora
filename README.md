@@ -203,8 +203,8 @@ If you discover a security vulnerability, please do not open a public issue.
 
 Instead, report it privately:
 
-- Email: security@example.com
-- Maintainer: Project Team
+- Email: nikolahadzic7@icloud.com
+- Maintainer: Nikola Hadzic
 
 We will investigate and provide updates as quickly as possible.
 
