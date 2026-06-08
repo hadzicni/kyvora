@@ -33,22 +33,6 @@ export type ListServersParams = {
   tags?: string[];
 };
 
-const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
-
-function createAuthorizationHeader(): Record<string, string> {
-  const username = process.env.NEXT_PUBLIC_API_USERNAME;
-  const password = process.env.NEXT_PUBLIC_API_PASSWORD;
-
-  if (!username || !password) {
-    return {};
-  }
-
-  return {
-    Authorization: `Basic ${btoa(`${username}:${password}`)}`,
-  };
-}
-
 class ApiError extends Error {
   constructor(
     message: string,
@@ -73,11 +57,10 @@ function appendParam(searchParams: URLSearchParams, key: string, value: unknown)
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(path, {
     ...init,
     headers: {
       Accept: "application/json",
-      ...createAuthorizationHeader(),
       ...init?.headers,
     },
   });
@@ -112,7 +95,7 @@ export async function listServers(
   appendParam(searchParams, "tags", params.tags);
 
   return request<ServerInventoryPage>(
-    `/api/v1/servers?${searchParams.toString()}`
+    `/api/server-inventory?${searchParams.toString()}`
   );
 }
 
