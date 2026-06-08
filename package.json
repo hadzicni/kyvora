@@ -12,6 +12,7 @@
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "dev:web": "npm run dev -w apps/web",
+    "dev:website": "npm run dev -w apps/website",
     "dev:api": "cd apps/api && gradle bootRun",
     "dev:agent": "cd apps/agent && go run ./cmd/kyvora-agent",
     "db:up": "docker compose -f infrastructure/docker-compose.yml up -d",
