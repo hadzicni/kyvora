@@ -3,7 +3,7 @@ spring:
     name: kyvora-api
 
   datasource:
-    url: jdbc:postgresql://docker01.lan:3247/kyvora
+    url: jdbc:postgresql://ictnikhadlk01:5432/kyvora
     username: kyvora
     password: kyvora
 
