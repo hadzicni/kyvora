@@ -1,5 +1,6 @@
 package dev.kyvora.api.auditlog.service;
 
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ import dev.kyvora.api.auditlog.entity.AuditLog;
 import dev.kyvora.api.auditlog.mapper.AuditLogMapper;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
 import dev.kyvora.api.auditlog.repository.AuditLogSpecifications;
+import dev.kyvora.api.agent.event.AgentChangedEvent;
 import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
 
 @Service
@@ -24,6 +26,7 @@ import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
 public class DefaultAuditLogService implements AuditLogService {
 
 	private static final String SERVER_AGGREGATE_TYPE = "SERVER";
+	private static final String AGENT_AGGREGATE_TYPE = "AGENT";
 	private static final String SYSTEM_ACTOR = "system";
 
 	private final AuditLogRepository repository;
@@ -52,6 +55,18 @@ public class DefaultAuditLogService implements AuditLogService {
 				metadataFor(event)));
 	}
 
+	@Override
+	public void recordAgentChange(AgentChangedEvent event) {
+		AuditEventType eventType = AuditEventType.valueOf(event.type().name());
+		repository.save(new AuditLog(
+				eventType,
+				AGENT_AGGREGATE_TYPE,
+				event.agentId(),
+				currentActor(),
+				messageFor(event),
+				metadataFor(event)));
+	}
+
 	private String currentActor() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
@@ -68,6 +83,13 @@ public class DefaultAuditLogService implements AuditLogService {
 		};
 	}
 
+	private String messageFor(AgentChangedEvent event) {
+		return switch (event.type()) {
+			case AGENT_REGISTERED -> "Agent registered: " + event.hostname();
+			case AGENT_HEARTBEAT_RECEIVED -> "Agent heartbeat received: " + event.hostname();
+		};
+	}
+
 	private Map<String, Object> metadataFor(ServerInventoryChangedEvent event) {
 		Map<String, Object> metadata = new LinkedHashMap<>();
 		metadata.put("name", event.name());
@@ -77,8 +99,23 @@ public class DefaultAuditLogService implements AuditLogService {
 		metadata.put("tags", event.tags());
 		metadata.put("operatingSystem", event.operatingSystem());
 		metadata.put("status", event.status());
-		metadata.put("lastSeenAt", event.lastSeenAt());
+		metadata.put("lastSeenAt", timestampMetadataValue(event.lastSeenAt()));
 		metadata.put("occurredAt", event.occurredAt().toString());
 		return metadata;
+	}
+
+	private Map<String, Object> metadataFor(AgentChangedEvent event) {
+		Map<String, Object> metadata = new LinkedHashMap<>();
+		metadata.put("name", event.name());
+		metadata.put("hostname", event.hostname());
+		metadata.put("version", event.version());
+		metadata.put("status", event.status());
+		metadata.put("lastSeenAt", timestampMetadataValue(event.lastSeenAt()));
+		metadata.put("occurredAt", event.occurredAt().toString());
+		return metadata;
+	}
+
+	private String timestampMetadataValue(Instant timestamp) {
+		return timestamp == null ? null : timestamp.toString();
 	}
 }

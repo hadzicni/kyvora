@@ -1,0 +1,17 @@
+package dev.kyvora.api.agent.dto;
+
+import dev.kyvora.api.agent.entity.AgentStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+@Schema(description = "Payload sent by a registered agent heartbeat.")
+public record AgentHeartbeatRequest(
+		@Schema(description = "Agent status reported by the heartbeat.", example = "ONLINE")
+		@NotNull
+		AgentStatus status,
+
+		@Schema(description = "Agent software version.", example = "0.1.1", minLength = 1, maxLength = 64)
+		@Size(min = 1, max = 64)
+		String version) {
+}

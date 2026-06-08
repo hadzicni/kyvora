@@ -11,6 +11,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import dev.kyvora.api.agent.exception.AgentNotFoundException;
+import dev.kyvora.api.agent.exception.DuplicateAgentException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 
@@ -20,6 +22,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(ServerInventoryNotFoundException.class)
 	public ResponseEntity<ApiErrorResponse> handleNotFound(
 			ServerInventoryNotFoundException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
+	}
+
+	@ExceptionHandler(AgentNotFoundException.class)
+	public ResponseEntity<ApiErrorResponse> handleAgentNotFound(
+			AgentNotFoundException exception,
 			HttpServletRequest request) {
 		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
 	}
@@ -54,6 +63,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(DuplicateServerInventoryException.class)
 	public ResponseEntity<ApiErrorResponse> handleDuplicate(
 			DuplicateServerInventoryException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of(exception.getField() + ": " + exception.getValue()));
+	}
+
+	@ExceptionHandler(DuplicateAgentException.class)
+	public ResponseEntity<ApiErrorResponse> handleDuplicateAgent(
+			DuplicateAgentException exception,
 			HttpServletRequest request) {
 		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of(exception.getField() + ": " + exception.getValue()));
 	}

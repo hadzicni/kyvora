@@ -55,4 +55,10 @@ class SecurityConfigIT {
 		mockMvc.perform(get("/api/v1/audit-logs"))
 				.andExpect(status().isUnauthorized());
 	}
+
+	@Test
+	void agentEndpointsRequireAuthentication() throws Exception {
+		mockMvc.perform(get("/api/v1/agents"))
+				.andExpect(status().isUnauthorized());
+	}
 }
