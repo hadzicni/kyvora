@@ -173,6 +173,11 @@ npm run format
 npm test
 ```
 
+Backend API documentation is available locally when the API is running:
+
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
+
 If the repository uses other tools, add the relevant commands here.
 
 ## Build and Deployment

@@ -22,6 +22,8 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/actuator/health").permitAll()
 						.requestMatchers("/actuator/info").permitAll()
+						.requestMatchers("/swagger-ui.html", "/swagger-ui/**").permitAll()
+						.requestMatchers("/v3/api-docs", "/v3/api-docs/**").permitAll()
 						.anyRequest().authenticated())
 				.httpBasic(Customizer.withDefaults())
 				.build();
