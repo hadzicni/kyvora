@@ -3,13 +3,12 @@
 import {
   Activity,
   Bot,
-  Database,
   LayoutDashboard,
   LogOut,
   Menu,
   Search,
   Server,
-  UserCircle,
+  UserCircle
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
@@ -48,6 +47,7 @@ import {
 import { useAgents } from "@/features/agents/use-agents";
 import { useServers } from "@/features/servers/use-servers";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const navItems = [
   {
@@ -104,9 +104,17 @@ function SidebarContent() {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 items-center gap-3 px-5">
-        <div className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <Database className="size-4" />
-        </div>
+          <span className="flex size-8 items-center justify-center">
+            <Image
+              src="/icon.svg"
+              alt=""
+              width={32}
+              height={32}
+              priority
+              aria-hidden="true"
+              className="size-8"
+            />
+          </span>
         <div>
           <div className="text-sm font-semibold leading-tight">Kyvora</div>
           <div className="text-xs text-muted-foreground">Operations</div>
