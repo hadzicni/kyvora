@@ -160,7 +160,13 @@ class AgentControllerIT {
 				.param("sort", "hostname,asc"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.content", hasSize(1)))
+				.andExpect(jsonPath("$.page", is(0)))
+				.andExpect(jsonPath("$.size", is(1)))
 				.andExpect(jsonPath("$.totalElements", is(2)))
+				.andExpect(jsonPath("$.totalPages", is(2)))
+				.andExpect(jsonPath("$.first", is(true)))
+				.andExpect(jsonPath("$.last", is(false)))
+				.andExpect(jsonPath("$.empty", is(false)))
 				.andExpect(jsonPath("$.content[0].hostname", is("node01.example.com")));
 	}
 

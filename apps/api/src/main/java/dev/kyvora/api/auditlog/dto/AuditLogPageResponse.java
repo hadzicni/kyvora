@@ -1,11 +1,11 @@
-package dev.kyvora.api.serverinventory.dto;
+package dev.kyvora.api.auditlog.dto;
 
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 
-public record ServerInventoryPageResponse(
-		List<ServerInventoryResponse> content,
+public record AuditLogPageResponse(
+		List<AuditLogResponse> content,
 		int page,
 		int size,
 		long totalElements,
@@ -14,8 +14,8 @@ public record ServerInventoryPageResponse(
 		boolean last,
 		boolean empty) {
 
-	public static ServerInventoryPageResponse from(Page<ServerInventoryResponse> page) {
-		return new ServerInventoryPageResponse(
+	public static AuditLogPageResponse from(Page<AuditLogResponse> page) {
+		return new AuditLogPageResponse(
 				page.getContent(),
 				page.getNumber(),
 				page.getSize(),

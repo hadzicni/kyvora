@@ -2,7 +2,6 @@ package dev.kyvora.api.auditlog.controller;
 
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -14,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import dev.kyvora.api.auditlog.dto.AuditLogFilter;
-import dev.kyvora.api.auditlog.dto.AuditLogResponse;
+import dev.kyvora.api.auditlog.dto.AuditLogPageResponse;
 import dev.kyvora.api.auditlog.entity.AuditEventType;
 import dev.kyvora.api.auditlog.service.AuditLogService;
 import dev.kyvora.api.config.openapi.OpenApiConfig;
@@ -51,7 +50,7 @@ public class AuditLogController {
 					@ApiResponse(responseCode = "401", description = "Authentication is required",
 							content = @Content)
 			})
-	public ResponseEntity<Page<AuditLogResponse>> findAll(
+	public ResponseEntity<AuditLogPageResponse> findAll(
 			@Parameter(description = "Aggregate type filter.", example = "SERVER")
 			@RequestParam(required = false) String aggregateType,
 			@Parameter(description = "Aggregate identifier filter.", example = "00000000-0000-0000-0000-000000000001")
@@ -60,6 +59,7 @@ public class AuditLogController {
 			@RequestParam(required = false) AuditEventType eventType,
 			@Parameter(description = "Pagination and sorting options. Supports page, size, and sort query parameters.")
 			@PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-		return ResponseEntity.ok(service.findAll(new AuditLogFilter(aggregateType, aggregateId, eventType), pageable));
+		return ResponseEntity.ok(AuditLogPageResponse.from(
+				service.findAll(new AuditLogFilter(aggregateType, aggregateId, eventType), pageable)));
 	}
 }

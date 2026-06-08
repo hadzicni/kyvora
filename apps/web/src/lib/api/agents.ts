@@ -13,11 +13,13 @@ export type Agent = {
 
 export type AgentPage = {
   content: Agent[];
-  page?: number;
-  size?: number;
-  number?: number;
+  page: number;
+  size: number;
   totalElements: number;
   totalPages: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
 };
 
 export type ListAgentsParams = {

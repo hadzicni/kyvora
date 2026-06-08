@@ -4,7 +4,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import dev.kyvora.api.config.openapi.OpenApiConfig;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryCreateRequest;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryFilter;
+import dev.kyvora.api.serverinventory.dto.ServerInventoryPageResponse;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryResponse;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryUpdateRequest;
 import dev.kyvora.api.serverinventory.entity.ServerStatus;
@@ -61,7 +61,7 @@ public class ServerInventoryController {
 					@ApiResponse(responseCode = "401", description = "Authentication is required",
 							content = @Content)
 			})
-	public ResponseEntity<Page<ServerInventoryResponse>> findAll(
+	public ResponseEntity<ServerInventoryPageResponse> findAll(
 			@Parameter(description = "Case-insensitive search across name, hostname, and IP address.", example = "web")
 			@RequestParam(required = false, name = "q") String q,
 			@Parameter(description = "Case-insensitive partial match on the display name.", example = "web")
@@ -78,7 +78,7 @@ public class ServerInventoryController {
 			@Parameter(description = "Pagination and sorting options. Supports page, size, and sort query parameters.")
 			@PageableDefault(size = 20) Pageable pageable) {
 		ServerInventoryFilter filter = new ServerInventoryFilter(q, name, hostname, ipAddress, status, tags);
-		return ResponseEntity.ok(service.findAll(filter, pageable));
+		return ResponseEntity.ok(ServerInventoryPageResponse.from(service.findAll(filter, pageable)));
 	}
 
 	@GetMapping("/{id}")

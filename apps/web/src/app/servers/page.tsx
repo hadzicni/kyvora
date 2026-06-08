@@ -63,8 +63,7 @@ export default function ServerInventoryPage() {
   const servers = serversQuery.data?.content ?? [];
   const totalElements = serversQuery.data?.totalElements ?? 0;
   const totalPages = serversQuery.data?.totalPages ?? 0;
-  const displayedPage =
-    serversQuery.data?.number ?? serversQuery.data?.page ?? page;
+  const displayedPage = serversQuery.data?.page ?? page;
   const rangeStart = totalElements === 0 ? 0 : displayedPage * pageSize + 1;
   const rangeEnd =
     totalElements === 0

@@ -3,7 +3,6 @@ package dev.kyvora.api.agent.controller;
 import java.net.URI;
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import dev.kyvora.api.agent.dto.AgentHeartbeatRequest;
+import dev.kyvora.api.agent.dto.AgentPageResponse;
 import dev.kyvora.api.agent.dto.AgentRegisterRequest;
 import dev.kyvora.api.agent.dto.AgentResponse;
 import dev.kyvora.api.agent.service.AgentService;
@@ -54,10 +54,10 @@ public class AgentController {
 					@ApiResponse(responseCode = "401", description = "Authentication is required",
 							content = @Content)
 			})
-	public ResponseEntity<Page<AgentResponse>> findAll(
+	public ResponseEntity<AgentPageResponse> findAll(
 			@Parameter(description = "Pagination and sorting options. Supports page, size, and sort query parameters.")
 			@PageableDefault(size = 20) Pageable pageable) {
-		return ResponseEntity.ok(service.findAll(pageable));
+		return ResponseEntity.ok(AgentPageResponse.from(service.findAll(pageable)));
 	}
 
 	@GetMapping("/{id}")

@@ -88,7 +88,13 @@ class ServerInventoryControllerIT {
 				.param("status", "OFFLINE"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.content", hasSize(1)))
+				.andExpect(jsonPath("$.page", is(0)))
+				.andExpect(jsonPath("$.size", is(1)))
 				.andExpect(jsonPath("$.totalElements", is(1)))
+				.andExpect(jsonPath("$.totalPages", is(1)))
+				.andExpect(jsonPath("$.first", is(true)))
+				.andExpect(jsonPath("$.last", is(true)))
+				.andExpect(jsonPath("$.empty", is(false)))
 				.andExpect(jsonPath("$.content[0].hostname", is("db01.example.com")))
 				.andExpect(jsonPath("$.content[0].status", is("OFFLINE")));
 	}
