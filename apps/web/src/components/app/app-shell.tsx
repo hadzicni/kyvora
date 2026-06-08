@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  Bot,
   Database,
   LayoutDashboard,
   Menu,
@@ -32,6 +33,11 @@ const navItems = [
     href: "/servers",
     label: "Servers",
     icon: Server,
+  },
+  {
+    href: "/agents",
+    label: "Agents",
+    icon: Bot,
   },
 ];
 
@@ -123,7 +129,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="hidden h-9 w-full max-w-xs items-center gap-2 rounded-md border bg-muted/30 px-3 text-sm text-muted-foreground sm:flex">
             <Search className="size-4" />
-            <span>Search servers</span>
+            <span>Search infrastructure</span>
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">

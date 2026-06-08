@@ -1,6 +1,6 @@
 "use client";
 
-import { CirclePlus, Pencil, Trash2 } from "lucide-react";
+import { CirclePlus, Pencil, Radio, Trash2 } from "lucide-react";
 
 import {
   Card,
@@ -20,12 +20,16 @@ const eventLabels: Record<AuditEventType, string> = {
   SERVER_CREATED: "Created",
   SERVER_UPDATED: "Updated",
   SERVER_DELETED: "Deleted",
+  AGENT_REGISTERED: "Registered",
+  AGENT_HEARTBEAT_RECEIVED: "Heartbeat",
 };
 
 const eventIcons = {
   SERVER_CREATED: CirclePlus,
   SERVER_UPDATED: Pencil,
   SERVER_DELETED: Trash2,
+  AGENT_REGISTERED: CirclePlus,
+  AGENT_HEARTBEAT_RECEIVED: Radio,
 } satisfies Record<
   AuditEventType,
   React.ComponentType<{ className?: string }>

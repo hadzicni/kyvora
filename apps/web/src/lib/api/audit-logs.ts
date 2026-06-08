@@ -1,7 +1,9 @@
 export type AuditEventType =
   | "SERVER_CREATED"
   | "SERVER_UPDATED"
-  | "SERVER_DELETED";
+  | "SERVER_DELETED"
+  | "AGENT_REGISTERED"
+  | "AGENT_HEARTBEAT_RECEIVED";
 
 export type AuditLog = {
   id: string;
