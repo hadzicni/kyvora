@@ -1,0 +1,66 @@
+name: Feature request
+description: Suggest an improvement or new capability for Kyvora.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Please describe the problem and the outcome you want.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem should this solve?
+      placeholder: Describe the current limitation or pain point.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like Kyvora to do?
+      placeholder: Describe the proposed behavior or design.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Web dashboard
+        - Marketing website
+        - API
+        - Agent
+        - Infrastructure
+        - Documentation
+        - CI/CD
+        - Unknown
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What alternatives or workarounds have you considered?
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add screenshots, diagrams, links, or examples if useful.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I have searched existing issues and discussions.
+          required: true
+        - label: This request fits Kyvora as an open-source homelab control plane.
+          required: true

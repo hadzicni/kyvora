@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/hadzicni/kyvora/security/policy
+    about: Please report security vulnerabilities privately using the security policy.
+  - name: Questions and discussions
+    url: https://github.com/hadzicni/kyvora/discussions
+    about: Please use GitHub Discussions for questions, ideas, and general help.
