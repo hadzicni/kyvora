@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
+import type { ComponentProps } from "react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -27,7 +28,21 @@ import {
 import { useUpdateServer } from "@/features/servers/use-servers";
 import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
 
-export function EditServerDialog({ server }: { server: ServerInventoryItem }) {
+type EditServerDialogProps = {
+  server: ServerInventoryItem;
+  triggerClassName?: string;
+  triggerLabel?: string;
+  triggerSize?: ComponentProps<typeof Button>["size"];
+  triggerVariant?: ComponentProps<typeof Button>["variant"];
+};
+
+export function EditServerDialog({
+  server,
+  triggerClassName,
+  triggerLabel,
+  triggerSize = triggerLabel ? "default" : "icon-sm",
+  triggerVariant = triggerLabel ? "default" : "ghost",
+}: EditServerDialogProps) {
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const updateServer = useUpdateServer();
@@ -99,8 +114,14 @@ export function EditServerDialog({ server }: { server: ServerInventoryItem }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={`Edit ${server.name}`}>
+        <Button
+          variant={triggerVariant}
+          size={triggerSize}
+          className={triggerClassName}
+          aria-label={triggerLabel ? undefined : `Edit ${server.name}`}
+        >
           <Pencil className="size-4" />
+          {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">

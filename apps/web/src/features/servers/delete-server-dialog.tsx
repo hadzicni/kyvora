@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Trash2 } from "lucide-react";
+import type { ComponentProps } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -17,7 +18,21 @@ import {
 import { useDeleteServer } from "@/features/servers/use-servers";
 import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
 
-export function DeleteServerDialog({ server }: { server: ServerInventoryItem }) {
+type DeleteServerDialogProps = {
+  server: ServerInventoryItem;
+  triggerClassName?: string;
+  triggerLabel?: string;
+  triggerSize?: ComponentProps<typeof Button>["size"];
+  triggerVariant?: ComponentProps<typeof Button>["variant"];
+};
+
+export function DeleteServerDialog({
+  server,
+  triggerClassName,
+  triggerLabel,
+  triggerSize = triggerLabel ? "default" : "icon-sm",
+  triggerVariant = triggerLabel ? "destructive" : "ghost",
+}: DeleteServerDialogProps) {
   const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const deleteServer = useDeleteServer();
@@ -75,11 +90,13 @@ export function DeleteServerDialog({ server }: { server: ServerInventoryItem }) 
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Delete ${server.name}`}
+          variant={triggerVariant}
+          size={triggerSize}
+          className={triggerClassName}
+          aria-label={triggerLabel ? undefined : `Delete ${server.name}`}
         >
-          <Trash2 className="size-4 text-destructive" />
+          <Trash2 className={triggerLabel ? "size-4" : "size-4 text-destructive"} />
+          {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent>

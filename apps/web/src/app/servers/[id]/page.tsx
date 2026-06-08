@@ -1,6 +1,15 @@
 "use client";
 
-import { ArrowLeft, RefreshCw, Server } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarClock,
+  Cpu,
+  Fingerprint,
+  Network,
+  RefreshCw,
+  Server,
+  TagsIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { ReactNode } from "react";
@@ -18,7 +27,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteServerDialog } from "@/features/servers/delete-server-dialog";
 import { EditServerDialog } from "@/features/servers/edit-server-dialog";
-import { formatDateTime } from "@/features/servers/format";
 import { ServerErrorState } from "@/features/servers/server-error-state";
 import { ServerStatusBadge } from "@/features/servers/server-status-badge";
 import { useServer } from "@/features/servers/use-servers";
@@ -33,10 +41,12 @@ function Field({
   label,
   value,
   mono,
+  muted,
 }: {
   label: string;
   value: ReactNode;
   mono?: boolean;
+  muted?: boolean;
 }) {
   return (
     <div className="rounded-lg border bg-muted/20 p-3">
@@ -46,7 +56,8 @@ function Field({
       <dd
         className={cn(
           "mt-2 min-h-5 break-words text-sm text-foreground",
-          mono && "font-mono text-xs"
+          mono && "font-mono text-xs",
+          muted && "text-muted-foreground"
         )}
       >
         {value}
@@ -55,13 +66,68 @@ function Field({
   );
 }
 
+function DetailSection({
+  children,
+  description,
+  icon,
+  title,
+}: {
+  children: ReactNode;
+  description: string;
+  icon: ReactNode;
+  title: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2">
+          {icon}
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-4">
+        <dl className="grid gap-3 sm:grid-cols-2">{children}</dl>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ServerDetailSkeleton() {
   return (
-    <div className="space-y-4">
-      <Skeleton className="h-24 w-full" />
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 10 }).map((_, index) => (
-          <Skeleton className="h-20 w-full" key={index} />
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="border-b">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-8 w-64 max-w-full" />
+              <Skeleton className="h-4 w-80 max-w-full" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-32" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <Skeleton className="h-4 w-full max-w-2xl" />
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Card key={index}>
+            <CardHeader className="border-b">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-4 w-56" />
+            </CardHeader>
+            <CardContent className="grid gap-3 pt-4 sm:grid-cols-2">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>
@@ -81,7 +147,7 @@ function NotFoundState() {
         <Button asChild variant="outline">
           <Link href="/servers">
             <ArrowLeft className="size-4" />
-            Back to inventory
+            Back to Servers
           </Link>
         </Button>
       </CardContent>
@@ -105,56 +171,129 @@ function Tags({ server }: { server: ServerInventoryItem }) {
   );
 }
 
+function formatDetailDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "Never seen";
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 function ServerDetails({ server }: { server: ServerInventoryItem }) {
+  const description = server.description.trim();
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Card>
         <CardHeader className="border-b">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Server className="size-5 text-muted-foreground" />
-                <CardTitle className="text-2xl">{server.name}</CardTitle>
+            <div className="min-w-0 space-y-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <Server className="size-4" />
+                Server inventory record
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="break-words text-3xl font-semibold tracking-tight">
+                  {server.name}
+                </h1>
                 <ServerStatusBadge status={server.status} />
               </div>
-              <CardDescription className="font-mono text-xs">
-                {server.hostname} - {server.ipAddress}
+              <CardDescription className="break-words font-mono text-xs">
+                {server.hostname} / {server.ipAddress}
               </CardDescription>
             </div>
-            <div className="flex gap-1">
-              <EditServerDialog server={server} />
-              <DeleteServerDialog server={server} />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <EditServerDialog server={server} triggerLabel="Edit" />
+              <DeleteServerDialog server={server} triggerLabel="Delete" />
+              <Button asChild variant="outline">
+                <Link href="/servers">
+                  <ArrowLeft className="size-4" />
+                  Back to Servers
+                </Link>
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-4">
           <p className="text-sm leading-6 text-muted-foreground">
-            {server.description || "No description"}
+            {description || "No description has been added for this server."}
           </p>
         </CardContent>
       </Card>
 
-      <dl className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <Field label="Name" value={server.name} />
-        <Field label="Hostname" value={server.hostname} mono />
-        <Field label="IP address" value={server.ipAddress} mono />
-        <Field
-          label="Description"
-          value={server.description || "No description"}
-        />
-        <Field label="Tags" value={<Tags server={server} />} />
-        <Field
-          label="Operating system"
-          value={server.operatingSystem || "Unknown"}
-        />
-        <Field
-          label="Status"
-          value={<ServerStatusBadge status={server.status} />}
-        />
-        <Field label="Last seen" value={formatDateTime(server.lastSeenAt)} />
-        <Field label="Created" value={formatDateTime(server.createdAt)} />
-        <Field label="Updated" value={formatDateTime(server.updatedAt)} />
-      </dl>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <DetailSection
+          title="Identity"
+          description="Inventory identity and descriptive metadata."
+          icon={<Fingerprint className="size-4 text-muted-foreground" />}
+        >
+          <Field label="Name" value={server.name} />
+          <Field
+            label="Status"
+            value={<ServerStatusBadge status={server.status} />}
+          />
+          <Field
+            label="Description"
+            value={description || "No description"}
+            muted={!description}
+          />
+        </DetailSection>
+
+        <DetailSection
+          title="Network"
+          description="Addressing details used to reach this server."
+          icon={<Network className="size-4 text-muted-foreground" />}
+        >
+          <Field label="Hostname" value={server.hostname} mono />
+          <Field label="IP address" value={server.ipAddress} mono />
+        </DetailSection>
+
+        <DetailSection
+          title="Operating system"
+          description="Reported platform information."
+          icon={<Cpu className="size-4 text-muted-foreground" />}
+        >
+          <Field
+            label="Operating system"
+            value={server.operatingSystem || "Unknown"}
+            muted={!server.operatingSystem}
+          />
+        </DetailSection>
+
+        <DetailSection
+          title="Tags"
+          description="Labels used for filtering and organization."
+          icon={<TagsIcon className="size-4 text-muted-foreground" />}
+        >
+          <Field label="Tags" value={<Tags server={server} />} />
+        </DetailSection>
+
+        <div className="xl:col-span-2">
+          <DetailSection
+            title="Timestamps"
+            description="Lifecycle and agent visibility timestamps."
+            icon={<CalendarClock className="size-4 text-muted-foreground" />}
+          >
+            <Field
+              label="Last seen"
+              value={formatDetailDateTime(server.lastSeenAt)}
+              muted={!server.lastSeenAt}
+            />
+            <Field
+              label="Created"
+              value={formatDetailDateTime(server.createdAt)}
+            />
+            <Field
+              label="Updated"
+              value={formatDetailDateTime(server.updatedAt)}
+            />
+            <Field label="Record ID" value={server.id} mono />
+          </DetailSection>
+        </div>
+      </div>
     </div>
   );
 }
@@ -208,7 +347,9 @@ export default function ServerDetailPage() {
             onRetry={() => void serverQuery.refetch()}
           />
         ) : null}
-        {serverQuery.isSuccess ? <ServerDetails server={serverQuery.data} /> : null}
+        {serverQuery.isSuccess ? (
+          <ServerDetails server={serverQuery.data} />
+        ) : null}
       </div>
     </AppShell>
   );
