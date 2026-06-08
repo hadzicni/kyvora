@@ -44,6 +44,18 @@ public class Agent {
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
+	@Column(name = "token_hash", length = 64)
+	private String tokenHash;
+
+	@Column(name = "token_created_at")
+	private Instant tokenCreatedAt;
+
+	@Column(name = "token_last_used_at")
+	private Instant tokenLastUsedAt;
+
+	@Column(name = "token_revoked_at")
+	private Instant tokenRevokedAt;
+
 	protected Agent() {
 	}
 
@@ -118,5 +130,37 @@ public class Agent {
 
 	public Instant getUpdatedAt() {
 		return updatedAt;
+	}
+
+	public String getTokenHash() {
+		return tokenHash;
+	}
+
+	public void setTokenHash(String tokenHash) {
+		this.tokenHash = tokenHash;
+	}
+
+	public Instant getTokenCreatedAt() {
+		return tokenCreatedAt;
+	}
+
+	public void setTokenCreatedAt(Instant tokenCreatedAt) {
+		this.tokenCreatedAt = tokenCreatedAt;
+	}
+
+	public Instant getTokenLastUsedAt() {
+		return tokenLastUsedAt;
+	}
+
+	public void setTokenLastUsedAt(Instant tokenLastUsedAt) {
+		this.tokenLastUsedAt = tokenLastUsedAt;
+	}
+
+	public Instant getTokenRevokedAt() {
+		return tokenRevokedAt;
+	}
+
+	public void setTokenRevokedAt(Instant tokenRevokedAt) {
+		this.tokenRevokedAt = tokenRevokedAt;
 	}
 }

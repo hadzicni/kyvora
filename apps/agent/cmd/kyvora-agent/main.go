@@ -27,8 +27,8 @@ func main() {
 		if errors.Is(err, context.Canceled) {
 			return
 		}
-		var duplicate *agent.DuplicateHostnameError
-		if errors.As(err, &duplicate) {
+		var authError *agent.AgentTokenAuthError
+		if errors.As(err, &authError) {
 			os.Exit(1)
 		}
 		logger.Error("agent stopped", "error", err)

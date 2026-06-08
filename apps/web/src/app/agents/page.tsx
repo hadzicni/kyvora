@@ -32,8 +32,7 @@ export default function AgentsPage() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Register agents and test heartbeat reporting through
-              /api/v1/agents.
+              Enroll agents, copy one-time tokens, and monitor heartbeat status.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">

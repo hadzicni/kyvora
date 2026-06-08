@@ -11,18 +11,16 @@ const (
 	defaultAPIURL            = "http://localhost:8080"
 	defaultAgentName         = "local-agent"
 	defaultAgentVersion      = "0.1.0"
-	defaultAPILoginEmail     = "admin@kyvora.local"
-	defaultAPILoginPassword  = "admin-password"
 	defaultHeartbeatInterval = 30 * time.Second
 )
 
 type Config struct {
 	APIURL            string
+	AgentID           string
+	AgentToken        string
 	Name              string
 	Hostname          string
 	Version           string
-	APILoginEmail     string
-	APILoginPassword  string
 	HeartbeatInterval time.Duration
 }
 
@@ -38,11 +36,11 @@ func loadConfig(getenv func(string) string, hostname func() (string, error)) (Co
 
 	cfg := Config{
 		APIURL:            envOrDefault(getenv, "KYVORA_API_URL", defaultAPIURL),
+		AgentID:           getenv("KYVORA_AGENT_ID"),
+		AgentToken:        getenv("KYVORA_AGENT_TOKEN"),
 		Name:              envOrDefault(getenv, "KYVORA_AGENT_NAME", defaultAgentName),
 		Hostname:          envOrDefault(getenv, "KYVORA_AGENT_HOSTNAME", osHostname),
 		Version:           envOrDefault(getenv, "KYVORA_AGENT_VERSION", defaultAgentVersion),
-		APILoginEmail:     envOrDefault(getenv, "KYVORA_API_LOGIN_EMAIL", defaultAPILoginEmail),
-		APILoginPassword:  envOrDefault(getenv, "KYVORA_API_LOGIN_PASSWORD", defaultAPILoginPassword),
 		HeartbeatInterval: defaultHeartbeatInterval,
 	}
 
@@ -52,6 +50,12 @@ func loadConfig(getenv func(string) string, hostname func() (string, error)) (Co
 			return Config{}, fmt.Errorf("KYVORA_HEARTBEAT_INTERVAL_SECONDS must be a positive integer")
 		}
 		cfg.HeartbeatInterval = time.Duration(seconds) * time.Second
+	}
+	if cfg.AgentID == "" {
+		return Config{}, fmt.Errorf("KYVORA_AGENT_ID is required")
+	}
+	if cfg.AgentToken == "" {
+		return Config{}, fmt.Errorf("KYVORA_AGENT_TOKEN is required")
 	}
 
 	return cfg, nil

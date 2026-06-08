@@ -16,7 +16,7 @@ public class AgentMapper {
 		return new Agent(
 				request.name().trim(),
 				normalizeHostname(request.hostname()),
-				request.version().trim(),
+				normalizeVersion(request.version()),
 				AgentStatus.PENDING);
 	}
 
@@ -33,6 +33,16 @@ public class AgentMapper {
 	}
 
 	public String normalizeHostname(String hostname) {
-		return hostname == null ? null : hostname.trim().toLowerCase(Locale.ROOT);
+		if (hostname == null || hostname.isBlank()) {
+			return null;
+		}
+		return hostname.trim().toLowerCase(Locale.ROOT);
+	}
+
+	public String normalizeVersion(String version) {
+		if (version == null || version.isBlank()) {
+			return "0.1.0";
+		}
+		return version.trim();
 	}
 }

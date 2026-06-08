@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,17 +12,15 @@ import (
 	"time"
 )
 
-const requestTimeout = 10 * time.Second
+const (
+	requestTimeout   = 10 * time.Second
+	agentTokenHeader = "X-Kyvora-Agent-Token"
+)
 
 type Client struct {
-	baseURL       *url.URL
-	loginEmail    string
-	loginPassword string
-	accessToken   string
-	refreshToken  string
-	tokenType     string
-	expiresAt     time.Time
-	httpClient    *http.Client
+	baseURL    *url.URL
+	agentToken string
+	httpClient *http.Client
 }
 
 type Agent struct {
@@ -34,31 +31,10 @@ type Agent struct {
 	Status   string `json:"status"`
 }
 
-type registerRequest struct {
-	Name     string `json:"name"`
-	Hostname string `json:"hostname"`
-	Version  string `json:"version"`
-}
-
 type heartbeatRequest struct {
-	Status  string `json:"status"`
-	Version string `json:"version"`
-}
-
-type loginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-type refreshRequest struct {
-	RefreshToken string `json:"refreshToken"`
-}
-
-type tokenResponse struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
-	TokenType    string `json:"tokenType"`
-	ExpiresIn    int64  `json:"expiresIn"`
+	Status   string `json:"status"`
+	Version  string `json:"version"`
+	Hostname string `json:"hostname,omitempty"`
 }
 
 type apiErrorResponse struct {
@@ -85,17 +61,16 @@ func (e *apiError) Error() string {
 	return fmt.Sprintf("Kyvora API returned HTTP %d", e.statusCode)
 }
 
-type DuplicateHostnameError struct {
-	Hostname string
-	Details  []string
-	Message  string
+type AgentTokenAuthError struct {
+	StatusCode int
+	Message    string
 }
 
-func (e *DuplicateHostnameError) Error() string {
+func (e *AgentTokenAuthError) Error() string {
 	if e.Message != "" {
 		return e.Message
 	}
-	return "agent hostname already exists"
+	return "agent token is invalid or revoked"
 }
 
 func NewClient(cfg Config) (*Client, error) {
@@ -108,46 +83,18 @@ func NewClient(cfg Config) (*Client, error) {
 	}
 
 	return &Client{
-		baseURL:       baseURL,
-		loginEmail:    cfg.APILoginEmail,
-		loginPassword: cfg.APILoginPassword,
-		tokenType:     "Bearer",
-		httpClient:    &http.Client{},
+		baseURL:    baseURL,
+		agentToken: cfg.AgentToken,
+		httpClient: &http.Client{},
 	}, nil
 }
 
-func (c *Client) Authenticate(ctx context.Context) error {
-	return c.login(ctx)
-}
-
-func (c *Client) Register(ctx context.Context, cfg Config) (Agent, error) {
-	var registered Agent
-	err := c.doJSON(ctx, http.MethodPost, "/api/v1/agents/register", registerRequest{
-		Name:     cfg.Name,
-		Hostname: cfg.Hostname,
-		Version:  cfg.Version,
-	}, &registered)
-	if err == nil {
-		return registered, nil
-	}
-
-	var apiErr *apiError
-	if errors.As(err, &apiErr) && apiErr.statusCode == http.StatusConflict {
-		return Agent{}, &DuplicateHostnameError{
-			Hostname: cfg.Hostname,
-			Details:  apiErr.body.Details,
-			Message:  apiErr.body.Message,
-		}
-	}
-
-	return Agent{}, err
-}
-
-func (c *Client) Heartbeat(ctx context.Context, agentID, version string) (Agent, error) {
+func (c *Client) Heartbeat(ctx context.Context, agentID, version, hostname string) (Agent, error) {
 	var updated Agent
 	err := c.doJSON(ctx, http.MethodPost, "/api/v1/agents/"+url.PathEscape(agentID)+"/heartbeat", heartbeatRequest{
-		Status:  "ONLINE",
-		Version: version,
+		Status:   "ONLINE",
+		Version:  version,
+		Hostname: hostname,
 	}, &updated)
 	return updated, err
 }
@@ -158,96 +105,15 @@ func (c *Client) doJSON(ctx context.Context, method, path string, body any, out 
 		return fmt.Errorf("encode request: %w", err)
 	}
 
-	if err := c.ensureAuthenticated(ctx); err != nil {
-		return err
-	}
-
-	statusCode, responseBody, err := c.sendJSON(ctx, method, path, payload, true)
+	statusCode, responseBody, err := c.sendJSON(ctx, method, path, payload)
 	if err != nil {
 		return err
-	}
-
-	if statusCode == http.StatusUnauthorized {
-		if err := c.refreshOrLogin(ctx); err != nil {
-			return err
-		}
-		statusCode, responseBody, err = c.sendJSON(ctx, method, path, payload, true)
-		if err != nil {
-			return err
-		}
 	}
 
 	return decodeAPIResponse(statusCode, responseBody, out)
 }
 
-func (c *Client) ensureAuthenticated(ctx context.Context) error {
-	if c.accessToken != "" && time.Now().Before(c.expiresAt) {
-		return nil
-	}
-	if c.refreshToken != "" {
-		return c.refreshOrLogin(ctx)
-	}
-	return c.login(ctx)
-}
-
-func (c *Client) refreshOrLogin(ctx context.Context) error {
-	if c.refreshToken != "" {
-		if err := c.refresh(ctx); err == nil {
-			return nil
-		}
-	}
-	return c.login(ctx)
-}
-
-func (c *Client) login(ctx context.Context) error {
-	return c.requestTokens(ctx, "/api/v1/auth/login", loginRequest{
-		Email:    c.loginEmail,
-		Password: c.loginPassword,
-	})
-}
-
-func (c *Client) refresh(ctx context.Context) error {
-	return c.requestTokens(ctx, "/api/v1/auth/refresh", refreshRequest{
-		RefreshToken: c.refreshToken,
-	})
-}
-
-func (c *Client) requestTokens(ctx context.Context, path string, body any) error {
-	payload, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("encode auth request: %w", err)
-	}
-
-	statusCode, responseBody, err := c.sendJSON(ctx, http.MethodPost, path, payload, false)
-	if err != nil {
-		return err
-	}
-	if statusCode < 200 || statusCode >= 300 {
-		apiErr := &apiError{statusCode: statusCode, rawBody: strings.TrimSpace(string(responseBody))}
-		_ = json.Unmarshal(responseBody, &apiErr.body)
-		return apiErr
-	}
-
-	var tokens tokenResponse
-	if err := json.Unmarshal(responseBody, &tokens); err != nil {
-		return fmt.Errorf("decode auth response: %w", err)
-	}
-	c.cacheTokens(tokens)
-	return nil
-}
-
-func (c *Client) cacheTokens(tokens tokenResponse) {
-	tokenType := tokens.TokenType
-	if tokenType == "" {
-		tokenType = "Bearer"
-	}
-	c.accessToken = tokens.AccessToken
-	c.refreshToken = tokens.RefreshToken
-	c.tokenType = tokenType
-	c.expiresAt = time.Now().Add(time.Duration(tokens.ExpiresIn)*time.Second - 30*time.Second)
-}
-
-func (c *Client) sendJSON(ctx context.Context, method, path string, payload []byte, protected bool) (int, []byte, error) {
+func (c *Client) sendJSON(ctx context.Context, method, path string, payload []byte) (int, []byte, error) {
 	requestCtx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
@@ -257,9 +123,7 @@ func (c *Client) sendJSON(ctx context.Context, method, path string, payload []by
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
-	if protected {
-		req.Header.Set("Authorization", c.tokenType+" "+c.accessToken)
-	}
+	req.Header.Set(agentTokenHeader, c.agentToken)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -279,6 +143,9 @@ func decodeAPIResponse(statusCode int, responseBody []byte, out any) error {
 	if statusCode < 200 || statusCode >= 300 {
 		apiErr := &apiError{statusCode: statusCode, rawBody: strings.TrimSpace(string(responseBody))}
 		_ = json.Unmarshal(responseBody, &apiErr.body)
+		if statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden {
+			return &AgentTokenAuthError{StatusCode: statusCode, Message: apiErr.Error()}
+		}
 		return apiErr
 	}
 	if len(responseBody) == 0 {

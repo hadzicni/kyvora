@@ -13,5 +13,9 @@ public record AgentHeartbeatRequest(
 
 		@Schema(description = "Agent software version.", example = "0.1.1", minLength = 1, maxLength = 64)
 		@Size(min = 1, max = 64)
-		String version) {
+		String version,
+
+		@Schema(description = "Hostname reported by the agent.", example = "node01.example.com", maxLength = 253)
+		@Size(max = 253)
+		String hostname) {
 }

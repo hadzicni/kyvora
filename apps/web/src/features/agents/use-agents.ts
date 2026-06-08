@@ -14,8 +14,6 @@ import {
   getAgent,
   listAgents,
   registerAgent,
-  sendAgentHeartbeat,
-  type AgentHeartbeatInput,
   type ListAgentsParams,
   type RegisterAgentInput,
 } from "@/lib/api/agents";
@@ -46,22 +44,6 @@ export function useRegisterAgent() {
 
   return useMutation({
     mutationFn: (input: RegisterAgentInput) => registerAgent(input),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: agentKeys.all }),
-        queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
-        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
-      ]);
-    },
-  });
-}
-
-export function useSendAgentHeartbeat() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: AgentHeartbeatInput }) =>
-      sendAgentHeartbeat({ id, input }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: agentKeys.all }),

@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import org.springframework.web.context.WebApplicationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import dev.kyvora.api.agent.entity.Agent;
 import dev.kyvora.api.agent.repository.AgentRepository;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
 
@@ -61,8 +63,8 @@ class AgentControllerIT {
 	}
 
 	@Test
-	void registerReturnsCreatedAgentAndAuditLog() throws Exception {
-		String createdJson = mockMvc.perform(post("/api/v1/agents/register")
+	void enrollReturnsCreatedAgentPlaintextTokenAndAuditLog() throws Exception {
+		String createdJson = mockMvc.perform(post("/api/v1/agents")
 				.with(user("alice"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(
@@ -70,19 +72,29 @@ class AgentControllerIT {
 						"NODE01.EXAMPLE.COM",
 						"0.1.0"))))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.id", notNullValue()))
-				.andExpect(jsonPath("$.name", is("Homelab Agent 01")))
-				.andExpect(jsonPath("$.hostname", is("node01.example.com")))
-				.andExpect(jsonPath("$.version", is("0.1.0")))
-				.andExpect(jsonPath("$.status", is("PENDING")))
-				.andExpect(jsonPath("$.lastSeenAt").doesNotExist())
-				.andExpect(jsonPath("$.registeredAt", notNullValue()))
-				.andExpect(jsonPath("$.updatedAt", notNullValue()))
+				.andExpect(jsonPath("$.agent.id", notNullValue()))
+				.andExpect(jsonPath("$.agent.name", is("Homelab Agent 01")))
+				.andExpect(jsonPath("$.agent.hostname", is("node01.example.com")))
+				.andExpect(jsonPath("$.agent.version", is("0.1.0")))
+				.andExpect(jsonPath("$.agent.status", is("PENDING")))
+				.andExpect(jsonPath("$.agent.lastSeenAt").doesNotExist())
+				.andExpect(jsonPath("$.agent.registeredAt", notNullValue()))
+				.andExpect(jsonPath("$.agent.updatedAt", notNullValue()))
+				.andExpect(jsonPath("$.agentToken", notNullValue()))
 				.andReturn()
 				.getResponse()
 				.getContentAsString();
 
-		String id = objectMapper.readTree(createdJson).get("id").asText();
+		JsonNode created = objectMapper.readTree(createdJson);
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
+
+		Agent stored = agentRepository.findById(UUID.fromString(id)).orElseThrow();
+		org.assertj.core.api.Assertions.assertThat(stored.getTokenHash()).isNotBlank();
+		org.assertj.core.api.Assertions.assertThat(stored.getTokenHash()).hasSize(64);
+		org.assertj.core.api.Assertions.assertThat(stored.getTokenHash()).isNotEqualTo(agentToken);
+		org.assertj.core.api.Assertions.assertThat(stored.getTokenCreatedAt()).isNotNull();
+		org.assertj.core.api.Assertions.assertThat(stored.getTokenLastUsedAt()).isNull();
 
 		mockMvc.perform(get("/api/v1/audit-logs")
 				.with(user("alice"))
@@ -106,7 +118,7 @@ class AgentControllerIT {
 	void duplicateHostnameReturnsConflict() throws Exception {
 		registerAgent("Agent 01", "dup.example.com", "0.1.0");
 
-		mockMvc.perform(post("/api/v1/agents/register")
+		mockMvc.perform(post("/api/v1/agents")
 				.with(user("alice"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(
@@ -121,10 +133,12 @@ class AgentControllerIT {
 	@Test
 	void heartbeatUpdatesStatusLastSeenVersionAndAuditLog() throws Exception {
 		String createdJson = registerAgent("Agent 01", "node01.example.com", "0.1.0");
-		String id = objectMapper.readTree(createdJson).get("id").asText();
+		JsonNode created = objectMapper.readTree(createdJson);
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
 
 		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
-				.with(user("alice"))
+				.header("X-Kyvora-Agent-Token", agentToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.1"))))
 				.andExpect(status().isOk())
@@ -132,6 +146,9 @@ class AgentControllerIT {
 				.andExpect(jsonPath("$.status", is("ONLINE")))
 				.andExpect(jsonPath("$.version", is("0.1.1")))
 				.andExpect(jsonPath("$.lastSeenAt", notNullValue()));
+
+		Agent stored = agentRepository.findById(UUID.fromString(id)).orElseThrow();
+		org.assertj.core.api.Assertions.assertThat(stored.getTokenLastUsedAt()).isNotNull();
 
 		mockMvc.perform(get("/api/v1/audit-logs")
 				.with(user("alice"))
@@ -146,6 +163,49 @@ class AgentControllerIT {
 				.andExpect(jsonPath("$.content[0].metadata.registeredAt").doesNotExist())
 				.andExpect(jsonPath("$.content[0].metadata.updatedAt").doesNotExist())
 				.andExpect(jsonPath("$.content[0].metadata.occurredAt", matchesPattern(ISO_8601_INSTANT_PATTERN)));
+	}
+
+	@Test
+	void heartbeatFailsWithMissingToken() throws Exception {
+		String createdJson = registerAgent("Agent 01", "node01.example.com", "0.1.0");
+		String id = objectMapper.readTree(createdJson).get("agent").get("id").asText();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message", is("Agent token is required")));
+	}
+
+	@Test
+	void heartbeatFailsWithInvalidToken() throws Exception {
+		String createdJson = registerAgent("Agent 01", "node01.example.com", "0.1.0");
+		String id = objectMapper.readTree(createdJson).get("agent").get("id").asText();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", "invalid-token")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message", is("Invalid agent token")));
+	}
+
+	@Test
+	void heartbeatFailsWithRevokedToken() throws Exception {
+		String createdJson = registerAgent("Agent 01", "node01.example.com", "0.1.0");
+		JsonNode created = objectMapper.readTree(createdJson);
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
+		Agent stored = agentRepository.findById(UUID.fromString(id)).orElseThrow();
+		stored.setTokenRevokedAt(java.time.Instant.now());
+		agentRepository.save(stored);
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("Agent token has been revoked")));
 	}
 
 	@Test
@@ -173,7 +233,7 @@ class AgentControllerIT {
 	@Test
 	void findByIdReturnsAgent() throws Exception {
 		String createdJson = registerAgent("Agent 01", "node01.example.com", "0.1.0");
-		String id = objectMapper.readTree(createdJson).get("id").asText();
+		String id = objectMapper.readTree(createdJson).get("agent").get("id").asText();
 
 		mockMvc.perform(get("/api/v1/agents/{id}", id)
 				.with(user("alice")))
@@ -190,7 +250,7 @@ class AgentControllerIT {
 				.andExpect(jsonPath("$.message", is("Agent not found: 00000000-0000-0000-0000-000000000001")));
 
 		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", "00000000-0000-0000-0000-000000000001")
-				.with(user("alice"))
+				.header("X-Kyvora-Agent-Token", "agent-token")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
 				.andExpect(status().isNotFound())
@@ -202,14 +262,14 @@ class AgentControllerIT {
 		mockMvc.perform(get("/api/v1/agents"))
 				.andExpect(status().isUnauthorized());
 
-		mockMvc.perform(post("/api/v1/agents/register")
+		mockMvc.perform(post("/api/v1/agents")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload("Agent 01", "node01.example.com", "0.1.0"))))
 				.andExpect(status().isUnauthorized());
 	}
 
 	private String registerAgent(String name, String hostname, String version) throws Exception {
-		return mockMvc.perform(post("/api/v1/agents/register")
+		return mockMvc.perform(post("/api/v1/agents")
 				.with(user("alice"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(name, hostname, version))))

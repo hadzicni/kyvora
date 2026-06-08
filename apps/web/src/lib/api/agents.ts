@@ -30,13 +30,13 @@ export type ListAgentsParams = {
 
 export type RegisterAgentInput = {
   name: string;
-  hostname: string;
-  version: string;
+  hostname?: string;
+  version?: string;
 };
 
-export type AgentHeartbeatInput = {
-  status: AgentStatus;
-  version?: string;
+export type AgentEnrollment = {
+  agent: Agent;
+  agentToken: string;
 };
 
 export class AgentApiError extends Error {
@@ -114,24 +114,10 @@ export async function getAgent(id: string): Promise<Agent> {
   return request<Agent>(`/api/agents/${encodeURIComponent(id)}`);
 }
 
-export async function registerAgent(input: RegisterAgentInput): Promise<Agent> {
-  return request<Agent>("/api/agents/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(input),
-  });
-}
-
-export async function sendAgentHeartbeat({
-  id,
-  input,
-}: {
-  id: string;
-  input: AgentHeartbeatInput;
-}): Promise<Agent> {
-  return request<Agent>(`/api/agents/${encodeURIComponent(id)}/heartbeat`, {
+export async function registerAgent(
+  input: RegisterAgentInput
+): Promise<AgentEnrollment> {
+  return request<AgentEnrollment>("/api/agents", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

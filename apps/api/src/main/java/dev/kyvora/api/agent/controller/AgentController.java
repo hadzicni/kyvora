@@ -1,6 +1,5 @@
 package dev.kyvora.api.agent.controller;
 
-import java.net.URI;
 import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
@@ -12,8 +11,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+import dev.kyvora.api.agent.dto.AgentEnrollmentResponse;
 import dev.kyvora.api.agent.dto.AgentHeartbeatRequest;
 import dev.kyvora.api.agent.dto.AgentPageResponse;
 import dev.kyvora.api.agent.dto.AgentRegisterRequest;
@@ -36,6 +37,8 @@ import jakarta.validation.Valid;
 @Tag(name = "Agent Management", description = "Register agents and receive agent heartbeats.")
 @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH_SCHEME)
 public class AgentController {
+
+	public static final String AGENT_TOKEN_HEADER = "X-Kyvora-Agent-Token";
 
 	private final AgentService service;
 
@@ -76,11 +79,12 @@ public class AgentController {
 		return ResponseEntity.ok(service.findById(id));
 	}
 
-	@PostMapping("/register")
+	@PostMapping
 	@Operation(
-			summary = "Register an agent",
+			summary = "Enroll an agent",
+			description = "Creates an agent record and returns a one-time plaintext agent token. The token is never stored in plaintext and is shown only in this response.",
 			responses = {
-					@ApiResponse(responseCode = "201", description = "Agent registered"),
+					@ApiResponse(responseCode = "201", description = "Agent enrolled"),
 					@ApiResponse(responseCode = "400", description = "Request body failed validation",
 							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
 					@ApiResponse(responseCode = "401", description = "Authentication is required",
@@ -88,27 +92,33 @@ public class AgentController {
 					@ApiResponse(responseCode = "409", description = "Request conflicts with existing agent data",
 							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
 			})
-	public ResponseEntity<AgentResponse> register(@Valid @RequestBody AgentRegisterRequest request) {
-		AgentResponse registered = service.register(request);
-		return ResponseEntity.created(URI.create("/api/v1/agents/" + registered.id())).body(registered);
+	public ResponseEntity<AgentEnrollmentResponse> enroll(@Valid @RequestBody AgentRegisterRequest request) {
+		AgentEnrollmentResponse enrolled = service.enroll(request);
+		return ResponseEntity.created(java.net.URI.create("/api/v1/agents/" + enrolled.agent().id())).body(enrolled);
 	}
 
 	@PostMapping("/{id}/heartbeat")
 	@Operation(
 			summary = "Receive an agent heartbeat",
+			description = "Authenticates with the X-Kyvora-Agent-Token header. User JWTs are not accepted for agent heartbeat authentication.",
+			security = {},
 			responses = {
 					@ApiResponse(responseCode = "200", description = "Heartbeat received"),
 					@ApiResponse(responseCode = "400", description = "Request body failed validation",
 							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
-					@ApiResponse(responseCode = "401", description = "Authentication is required",
-							content = @Content),
+					@ApiResponse(responseCode = "401", description = "Agent token is missing or invalid",
+							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+					@ApiResponse(responseCode = "403", description = "Agent token is revoked",
+							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
 					@ApiResponse(responseCode = "404", description = "Agent was not found",
 							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
 			})
 	public ResponseEntity<AgentResponse> heartbeat(
 			@Parameter(description = "Agent identifier.", example = "00000000-0000-0000-0000-000000000001")
 			@PathVariable UUID id,
+			@Parameter(description = "One-time enrollment token assigned to the agent.", required = true)
+			@RequestHeader(value = AGENT_TOKEN_HEADER, required = false) String agentToken,
 			@Valid @RequestBody AgentHeartbeatRequest request) {
-		return ResponseEntity.ok(service.heartbeat(id, request));
+		return ResponseEntity.ok(service.heartbeat(id, agentToken, request));
 	}
 }

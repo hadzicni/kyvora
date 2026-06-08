@@ -148,7 +148,13 @@ npm run dev:api
 
 #### Start the Go agent
 
+Enroll an agent in the web UI first, then start the agent with the generated
+agent ID and token:
+
 ```bash
+KYVORA_API_URL=http://localhost:8080 \
+KYVORA_AGENT_ID=<agent-id> \
+KYVORA_AGENT_TOKEN=<agent-token> \
 npm run dev:agent
 ```
 
@@ -213,12 +219,13 @@ Local agent API configuration:
 
 ```env
 KYVORA_API_URL=http://localhost:8080
-KYVORA_API_LOGIN_EMAIL=admin@kyvora.local
-KYVORA_API_LOGIN_PASSWORD=admin-password
+KYVORA_AGENT_ID=<agent-id>
+KYVORA_AGENT_TOKEN=<agent-token>
 ```
 
-The Go agent keeps JWTs in memory only and uses Bearer authentication for
-registration and heartbeat requests.
+Create an agent from the web dashboard to receive `KYVORA_AGENT_ID` and
+`KYVORA_AGENT_TOKEN`. Agent tokens are shown only once. Do not commit tokens or
+store them in `NEXT_PUBLIC_*` variables.
 
 ## Usage
 
@@ -257,6 +264,20 @@ new refresh token returned by the refresh response.
 The local bootstrap credentials above are development-only. Do not use the
 default admin email or password in production.
 
+## Agent Enrollment
+
+Agent enrollment uses one-time plaintext tokens. Kyvora stores only token
+hashes and authenticates heartbeats with the `X-Kyvora-Agent-Token` header.
+
+1. Log in to the web dashboard.
+2. Go to Agents.
+3. Create an agent by entering a name.
+4. Copy the one-time token and generated run command.
+5. Start the agent with `KYVORA_API_URL`, `KYVORA_AGENT_ID`, and
+   `KYVORA_AGENT_TOKEN`.
+
+The token is shown only once immediately after creation. Store it securely and
+do not commit it to Git.
 
 ## Development
 
