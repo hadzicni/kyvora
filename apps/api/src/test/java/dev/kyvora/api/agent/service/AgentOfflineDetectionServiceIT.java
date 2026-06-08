@@ -58,15 +58,22 @@ class AgentOfflineDetectionServiceIT {
 		ServerInventory storedServer = serverInventoryRepository.findById(server.getId()).orElseThrow();
 		assertThat(storedServer.getStatus()).isEqualTo(ServerStatus.OFFLINE);
 
+		assertThat(auditLogRepository.findAll()).hasSize(2);
 		assertThat(auditLogRepository.findAll())
-				.singleElement()
-				.satisfies(log -> {
+				.anySatisfy(log -> {
 					assertThat(log.getEventType()).isEqualTo(AuditEventType.AGENT_MARKED_OFFLINE);
 					assertThat(log.getAggregateType()).isEqualTo("AGENT");
 					assertThat(log.getAggregateId()).isEqualTo(agent.getId());
-					assertThat(log.getActor()).isEqualTo("system");
+					assertThat(log.getActor()).isEqualTo("system:agent-monitor");
 					assertThat(log.getMessage()).isEqualTo("Agent marked offline: node01.example.com");
 					assertThat(log.getMetadata()).containsEntry("status", "OFFLINE");
+					assertThat(log.getMetadata()).containsEntry("serverId", server.getId().toString());
+				})
+				.anySatisfy(log -> {
+					assertThat(log.getEventType()).isEqualTo(AuditEventType.SERVER_MARKED_OFFLINE_BY_AGENT);
+					assertThat(log.getAggregateType()).isEqualTo("SERVER");
+					assertThat(log.getAggregateId()).isEqualTo(server.getId());
+					assertThat(log.getMessage()).isEqualTo("Server marked offline by agent");
 				});
 	}
 
@@ -82,6 +89,24 @@ class AgentOfflineDetectionServiceIT {
 		assertThat(serverInventoryRepository.findById(server.getId()).orElseThrow().getStatus())
 				.isEqualTo(ServerStatus.ONLINE);
 		assertThat(auditLogRepository.findAll()).isEmpty();
+	}
+
+	@Test
+	void offlineDetectionDoesNotWriteServerOfflineEventWhenServerIsAlreadyOffline() {
+		ServerInventory server = createServer("Node 06", "node06.example.com");
+		server.setStatus(ServerStatus.OFFLINE);
+		serverInventoryRepository.save(server);
+		createAgent("Agent 06", "node06.example.com", AgentStatus.ONLINE, server, 120);
+
+		int changed = agentService.markStaleOnlineAgentsOffline();
+
+		assertThat(changed).isEqualTo(1);
+		assertThat(auditLogRepository.findAll().stream()
+				.filter(log -> log.getEventType() == AuditEventType.AGENT_MARKED_OFFLINE)
+				.count()).isEqualTo(1);
+		assertThat(auditLogRepository.findAll().stream()
+				.filter(log -> log.getEventType() == AuditEventType.SERVER_MARKED_OFFLINE_BY_AGENT)
+				.count()).isZero();
 	}
 
 	@Test

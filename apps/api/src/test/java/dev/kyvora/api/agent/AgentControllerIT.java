@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.kyvora.api.agent.entity.Agent;
 import dev.kyvora.api.agent.repository.AgentRepository;
+import dev.kyvora.api.auditlog.entity.AuditEventType;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;
 import dev.kyvora.api.serverinventory.entity.ServerStatus;
@@ -116,12 +117,16 @@ class AgentControllerIT {
 				.param("aggregateId", id))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.content", hasSize(1)))
-				.andExpect(jsonPath("$.content[0].eventType", is("AGENT_REGISTERED")))
+				.andExpect(jsonPath("$.content[0].eventType", is("AGENT_ENROLLED")))
 				.andExpect(jsonPath("$.content[0].aggregateType", is("AGENT")))
 				.andExpect(jsonPath("$.content[0].aggregateId", is(id)))
 				.andExpect(jsonPath("$.content[0].actor", is("alice")))
-				.andExpect(jsonPath("$.content[0].message", is("Agent registered: node01.example.com")))
+				.andExpect(jsonPath("$.content[0].message", is("Agent enrolled")))
+				.andExpect(jsonPath("$.content[0].metadata.agentId", is(id)))
+				.andExpect(jsonPath("$.content[0].metadata.agentName", is("Homelab Agent 01")))
 				.andExpect(jsonPath("$.content[0].metadata.hostname", is("node01.example.com")))
+				.andExpect(jsonPath("$.content[0].metadata.serverId", is(server.getId().toString())))
+				.andExpect(jsonPath("$.content[0].metadata.serverName", is("Node 01")))
 				.andExpect(jsonPath("$.content[0].metadata.lastSeenAt", nullValue()))
 				.andExpect(jsonPath("$.content[0].metadata.registeredAt").doesNotExist())
 				.andExpect(jsonPath("$.content[0].metadata.updatedAt").doesNotExist())
@@ -176,7 +181,7 @@ class AgentControllerIT {
 	}
 
 	@Test
-	void heartbeatUpdatesStatusLastSeenVersionAndAuditLog() throws Exception {
+	void firstHeartbeatUpdatesStatusAndWritesLifecycleAuditLogWithoutRepeatedHeartbeatNoise() throws Exception {
 		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
 		String createdJson = registerAgent(server.getId(), "Agent 01", "0.1.0");
 		JsonNode created = objectMapper.readTree(createdJson);
@@ -199,20 +204,39 @@ class AgentControllerIT {
 		org.assertj.core.api.Assertions.assertThat(storedServer.getStatus()).isEqualTo(ServerStatus.ONLINE);
 		org.assertj.core.api.Assertions.assertThat(storedServer.getLastSeenAt()).isNotNull();
 
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.1"))))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/v1/audit-logs")
+				.with(user("alice"))
+				.param("aggregateType", "AGENT")
+				.param("aggregateId", id)
+				.param("eventType", "AGENT_CONNECTED"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content", hasSize(1)))
+				.andExpect(jsonPath("$.content[0].actor", is("agent:node01.example.com")))
+				.andExpect(jsonPath("$.content[0].message", is("Agent connected")))
+				.andExpect(jsonPath("$.content[0].metadata.status", is("ONLINE")))
+				.andExpect(jsonPath("$.content[0].metadata.serverId", is(server.getId().toString())))
+				.andExpect(jsonPath("$.content[0].metadata.lastSeenAt", matchesPattern(ISO_8601_INSTANT_PATTERN)))
+				.andExpect(jsonPath("$.content[0].metadata.registeredAt").doesNotExist())
+				.andExpect(jsonPath("$.content[0].metadata.updatedAt").doesNotExist())
+				.andExpect(jsonPath("$.content[0].metadata.occurredAt", matchesPattern(ISO_8601_INSTANT_PATTERN)));
+
 		mockMvc.perform(get("/api/v1/audit-logs")
 				.with(user("alice"))
 				.param("aggregateType", "AGENT")
 				.param("aggregateId", id)
 				.param("eventType", "AGENT_HEARTBEAT_RECEIVED"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content", hasSize(1)))
-				.andExpect(jsonPath("$.content[0].actor", is("agent:node01.example.com")))
-				.andExpect(jsonPath("$.content[0].message", is("Agent heartbeat received: node01.example.com")))
-				.andExpect(jsonPath("$.content[0].metadata.status", is("ONLINE")))
-				.andExpect(jsonPath("$.content[0].metadata.lastSeenAt", matchesPattern(ISO_8601_INSTANT_PATTERN)))
-				.andExpect(jsonPath("$.content[0].metadata.registeredAt").doesNotExist())
-				.andExpect(jsonPath("$.content[0].metadata.updatedAt").doesNotExist())
-				.andExpect(jsonPath("$.content[0].metadata.occurredAt", matchesPattern(ISO_8601_INSTANT_PATTERN)));
+				.andExpect(jsonPath("$.content", hasSize(0)));
+
+		org.assertj.core.api.Assertions.assertThat(auditLogRepository.findAll().stream()
+				.filter(log -> log.getEventType() == AuditEventType.SERVER_MARKED_ONLINE_BY_AGENT)
+				.count()).isEqualTo(1);
 	}
 
 	@Test
@@ -227,12 +251,50 @@ class AgentControllerIT {
 				.andExpect(status().isNoContent());
 
 		org.assertj.core.api.Assertions.assertThat(agentRepository.findById(UUID.fromString(id))).isEmpty();
+		org.assertj.core.api.Assertions.assertThat(auditLogRepository.findAll().stream()
+				.filter(log -> log.getEventType() == AuditEventType.AGENT_ENROLLMENT_CANCELED)
+				.findFirst())
+				.hasValueSatisfying(log -> {
+					org.assertj.core.api.Assertions.assertThat(log.getActor()).isEqualTo("alice");
+					org.assertj.core.api.Assertions.assertThat(log.getMessage()).isEqualTo("Agent enrollment canceled");
+					org.assertj.core.api.Assertions.assertThat(log.getMetadata()).containsEntry("agentId", id);
+					org.assertj.core.api.Assertions.assertThat(log.getMetadata()).containsEntry("serverId", server.getId().toString());
+				});
 
 		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
 				.header("X-Kyvora-Agent-Token", agentToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
 				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void heartbeatThatBringsOfflineAgentOnlineWritesLifecycleAuditLog() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
+		Agent agent = agentRepository.findById(UUID.fromString(id)).orElseThrow();
+		agent.setStatus(dev.kyvora.api.agent.entity.AgentStatus.OFFLINE);
+		agent.setLastSeenAt(java.time.Instant.now().minusSeconds(300));
+		agentRepository.save(agent);
+		ServerInventory storedServer = serverInventoryRepository.findById(server.getId()).orElseThrow();
+		storedServer.setStatus(ServerStatus.OFFLINE);
+		serverInventoryRepository.save(storedServer);
+		auditLogRepository.deleteAll();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isOk());
+
+		org.assertj.core.api.Assertions.assertThat(auditLogRepository.findAll().stream()
+				.filter(log -> log.getEventType() == AuditEventType.AGENT_MARKED_ONLINE)
+				.count()).isEqualTo(1);
+		org.assertj.core.api.Assertions.assertThat(auditLogRepository.findAll().stream()
+				.filter(log -> log.getEventType() == AuditEventType.SERVER_MARKED_ONLINE_BY_AGENT)
+				.count()).isEqualTo(1);
 	}
 
 	@Test
@@ -298,6 +360,13 @@ class AgentControllerIT {
 		org.assertj.core.api.Assertions.assertThat(stored.getServer().getId()).isEqualTo(server.getId());
 		org.assertj.core.api.Assertions.assertThat(stored.getTokenHash()).isNotEqualTo(oldToken);
 		org.assertj.core.api.Assertions.assertThat(stored.getTokenHash()).isNotEqualTo(newToken);
+		org.assertj.core.api.Assertions.assertThat(auditLogRepository.findAll().stream()
+				.filter(log -> log.getEventType() == AuditEventType.AGENT_TOKEN_ROTATED)
+				.findFirst())
+				.hasValueSatisfying(log -> {
+					org.assertj.core.api.Assertions.assertThat(log.getMessage()).isEqualTo("Agent token rotated");
+					org.assertj.core.api.Assertions.assertThat(log.getMetadata().toString()).doesNotContain(oldToken, newToken, stored.getTokenHash());
+				});
 
 		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
 				.header("X-Kyvora-Agent-Token", oldToken)

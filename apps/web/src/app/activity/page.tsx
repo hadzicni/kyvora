@@ -10,6 +10,7 @@ import {
   Search,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
@@ -88,7 +89,7 @@ export default function ActivityPage() {
 
     return auditLogs.filter((auditLog) => {
       return (
-        auditLog.message.toLowerCase().includes(normalizedSearch) ||
+        formatActivityMessage(auditLog).toLowerCase().includes(normalizedSearch) ||
         auditLog.actor.toLowerCase().includes(normalizedSearch)
       );
     });
@@ -338,6 +339,68 @@ export default function ActivityPage() {
   );
 }
 
+function metadataString(auditLog: AuditLog, key: string) {
+  const value = auditLog.metadata[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function formatActivityMessage(auditLog: AuditLog) {
+  const serverName = metadataString(auditLog, "serverName");
+  const hostname = metadataString(auditLog, "hostname");
+
+  switch (auditLog.eventType) {
+    case "AGENT_REGISTERED":
+    case "AGENT_ENROLLED":
+      return `Agent enrolled${serverName ? ` for server ${serverName}` : ""}`;
+    case "AGENT_CONNECTED":
+      return `Agent connected${hostname ? ` from ${hostname}` : ""}`;
+    case "AGENT_MARKED_ONLINE":
+      return `Agent marked online${hostname ? ` from ${hostname}` : ""}`;
+    case "AGENT_MARKED_OFFLINE":
+      return "Agent marked offline after missed heartbeats";
+    case "SERVER_MARKED_ONLINE_BY_AGENT":
+      return "Server marked online by agent";
+    case "SERVER_MARKED_OFFLINE_BY_AGENT":
+      return "Server marked offline by agent";
+    case "AGENT_TOKEN_ROTATED":
+      return "Agent token rotated";
+    case "AGENT_ENROLLMENT_CANCELED":
+      return "Agent enrollment canceled";
+    default:
+      return auditLog.message;
+  }
+}
+
+function serverIdFor(auditLog: AuditLog) {
+  if (auditLog.aggregateType === "SERVER") {
+    return auditLog.aggregateId;
+  }
+  return metadataString(auditLog, "serverId");
+}
+
+function ServerLink({
+  auditLog,
+  fallback,
+}: {
+  auditLog: AuditLog;
+  fallback: string;
+}) {
+  const serverId = serverIdFor(auditLog);
+
+  if (!serverId) {
+    return fallback;
+  }
+
+  return (
+    <Link
+      className="underline-offset-4 hover:text-foreground hover:underline"
+      href={`/servers/${encodeURIComponent(serverId)}`}
+    >
+      {fallback}
+    </Link>
+  );
+}
+
 function ActivityTable({
   auditLogs,
   onInspect,
@@ -372,11 +435,13 @@ function ActivityTable({
               {auditLog.aggregateType}
             </TableCell>
             <TableCell className="max-w-[14rem] truncate font-mono text-xs text-muted-foreground">
-              {auditLog.aggregateId}
+              <ServerLink auditLog={auditLog} fallback={auditLog.aggregateId} />
             </TableCell>
             <TableCell>{auditLog.actor}</TableCell>
             <TableCell className="min-w-[18rem] max-w-md whitespace-normal">
-              <span className="line-clamp-2">{auditLog.message}</span>
+              <span className="line-clamp-2">
+                {formatActivityMessage(auditLog)}
+              </span>
             </TableCell>
             <TableCell className="text-muted-foreground">
               {formatTimestamp(auditLog.createdAt)}
@@ -500,7 +565,7 @@ function ActivityDetailSheet({
             {auditLog ? formatAuditEventType(auditLog.eventType) : "Activity"}
           </SheetTitle>
           <SheetDescription>
-            {auditLog ? auditLog.message : "Audit log details"}
+            {auditLog ? formatActivityMessage(auditLog) : "Audit log details"}
           </SheetDescription>
         </SheetHeader>
         {auditLog ? (
@@ -524,7 +589,7 @@ function ActivityDetailSheet({
             <div className="space-y-2">
               <h2 className="text-sm font-medium">Message</h2>
               <p className="rounded-md border bg-muted/20 p-3 text-sm text-muted-foreground">
-                {auditLog.message}
+                {formatActivityMessage(auditLog)}
               </p>
             </div>
 

@@ -27,6 +27,8 @@ import dev.kyvora.api.agent.repository.AgentRepository;
 import dev.kyvora.api.auditlog.service.AuditLogService;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;
 import dev.kyvora.api.serverinventory.entity.ServerStatus;
+import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
+import dev.kyvora.api.serverinventory.event.ServerInventoryEventType;
 import dev.kyvora.api.serverinventory.exception.ServerInventoryNotFoundException;
 import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
 
@@ -89,7 +91,7 @@ public class DefaultAgentService implements AgentService {
 		agent.setTokenCreatedAt(Instant.now());
 
 		Agent saved = repository.save(agent);
-		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_REGISTERED, saved));
+		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_ENROLLED, saved));
 		return new AgentEnrollmentResponse(mapper.toResponse(saved), token);
 	}
 
@@ -99,6 +101,7 @@ public class DefaultAgentService implements AgentService {
 		if (agent.getStatus() != AgentStatus.PENDING || agent.getLastSeenAt() != null) {
 			throw new AgentEnrollmentCancellationException();
 		}
+		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_ENROLLMENT_CANCELED, agent));
 		repository.delete(agent);
 	}
 
@@ -113,6 +116,7 @@ public class DefaultAgentService implements AgentService {
 		agent.setTokenRevokedAt(null);
 
 		Agent saved = repository.save(agent);
+		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_TOKEN_ROTATED, saved));
 		return new AgentEnrollmentResponse(mapper.toResponse(saved), token);
 	}
 
@@ -121,6 +125,10 @@ public class DefaultAgentService implements AgentService {
 		Agent agent = getRequiredEntity(id);
 		verifyAgentToken(agent, agentToken);
 
+		AgentStatus previousStatus = agent.getStatus();
+		Instant previousLastSeenAt = agent.getLastSeenAt();
+		ServerInventory linkedServer = agent.getServer();
+		ServerStatus previousServerStatus = linkedServer == null ? null : linkedServer.getStatus();
 		Instant heartbeatAt = Instant.now();
 		agent.setStatus(request.status());
 		if (request.version() != null && !request.version().isBlank()) {
@@ -133,7 +141,7 @@ public class DefaultAgentService implements AgentService {
 		agent.setTokenLastUsedAt(heartbeatAt);
 		updateLinkedServer(agent, heartbeatAt);
 		Agent saved = repository.save(agent);
-		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_HEARTBEAT_RECEIVED, saved));
+		recordHeartbeatLifecycleEvents(saved, previousStatus, previousLastSeenAt, previousServerStatus);
 		return mapper.toResponse(saved);
 	}
 
@@ -145,11 +153,45 @@ public class DefaultAgentService implements AgentService {
 			agent.setStatus(AgentStatus.OFFLINE);
 			ServerInventory server = agent.getServer();
 			if (server != null) {
+				ServerStatus previousServerStatus = server.getStatus();
 				server.setStatus(ServerStatus.OFFLINE);
+				if (previousServerStatus != ServerStatus.OFFLINE) {
+					auditLogService.recordServerInventoryChange(ServerInventoryChangedEvent.fromAgentMonitor(
+							ServerInventoryEventType.SERVER_MARKED_OFFLINE_BY_AGENT,
+							server,
+							agent));
+				}
 			}
-			auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_MARKED_OFFLINE, agent));
+			auditLogService.recordAgentChange(AgentChangedEvent.fromSystemActor(AgentEventType.AGENT_MARKED_OFFLINE, agent));
 		}
 		return staleAgents.size();
+	}
+
+	private void recordHeartbeatLifecycleEvents(
+			Agent agent,
+			AgentStatus previousStatus,
+			Instant previousLastSeenAt,
+			ServerStatus previousServerStatus) {
+		boolean firstHeartbeat = previousLastSeenAt == null;
+		boolean becameOnline = previousStatus != AgentStatus.ONLINE && agent.getStatus() == AgentStatus.ONLINE;
+
+		if (firstHeartbeat || previousStatus == AgentStatus.PENDING) {
+			auditLogService.recordAgentChange(AgentChangedEvent.fromAgentActor(AgentEventType.AGENT_CONNECTED, agent));
+		}
+		else if (becameOnline) {
+			auditLogService.recordAgentChange(AgentChangedEvent.fromAgentActor(AgentEventType.AGENT_MARKED_ONLINE, agent));
+		}
+
+		ServerInventory server = agent.getServer();
+		if (server != null
+				&& agent.getStatus() == AgentStatus.ONLINE
+				&& previousServerStatus != ServerStatus.ONLINE
+				&& server.getStatus() == ServerStatus.ONLINE) {
+			auditLogService.recordServerInventoryChange(ServerInventoryChangedEvent.fromAgent(
+					ServerInventoryEventType.SERVER_MARKED_ONLINE_BY_AGENT,
+					server,
+					agent));
+		}
 	}
 
 	private void verifyAgentToken(Agent agent, String agentToken) {

@@ -55,7 +55,7 @@ public class DefaultAuditLogService implements AuditLogService {
 				eventType,
 				SERVER_AGGREGATE_TYPE,
 				event.serverId(),
-				currentActor(),
+				event.actor() == null || event.actor().isBlank() ? currentActor() : event.actor(),
 				messageFor(event),
 				metadataFor(event)));
 	}
@@ -95,13 +95,18 @@ public class DefaultAuditLogService implements AuditLogService {
 	}
 
 	private String actorFor(AgentChangedEvent event) {
-		if (event.type() != AgentEventType.AGENT_HEARTBEAT_RECEIVED) {
-			return currentActor();
+		if (event.actor() != null && !event.actor().isBlank()) {
+			return event.actor();
 		}
-		if (event.hostname() != null && !event.hostname().isBlank()) {
-			return "agent:" + event.hostname();
+		if (event.type() == AgentEventType.AGENT_HEARTBEAT_RECEIVED
+				|| event.type() == AgentEventType.AGENT_CONNECTED
+				|| event.type() == AgentEventType.AGENT_MARKED_ONLINE) {
+			if (event.hostname() != null && !event.hostname().isBlank()) {
+				return "agent:" + event.hostname();
+			}
+			return "agent:" + event.agentId();
 		}
-		return "agent:" + event.agentId();
+		return currentActor();
 	}
 
 	private String messageFor(ServerInventoryChangedEvent event) {
@@ -109,14 +114,20 @@ public class DefaultAuditLogService implements AuditLogService {
 			case SERVER_CREATED -> "Server created: " + event.hostname();
 			case SERVER_UPDATED -> "Server updated: " + event.hostname();
 			case SERVER_DELETED -> "Server deleted: " + event.hostname();
+			case SERVER_MARKED_ONLINE_BY_AGENT -> "Server marked online by agent";
+			case SERVER_MARKED_OFFLINE_BY_AGENT -> "Server marked offline by agent";
 		};
 	}
 
 	private String messageFor(AgentChangedEvent event) {
 		return switch (event.type()) {
-			case AGENT_REGISTERED -> "Agent registered: " + event.hostname();
+			case AGENT_REGISTERED, AGENT_ENROLLED -> "Agent enrolled";
+			case AGENT_CONNECTED -> "Agent connected";
 			case AGENT_HEARTBEAT_RECEIVED -> "Agent heartbeat received: " + event.hostname();
+			case AGENT_MARKED_ONLINE -> "Agent marked online";
 			case AGENT_MARKED_OFFLINE -> "Agent marked offline: " + event.hostname();
+			case AGENT_TOKEN_ROTATED -> "Agent token rotated";
+			case AGENT_ENROLLMENT_CANCELED -> "Agent enrollment canceled";
 		};
 	}
 
@@ -130,17 +141,22 @@ public class DefaultAuditLogService implements AuditLogService {
 		metadata.put("operatingSystem", event.operatingSystem());
 		metadata.put("status", event.status());
 		metadata.put("lastSeenAt", timestampMetadataValue(event.lastSeenAt()));
+		metadata.put("agentId", event.agentId() == null ? null : event.agentId().toString());
+		metadata.put("agentName", event.agentName());
 		metadata.put("occurredAt", event.occurredAt().toString());
 		return metadata;
 	}
 
 	private Map<String, Object> metadataFor(AgentChangedEvent event) {
 		Map<String, Object> metadata = new LinkedHashMap<>();
-		metadata.put("name", event.name());
+		metadata.put("agentId", event.agentId().toString());
+		metadata.put("agentName", event.name());
 		metadata.put("hostname", event.hostname());
 		metadata.put("version", event.version());
 		metadata.put("status", event.status());
 		metadata.put("lastSeenAt", timestampMetadataValue(event.lastSeenAt()));
+		metadata.put("serverId", event.serverId() == null ? null : event.serverId().toString());
+		metadata.put("serverName", event.serverName());
 		metadata.put("occurredAt", event.occurredAt().toString());
 		return metadata;
 	}

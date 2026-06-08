@@ -21,9 +21,16 @@ const eventIcons = {
   SERVER_CREATED: CirclePlus,
   SERVER_UPDATED: Pencil,
   SERVER_DELETED: Trash2,
+  SERVER_MARKED_ONLINE_BY_AGENT: Radio,
+  SERVER_MARKED_OFFLINE_BY_AGENT: WifiOff,
   AGENT_REGISTERED: CirclePlus,
+  AGENT_ENROLLED: CirclePlus,
+  AGENT_CONNECTED: Radio,
   AGENT_HEARTBEAT_RECEIVED: Radio,
+  AGENT_MARKED_ONLINE: Radio,
   AGENT_MARKED_OFFLINE: WifiOff,
+  AGENT_TOKEN_ROTATED: Radio,
+  AGENT_ENROLLMENT_CANCELED: Trash2,
 } satisfies Record<
   AuditEventType,
   React.ComponentType<{ className?: string }>

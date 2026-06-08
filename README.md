@@ -295,6 +295,11 @@ not manual editing. A server starts as `UNKNOWN`, becomes `ONLINE` when its
 linked agent reports a heartbeat, and becomes `OFFLINE` when the backend has
 not received a heartbeat recently.
 
+Activity tracks lifecycle transitions such as enrollment, first connection,
+token rotation, cancellation, and offline detection. Routine heartbeats update
+status and last-seen timestamps without creating repeated Activity rows. Token
+values, token hashes, authorization headers, and cookies are never logged.
+
 ## Development
 
 Useful commands:

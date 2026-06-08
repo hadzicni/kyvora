@@ -14,6 +14,9 @@ public record AgentChangedEvent(
 		String version,
 		AgentStatus status,
 		Instant lastSeenAt,
+		UUID serverId,
+		String serverName,
+		String actor,
 		Instant occurredAt) {
 
 	public static AgentChangedEvent from(AgentEventType type, Agent agent) {
@@ -25,6 +28,35 @@ public record AgentChangedEvent(
 				agent.getVersion(),
 				agent.getStatus(),
 				agent.getLastSeenAt(),
+				agent.getServer() == null ? null : agent.getServer().getId(),
+				agent.getServer() == null ? null : agent.getServer().getName(),
+				null,
+				Instant.now());
+	}
+
+	public static AgentChangedEvent fromAgentActor(AgentEventType type, Agent agent) {
+		String actor = agent.getHostname() == null || agent.getHostname().isBlank()
+				? "agent:" + agent.getId()
+				: "agent:" + agent.getHostname();
+		return withActor(type, agent, actor);
+	}
+
+	public static AgentChangedEvent fromSystemActor(AgentEventType type, Agent agent) {
+		return withActor(type, agent, "system:agent-monitor");
+	}
+
+	private static AgentChangedEvent withActor(AgentEventType type, Agent agent, String actor) {
+		return new AgentChangedEvent(
+				type,
+				agent.getId(),
+				agent.getName(),
+				agent.getHostname(),
+				agent.getVersion(),
+				agent.getStatus(),
+				agent.getLastSeenAt(),
+				agent.getServer() == null ? null : agent.getServer().getId(),
+				agent.getServer() == null ? null : agent.getServer().getName(),
+				actor,
 				Instant.now());
 	}
 }

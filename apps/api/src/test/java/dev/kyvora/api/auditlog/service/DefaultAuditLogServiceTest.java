@@ -33,6 +33,9 @@ class DefaultAuditLogServiceTest {
 				"0.1.0",
 				AgentStatus.ONLINE,
 				Instant.now(),
+				null,
+				null,
+				null,
 				Instant.now());
 
 		service.recordAgentChange(event);
@@ -51,6 +54,9 @@ class DefaultAuditLogServiceTest {
 				"node01.example.com",
 				"0.1.0",
 				AgentStatus.PENDING,
+				null,
+				null,
+				null,
 				null,
 				Instant.now());
 
