@@ -120,17 +120,25 @@ npm run dev
 
 ## Configuration
 
-Set the required environment variables and configuration values.
-
-Example:
+The backend uses HTTP Basic Auth in local development. By default, Spring Boot
+creates a stable development user from these environment variables:
 
 ```env
-APP_ENV=development
-APP_PORT=3000
-API_URL=https://example.com
+KYVORA_SECURITY_USERNAME=user
+KYVORA_SECURITY_PASSWORD=dev-password
 ```
 
-If a file such as `.env`, `appsettings.json`, or `config.yaml` is used, describe the most important values here.
+The Next.js API proxy sends matching credentials from server-only environment
+variables:
+
+```env
+API_BASE_URL=http://localhost:8080
+API_USERNAME=user
+API_PASSWORD=dev-password
+```
+
+Override these values locally as needed. Do not use the development defaults as
+production credentials.
 
 ## Usage
 

@@ -2,6 +2,11 @@ spring:
   application:
     name: kyvora-api
 
+  security:
+    user:
+      name: ${KYVORA_SECURITY_USERNAME:user}
+      password: ${KYVORA_SECURITY_PASSWORD:dev-password}
+
   datasource:
     url: jdbc:postgresql://ictnikhadlk01:5432/kyvora
     username: kyvora
