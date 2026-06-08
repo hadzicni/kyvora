@@ -1,12 +1,20 @@
+const githubUrl = "https://github.com/hadzicni/kyvora"
+const githubFileUrl = (path: string) => `${githubUrl}/blob/main/${path}`
+
 export const siteConfig = {
   name: "Kyvora",
   url: "https://kyvora.dev",
   description:
     "Kyvora is an open-source homelab control plane for managing servers, agents, monitoring, users, and infrastructure operations.",
   links: {
-    github: "https://github.com/hadzicni/kyvora",
-    docs: "https://github.com/hadzicni/kyvora/tree/main/docs",
-    roadmap: "https://github.com/hadzicni/kyvora/issues",
+    github: githubUrl,
+    docs: `${githubUrl}/tree/main/docs`,
+    roadmap: `${githubUrl}/issues`,
+    changelog: `${githubUrl}/releases`,
+    contributing: githubFileUrl("CONTRIBUTING.md"),
+    codeOfConduct: githubFileUrl("CODE_OF_CONDUCT.md"),
+    security: githubFileUrl("SECURITY.md"),
+    license: githubFileUrl("LICENSE"),
   },
   mainNav: [
     {
@@ -19,11 +27,11 @@ export const siteConfig = {
     },
     {
       title: "Roadmap",
-      href: "https://github.com/hadzicni/kyvora/issues",
+      href: `${githubUrl}/issues`,
     },
     {
       title: "GitHub",
-      href: "https://github.com/hadzicni/kyvora",
+      href: githubUrl,
     },
   ],
 } as const
