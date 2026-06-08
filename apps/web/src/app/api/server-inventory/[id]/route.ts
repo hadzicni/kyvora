@@ -26,6 +26,7 @@ async function createBackendUrl(request: NextRequest, context: RouteContext) {
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const response = await backendFetch(
+      request,
       await createBackendUrl(request, context),
       {
         headers: {
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 export async function PUT(request: NextRequest, context: RouteContext) {
   try {
     const response = await backendFetch(
+      request,
       await createBackendUrl(request, context),
       {
         method: "PUT",
@@ -73,6 +75,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const response = await backendFetch(
+      request,
       await createBackendUrl(request, context),
       {
         method: "DELETE",

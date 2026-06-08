@@ -5,12 +5,14 @@ import {
   Bot,
   Database,
   LayoutDashboard,
+  LogOut,
   Menu,
   Search,
   Server,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -94,6 +96,8 @@ function SidebarContent() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
+
   return (
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 border-r border-sidebar-border bg-sidebar md:block">
@@ -127,9 +131,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="hidden h-9 w-full max-w-xs items-center gap-2 rounded-md border bg-muted/30 px-3 text-sm text-muted-foreground sm:flex">
+          <div className="hidden h-9 w-full max-w-xs items-center gap-2 rounded-md border bg-muted/30 px-3 text-sm text-muted-foreground xl:flex">
             <Search className="size-4" />
             <span>Search infrastructure</span>
+          </div>
+
+          <div className="ml-auto flex items-center gap-3">
+            <div className="hidden min-w-0 text-right text-xs text-muted-foreground sm:block">
+              <div className="truncate font-medium text-foreground">
+                {status === "loading"
+                  ? "Loading session"
+                  : session?.user.displayName || session?.user.email || "Signed in"}
+              </div>
+              <div className="truncate">
+                {session?.user.role || "Authenticated"}
+              </div>
+            </div>
+            <Button
+              aria-label="Sign out"
+              onClick={async () => {
+                await fetch("/api/session/logout", { method: "POST" }).catch(() => {
+                  // The local session should still be cleared even if backend logout fails.
+                });
+
+                await signOut({ callbackUrl: "/login" });
+              }}
+              size="icon"
+              variant="outline"
+            >
+              <LogOut className="size-4" />
+            </Button>
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">

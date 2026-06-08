@@ -10,6 +10,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const response = await backendFetch(
+      request,
       new URL("/api/v1/agents/register", apiBaseUrl),
       {
         method: "POST",

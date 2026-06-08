@@ -27,6 +27,7 @@ async function createBackendUrl(request: NextRequest, context: RouteContext) {
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const response = await backendFetch(
+      request,
       await createBackendUrl(request, context),
       {
         headers: {

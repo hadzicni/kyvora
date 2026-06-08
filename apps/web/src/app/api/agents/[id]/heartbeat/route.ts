@@ -18,6 +18,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   try {
     const response = await backendFetch(
+      request,
       new URL(`/api/v1/agents/${encodeURIComponent(id)}/heartbeat`, apiBaseUrl),
       {
         method: "POST",

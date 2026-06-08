@@ -16,7 +16,7 @@ function createBackendUrl(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const response = await backendFetch(createBackendUrl(request), {
+    const response = await backendFetch(request, createBackendUrl(request), {
       headers: {
         Accept: "application/json",
       },

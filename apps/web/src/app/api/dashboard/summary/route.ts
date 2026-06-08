@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 import {
   apiBaseUrl,
@@ -6,9 +6,10 @@ import {
   createBackendResponse,
 } from "../../_lib/backend";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const response = await backendFetch(
+      request,
       new URL("/api/v1/dashboard/summary", apiBaseUrl),
       {
         headers: {

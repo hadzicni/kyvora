@@ -15,7 +15,7 @@ function createBackendUrl(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const response = await backendFetch(createBackendUrl(request), {
+    const response = await backendFetch(request, createBackendUrl(request), {
       headers: {
         Accept: "application/json",
       },
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const response = await backendFetch(createBackendUrl(request), {
+    const response = await backendFetch(request, createBackendUrl(request), {
       method: "POST",
       headers: {
         Accept: "application/json",
