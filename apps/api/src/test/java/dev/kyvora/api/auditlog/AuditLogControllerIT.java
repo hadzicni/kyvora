@@ -2,6 +2,7 @@ package dev.kyvora.api.auditlog;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -35,6 +36,8 @@ import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
 @SpringBootTest
 @ActiveProfiles("test")
 class AuditLogControllerIT {
+
+	private static final String ISO_8601_INSTANT_PATTERN = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?Z";
 
 	@Autowired
 	private WebApplicationContext webApplicationContext;
@@ -104,6 +107,7 @@ class AuditLogControllerIT {
 				.andExpect(jsonPath("$.content[0].actor", is("alice")))
 				.andExpect(jsonPath("$.content[0].message", is("Server created: web01.example.com")))
 				.andExpect(jsonPath("$.content[0].metadata.hostname", is("web01.example.com")))
+				.andExpect(jsonPath("$.content[0].metadata.occurredAt", matchesPattern(ISO_8601_INSTANT_PATTERN)))
 				.andExpect(jsonPath("$.content[0].createdAt", notNullValue()))
 				.andExpect(jsonPath("$.content[1].eventType", is("SERVER_UPDATED")))
 				.andExpect(jsonPath("$.content[2].eventType", is("SERVER_DELETED")));

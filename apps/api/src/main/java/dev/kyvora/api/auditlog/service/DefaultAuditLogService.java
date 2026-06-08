@@ -78,7 +78,7 @@ public class DefaultAuditLogService implements AuditLogService {
 		metadata.put("operatingSystem", event.operatingSystem());
 		metadata.put("status", event.status());
 		metadata.put("lastSeenAt", event.lastSeenAt());
-		metadata.put("occurredAt", event.occurredAt());
+		metadata.put("occurredAt", event.occurredAt().toString());
 		return metadata;
 	}
 }
