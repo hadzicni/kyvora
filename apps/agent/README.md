@@ -27,6 +27,10 @@ browser-exposed environment variables.
 Successful heartbeats update the assigned agent status and the linked server
 status and last-seen timestamp.
 
+Agents must send heartbeats regularly. If the API does not receive a heartbeat
+within `KYVORA_AGENT_OFFLINE_THRESHOLD_SECONDS` seconds, Kyvora marks the agent
+and its linked server offline during the scheduled offline check.
+
 ## Configuration
 
 ```env

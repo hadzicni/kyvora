@@ -1,6 +1,6 @@
 "use client";
 
-import { CirclePlus, Pencil, Radio, Trash2 } from "lucide-react";
+import { CirclePlus, Pencil, Radio, Trash2, WifiOff } from "lucide-react";
 
 import {
   Card,
@@ -23,6 +23,7 @@ const eventIcons = {
   SERVER_DELETED: Trash2,
   AGENT_REGISTERED: CirclePlus,
   AGENT_HEARTBEAT_RECEIVED: Radio,
+  AGENT_MARKED_OFFLINE: WifiOff,
 } satisfies Record<
   AuditEventType,
   React.ComponentType<{ className?: string }>

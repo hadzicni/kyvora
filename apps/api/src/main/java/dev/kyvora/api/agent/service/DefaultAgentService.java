@@ -3,6 +3,7 @@ package dev.kyvora.api.agent.service;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,18 +38,21 @@ public class DefaultAgentService implements AgentService {
 	private final AuditLogService auditLogService;
 	private final AgentTokenService agentTokenService;
 	private final ServerInventoryRepository serverInventoryRepository;
+	private final long offlineThresholdSeconds;
 
 	public DefaultAgentService(
 			AgentRepository repository,
 			AgentMapper mapper,
 			AuditLogService auditLogService,
 			AgentTokenService agentTokenService,
-			ServerInventoryRepository serverInventoryRepository) {
+			ServerInventoryRepository serverInventoryRepository,
+			@Value("${kyvora.agent.offline-threshold-seconds:90}") long offlineThresholdSeconds) {
 		this.repository = repository;
 		this.mapper = mapper;
 		this.auditLogService = auditLogService;
 		this.agentTokenService = agentTokenService;
 		this.serverInventoryRepository = serverInventoryRepository;
+		this.offlineThresholdSeconds = offlineThresholdSeconds;
 	}
 
 	@Override
@@ -107,6 +111,21 @@ public class DefaultAgentService implements AgentService {
 		Agent saved = repository.save(agent);
 		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_HEARTBEAT_RECEIVED, saved));
 		return mapper.toResponse(saved);
+	}
+
+	@Override
+	public int markStaleOnlineAgentsOffline() {
+		Instant staleBefore = Instant.now().minusSeconds(offlineThresholdSeconds);
+		var staleAgents = repository.findStaleOnlineAgents(staleBefore);
+		for (Agent agent : staleAgents) {
+			agent.setStatus(AgentStatus.OFFLINE);
+			ServerInventory server = agent.getServer();
+			if (server != null) {
+				server.setStatus(ServerStatus.OFFLINE);
+			}
+			auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_MARKED_OFFLINE, agent));
+		}
+		return staleAgents.size();
 	}
 
 	private void verifyAgentToken(Agent agent, String agentToken) {

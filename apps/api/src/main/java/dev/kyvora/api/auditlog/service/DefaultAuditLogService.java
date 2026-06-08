@@ -116,6 +116,7 @@ public class DefaultAuditLogService implements AuditLogService {
 		return switch (event.type()) {
 			case AGENT_REGISTERED -> "Agent registered: " + event.hostname();
 			case AGENT_HEARTBEAT_RECEIVED -> "Agent heartbeat received: " + event.hostname();
+			case AGENT_MARKED_OFFLINE -> "Agent marked offline: " + event.hostname();
 		};
 	}
 

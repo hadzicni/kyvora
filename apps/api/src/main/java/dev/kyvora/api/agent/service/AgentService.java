@@ -19,4 +19,6 @@ public interface AgentService {
 	AgentEnrollmentResponse enroll(AgentRegisterRequest request);
 
 	AgentResponse heartbeat(UUID id, String agentToken, AgentHeartbeatRequest request);
+
+	int markStaleOnlineAgentsOffline();
 }

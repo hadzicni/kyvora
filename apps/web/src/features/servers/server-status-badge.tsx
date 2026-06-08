@@ -12,7 +12,7 @@ const statusClasses: Record<ServerStatus, string> = {
 export function ServerStatusBadge({ status }: { status: ServerStatus }) {
   return (
     <Badge className={cn("border", statusClasses[status])} variant="outline">
-      {status.toLowerCase()}
+      {status}
     </Badge>
   );
 }

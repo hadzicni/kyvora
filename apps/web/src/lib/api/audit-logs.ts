@@ -3,7 +3,8 @@ export type AuditEventType =
   | "SERVER_UPDATED"
   | "SERVER_DELETED"
   | "AGENT_REGISTERED"
-  | "AGENT_HEARTBEAT_RECEIVED";
+  | "AGENT_HEARTBEAT_RECEIVED"
+  | "AGENT_MARKED_OFFLINE";
 
 export type AuditLog = {
   id: string;

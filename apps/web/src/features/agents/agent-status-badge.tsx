@@ -13,7 +13,7 @@ const statusClasses: Record<AgentStatus, string> = {
 export function AgentStatusBadge({ status }: { status: AgentStatus }) {
   return (
     <Badge className={cn("border", statusClasses[status])} variant="outline">
-      {status.toLowerCase()}
+      {status}
     </Badge>
   );
 }

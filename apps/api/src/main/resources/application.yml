@@ -38,3 +38,7 @@ kyvora:
       email: ${KYVORA_BOOTSTRAP_ADMIN_EMAIL:admin@kyvora.local}
       password: ${KYVORA_BOOTSTRAP_ADMIN_PASSWORD:admin-password}
       display-name: ${KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME:Kyvora Admin}
+
+  agent:
+    offline-threshold-seconds: ${KYVORA_AGENT_OFFLINE_THRESHOLD_SECONDS:90}
+    offline-check-interval-seconds: ${KYVORA_AGENT_OFFLINE_CHECK_INTERVAL_SECONDS:30}

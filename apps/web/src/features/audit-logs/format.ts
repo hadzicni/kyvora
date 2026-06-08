@@ -6,6 +6,7 @@ export const auditEventTypes = [
   "SERVER_DELETED",
   "AGENT_REGISTERED",
   "AGENT_HEARTBEAT_RECEIVED",
+  "AGENT_MARKED_OFFLINE",
 ] as const satisfies AuditEventType[];
 
 export const aggregateTypes = ["SERVER", "AGENT"] as const;
