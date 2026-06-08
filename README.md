@@ -12,9 +12,6 @@ An open-source Homelab Control Plane for managing, monitoring, and operating sel
 [![Status](https://img.shields.io/badge/status-development-success.svg)](#overview)
 [![Language](https://img.shields.io/badge/language-NextJS/SpringBoot-blue.svg)](#overview)
 
-<!-- Optional GitHub badges -->
-<!-- Replace USERNAME and REPOSITORY -->
-
 [![Release](https://img.shields.io/github/v/release/hadzicni/kyvora)](https://github.com/hadzicni/kyvora/releases)
 [![Stars](https://img.shields.io/github/stars/hadzicni/kyvora)](https://github.com/hadzicni/kyvora/stargazers)
 [![Issues](https://img.shields.io/github/issues/hadzicni/kyvora)](https://github.com/hadzicni/kyvora/issues)
@@ -48,38 +45,61 @@ An open-source Homelab Control Plane for managing, monitoring, and operating sel
 
 ## Overview
 
-This repository contains: [short description of the use case, target audience, and technical purpose].
+Kyvora is an open-source Homelab Control Plane for managing self-hosted infrastructure from one dashboard.
 
-You can also mention here:
+It currently provides:
 
-- which problem the project solves
-- who the project is for
-- which core technologies are used
+- a Spring Boot backend API with JWT authentication
+- a Next.js web dashboard with Auth.js login sessions
+- server inventory management with CRUD, search, filters, pagination, and detail pages
+- agent registration and heartbeat tracking
+- persistent audit logging for infrastructure changes
+- dashboard summary metrics
+- OpenAPI/Swagger documentation
+- an initial Go-based Kyvora agent
+
+Kyvora is built as a monorepo with a modular backend, a modern web UI, and a lightweight agent foundation.
 
 ## Tech Stack
 
-| Category   | Technology   |
-| ---------- | ------------ |
-| Frontend   | Next.js      |
-| Backend    | Spring Boot  |
-| Database   | PostgreSQL   |
-| Testing    | [Technology] |
-| CI/CD      | GitHub Actions |
-| Deployment | Docker       |
+| Category | Technology |
+| --- | --- |
+| Frontend | Next.js 16, React 19, TypeScript |
+| UI | Tailwind CSS v4, shadcn/ui |
+| Web Auth | Auth.js / NextAuth |
+| Backend | Java 21, Spring Boot 4 |
+| API Auth | JWT access tokens, refresh tokens |
+| Database | PostgreSQL |
+| Migrations | Flyway |
+| Backend Persistence | Spring Data JPA |
+| Agent | Go |
+| Testing | JUnit, Spring Boot Test, Go test, ESLint |
+| CI/CD | GitHub Actions |
+| Local Infrastructure | Docker / Docker Compose |
 
 ## Features
 
-- Feature 1
-- Feature 2
-- Feature 3
-- Feature 4
+- Web dashboard with dark-mode-first UI
+- Auth.js login session for the web app
+- JWT-secured backend API
+- Server Inventory CRUD
+- Server search, filtering, pagination, and detail pages
+- Agent registration and heartbeat tracking
+- Initial Go agent for local registration and heartbeats
+- Dashboard summary metrics
+- Persistent audit logs with recent activity
+- OpenAPI/Swagger API documentation
+- GitHub Actions CI for web, API, and agent checks
 
 ## Prerequisites
 
-- Operating system: [Windows / macOS / Linux]
-- Language or runtime: [e.g. Node.js, Python, Java, .NET, Go]
-- Version: [e.g. Node.js 20+, Python 3.12+]
-- Additional tools: [e.g. Git, Docker, database, compiler]
+- Git
+- Node.js 24+
+- npm
+- Java 21
+- Gradle
+- Go 1.26+
+- Docker or a reachable PostgreSQL database
 
 ## Installation
 
@@ -92,31 +112,58 @@ cd kyvora
 
 ### 2. Install dependencies
 
-Adjust the following command to match the project:
 
 ```bash
-# Node.js
 npm install
-
-# or
-yarn install
-
-# or
-pnpm install
-
-# Python
-pip install -r requirements.txt
-
-# .NET
-dotnet restore
 ```
 
-### 3. Start the project
+### 3. Start PostgreSQL
+
+Run PostgreSQL locally or on a reachable host. The backend expects a PostgreSQL database named `kyvora` by default.
+
+Example with Docker:
 
 ```bash
-# Example
-npm run dev
+docker run --name kyvora-postgres \
+  -e POSTGRES_DB=kyvora \
+  -e POSTGRES_USER=kyvora \
+  -e POSTGRES_PASSWORD=kyvora \
+  -p 5432:5432 \
+  -d postgres:18-alpine
 ```
+
+### 4. Start the project
+
+#### Start the web dashboard
+
+```bash
+npm run dev:web
+```
+
+#### Start the API server
+
+```bash
+npm run dev:api
+```
+
+#### Start the Go agent
+
+```bash
+npm run dev:agent
+```
+
+### Useful local URLs:
+
+* Web dashboard: http://localhost:3000
+* Login: http://localhost:3000/login
+* API health: http://localhost:8080/actuator/health
+* Swagger UI: http://localhost:8080/swagger-ui.html
+* OpenAPI JSON: http://localhost:8080/v3/api-docs
+
+### Local bootstrap login:
+
+* Email: admin@kyvora.local
+* Password: admin-password
 
 ## Configuration
 
@@ -210,30 +257,23 @@ new refresh token returned by the refresh response.
 The local bootstrap credentials above are development-only. Do not use the
 default admin email or password in production.
 
+
 ## Development
 
-Useful commands for local development:
+Useful commands:
 
 ```bash
-# Start in development mode
-npm run dev
+npm run dev:web
+npm run dev:agent
 
-# Linting
-npm run lint
+npm run lint -w apps/web
+npm run build -w apps/web
 
-# Formatting
-npm run format
+gradle -p apps/api test
 
-# Tests
-npm test
+cd apps/agent
+go test ./...
 ```
-
-Backend API documentation is available locally when the API is running:
-
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- OpenAPI JSON: http://localhost:8080/v3/api-docs
-
-If the repository uses other tools, add the relevant commands here.
 
 ## Build and Deployment
 
