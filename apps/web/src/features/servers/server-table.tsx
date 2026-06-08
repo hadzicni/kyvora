@@ -9,6 +9,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { ServerInventoryItem } from "@/lib/api/servers";
+import { DeleteServerDialog } from "./delete-server-dialog";
+import { EditServerDialog } from "./edit-server-dialog";
 import { formatDateTime } from "./format";
 import { ServerStatusBadge } from "./server-status-badge";
 
@@ -24,6 +26,7 @@ export function ServerTable({ servers }: { servers: ServerInventoryItem[] }) {
           <TableHead>OS</TableHead>
           <TableHead>Tags</TableHead>
           <TableHead>Last seen</TableHead>
+          <TableHead className="w-20 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -59,6 +62,12 @@ export function ServerTable({ servers }: { servers: ServerInventoryItem[] }) {
             </TableCell>
             <TableCell className="text-muted-foreground">
               {formatDateTime(server.lastSeenAt)}
+            </TableCell>
+            <TableCell>
+              <div className="flex justify-end gap-1">
+                <EditServerDialog server={server} />
+                <DeleteServerDialog server={server} />
+              </div>
             </TableCell>
           </TableRow>
         ))}

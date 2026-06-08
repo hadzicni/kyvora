@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -14,67 +14,50 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { getConflictField } from "@/features/servers/create-server-dialog";
 import {
-  emptyServerFormValues,
   ServerForm,
   type ServerFormPayload,
   type ServerFormValues,
   serverFormSchema,
+  toServerFormValues,
   toServerInput,
 } from "@/features/servers/server-form";
-import { useCreateServer } from "@/features/servers/use-servers";
-import { ApiError } from "@/lib/api/servers";
+import { useUpdateServer } from "@/features/servers/use-servers";
+import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
 
-export function getConflictField(error: ApiError): "hostname" | "ipAddress" | null {
-  const duplicateDetail = error.details.find(
-    (detail) =>
-      detail.startsWith("hostname:") || detail.startsWith("ipAddress:")
-  );
-
-  if (duplicateDetail?.startsWith("hostname:")) {
-    return "hostname";
-  }
-
-  if (duplicateDetail?.startsWith("ipAddress:")) {
-    return "ipAddress";
-  }
-
-  if (error.message.toLowerCase().includes("hostname")) {
-    return "hostname";
-  }
-
-  if (error.message.toLowerCase().includes("ipaddress")) {
-    return "ipAddress";
-  }
-
-  return null;
-}
-
-export function CreateServerDialog() {
+export function EditServerDialog({ server }: { server: ServerInventoryItem }) {
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const createServer = useCreateServer();
+  const updateServer = useUpdateServer();
   const form = useForm<ServerFormValues, unknown, ServerFormPayload>({
     resolver: zodResolver(serverFormSchema),
-    defaultValues: emptyServerFormValues,
+    defaultValues: toServerFormValues(server),
   });
 
   async function onSubmit(values: ServerFormPayload) {
     setFormError(null);
 
     try {
-      await createServer.mutateAsync(toServerInput(values));
-      form.reset(emptyServerFormValues);
+      await updateServer.mutateAsync({
+        id: server.id,
+        input: toServerInput(values),
+      });
       setOpen(false);
     } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        setFormError("This server no longer exists. Refresh the inventory.");
+        return;
+      }
+
       if (error instanceof ApiError && error.status === 409) {
         const field = getConflictField(error);
         const message =
           field === "hostname"
-            ? "A server with this hostname already exists."
+            ? "Another server already uses this hostname."
             : field === "ipAddress"
-              ? "A server with this IP address already exists."
-              : "A server with matching unique inventory data already exists.";
+              ? "Another server already uses this IP address."
+              : "Another server has matching unique inventory data.";
 
         setFormError(message);
 
@@ -87,45 +70,41 @@ export function CreateServerDialog() {
       setFormError(
         error instanceof Error
           ? error.message
-          : "Unable to create the server right now."
+          : "Unable to update the server right now."
       );
     }
   }
 
   function handleOpenChange(nextOpen: boolean) {
+    form.reset(toServerFormValues(server));
+    setFormError(null);
     setOpen(nextOpen);
-
-    if (!nextOpen) {
-      form.reset(emptyServerFormValues);
-      setFormError(null);
-    }
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="size-4" />
-          Create server
+        <Button variant="ghost" size="icon-sm" aria-label={`Edit ${server.name}`}>
+          <Pencil className="size-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create server</DialogTitle>
+          <DialogTitle>Edit server</DialogTitle>
           <DialogDescription>
-            Add a managed server to the inventory.
+            Update inventory details for {server.name}.
           </DialogDescription>
         </DialogHeader>
 
         <ServerForm
           form={form}
           formError={formError}
-          idPrefix="create-server"
-          isPending={createServer.isPending}
+          idPrefix={`edit-server-${server.id}`}
+          isPending={updateServer.isPending}
           onCancel={() => handleOpenChange(false)}
           onSubmit={onSubmit}
-          submitIcon={<Plus className="size-4" />}
-          submitLabel="Create server"
+          submitIcon={<Pencil className="size-4" />}
+          submitLabel="Save changes"
         />
       </DialogContent>
     </Dialog>

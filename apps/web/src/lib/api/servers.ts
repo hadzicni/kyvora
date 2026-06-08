@@ -43,6 +43,8 @@ export type CreateServerInput = {
   status: ServerStatus;
 };
 
+export type UpdateServerInput = CreateServerInput;
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -94,7 +96,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(message, response.status, details);
   }
 
-  return response.json() as Promise<T>;
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const body = await response.text();
+
+  if (!body) {
+    return undefined as T;
+  }
+
+  return JSON.parse(body) as T;
 }
 
 export async function listServers(
@@ -124,6 +136,31 @@ export async function createServer(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(input),
+  });
+}
+
+export async function updateServer({
+  id,
+  input,
+}: {
+  id: string;
+  input: UpdateServerInput;
+}): Promise<ServerInventoryItem> {
+  return request<ServerInventoryItem>(
+    `/api/server-inventory/${encodeURIComponent(id)}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }
+  );
+}
+
+export async function deleteServer(id: string): Promise<void> {
+  await request<void>(`/api/server-inventory/${encodeURIComponent(id)}`, {
+    method: "DELETE",
   });
 }
 
