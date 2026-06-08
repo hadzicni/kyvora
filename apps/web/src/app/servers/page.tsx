@@ -21,6 +21,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CreateServerDialog } from "@/features/servers/create-server-dialog";
 import { formatNumber } from "@/features/servers/format";
 import { ServerEmptyState } from "@/features/servers/server-empty-state";
@@ -136,22 +143,25 @@ export default function ServerInventoryPage() {
 
               <div className="grid gap-2">
                 <Label htmlFor="server-status">Status</Label>
-                <select
-                  id="server-status"
-                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                <Select
                   value={status}
-                  onChange={(event) => {
-                    setStatus(event.target.value as ServerStatus | "ALL");
+                  onValueChange={(value) => {
+                    setStatus(value as ServerStatus | "ALL");
                     setPage(0);
                   }}
                 >
-                  <option value="ALL">All statuses</option>
-                  {serverStatuses.map((serverStatus) => (
-                    <option key={serverStatus} value={serverStatus}>
-                      {serverStatus}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="server-status" className="w-full">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="ALL">All statuses</SelectItem>
+                    {serverStatuses.map((serverStatus) => (
+                      <SelectItem key={serverStatus} value={serverStatus}>
+                        {serverStatus}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid gap-2">
@@ -220,27 +230,31 @@ export default function ServerInventoryPage() {
                   >
                     Rows
                   </Label>
-                  <select
-                    aria-label="Rows per page"
-                    id="server-page-size"
-                    className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                  <Select
+                    value={String(pageSize)}
                     disabled={serversQuery.isFetching}
-                    value={pageSize}
-                    onChange={(event) => {
+                    onValueChange={(value) => {
                       setPageSize(
-                        Number(
-                          event.target.value
-                        ) as (typeof pageSizeOptions)[number]
+                        Number(value) as (typeof pageSizeOptions)[number]
                       );
                       setPage(0);
                     }}
                   >
-                    {pageSizeOptions.map((size) => (
-                      <option key={size} value={size}>
-                        {size} rows
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger
+                      id="server-page-size"
+                      aria-label="Rows per page"
+                      className="w-[7.5rem]"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {pageSizeOptions.map((size) => (
+                        <SelectItem key={size} value={String(size)}>
+                          {size} rows
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     aria-label="Previous page"
                     disabled={!canGoBack}
