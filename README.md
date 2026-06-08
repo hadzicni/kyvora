@@ -2,7 +2,7 @@
 
 <h1>Kyvora</h1>
 
-<img src="./docs/banner.png" alt="Project banner" width="100%" />
+<img src="./docs/branding/banner.png" alt="Project banner" width="100%" />
 
 <br />
 

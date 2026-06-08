@@ -1,8 +1,9 @@
-import Link from "next/link"
 import { ArrowRight, GitBranch } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
 
-import { siteConfig } from "@/config/site"
 import { Button } from "@/components/ui/button"
+import { siteConfig } from "@/config/site"
 
 export function SiteHeader() {
   return (
@@ -13,9 +14,18 @@ export function SiteHeader() {
           className="flex items-center gap-2 rounded-lg outline-none transition-opacity hover:opacity-85 focus-visible:ring-3 focus-visible:ring-emerald-400/40"
           aria-label="Kyvora home"
         >
-          <span className="flex size-8 items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-400/10 text-sm font-semibold text-emerald-200 shadow-[0_0_32px_rgba(52,211,153,0.18)]">
-            K
+          <span className="flex size-8 items-center justify-center">
+            <Image
+              src="/icon.svg"
+              alt=""
+              width={32}
+              height={32}
+              priority
+              aria-hidden="true"
+              className="size-8"
+            />
           </span>
+
           <span className="text-sm font-semibold tracking-wide text-white">
             {siteConfig.name}
           </span>
@@ -32,7 +42,9 @@ export function SiteHeader() {
                 className="text-neutral-300 hover:text-white"
                 target={item.href.startsWith("http") ? "_blank" : undefined}
                 rel={
-                  item.href.startsWith("http") ? "noopener noreferrer" : undefined
+                  item.href.startsWith("http")
+                    ? "noopener noreferrer"
+                    : undefined
                 }
               >
                 {item.title}
@@ -57,12 +69,13 @@ export function SiteHeader() {
               <GitBranch aria-hidden="true" />
             </Link>
           </Button>
+
           <Button
             size="sm"
             asChild
             className="bg-emerald-300 text-neutral-950 hover:bg-emerald-200"
           >
-            <Link href={siteConfig.links.docs} target="_blank" rel="noopener noreferrer">
+            <Link href={siteConfig.links.docs}>
               Get Started
               <ArrowRight aria-hidden="true" />
             </Link>
