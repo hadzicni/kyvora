@@ -34,7 +34,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/v1/agents")
 @Tag(name = "Agent Management", description = "Register agents and receive agent heartbeats.")
-@SecurityRequirement(name = OpenApiConfig.BASIC_AUTH_SCHEME)
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH_SCHEME)
 public class AgentController {
 
 	private final AgentService service;

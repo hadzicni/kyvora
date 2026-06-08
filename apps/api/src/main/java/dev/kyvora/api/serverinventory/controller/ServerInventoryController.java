@@ -41,7 +41,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/v1/servers")
 @Tag(name = "Server Inventory", description = "Manage servers registered in the Kyvora inventory.")
-@SecurityRequirement(name = OpenApiConfig.BASIC_AUTH_SCHEME)
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH_SCHEME)
 public class ServerInventoryController {
 
 	private final ServerInventoryService service;

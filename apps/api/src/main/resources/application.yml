@@ -2,15 +2,13 @@ spring:
   application:
     name: kyvora-api
 
-  security:
-    user:
-      name: ${KYVORA_SECURITY_USERNAME:user}
-      password: ${KYVORA_SECURITY_PASSWORD:dev-password}
+  profiles:
+    default: local
 
   datasource:
-    url: jdbc:postgresql://ictnikhadlk01:5432/kyvora
-    username: kyvora
-    password: kyvora
+    url: ${KYVORA_DATASOURCE_URL:jdbc:postgresql://ictnikhadlk01:5432/kyvora}
+    username: ${KYVORA_DATASOURCE_USERNAME:kyvora}
+    password: ${KYVORA_DATASOURCE_PASSWORD:kyvora}
 
   jpa:
     hibernate:
@@ -21,10 +19,22 @@ spring:
     enabled: true
 
 server:
-  port: 8080
+  port: ${KYVORA_API_PORT:8080}
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+
+kyvora:
+  jwt:
+    secret: ${KYVORA_JWT_SECRET:dev-only-change-me-dev-only-change-me}
+    access-token-ttl-seconds: ${KYVORA_JWT_ACCESS_TOKEN_TTL_SECONDS:900}
+    refresh-token-ttl-seconds: ${KYVORA_REFRESH_TOKEN_TTL_SECONDS:2592000}
+
+  bootstrap:
+    admin:
+      email: ${KYVORA_BOOTSTRAP_ADMIN_EMAIL:admin@kyvora.local}
+      password: ${KYVORA_BOOTSTRAP_ADMIN_PASSWORD:admin-password}
+      display-name: ${KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME:Kyvora Admin}

@@ -1,10 +1,13 @@
 package dev.kyvora.api.auditlog.service;
 
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import dev.kyvora.api.auditlog.dto.AuditLogFilter;
 import dev.kyvora.api.auditlog.dto.AuditLogResponse;
+import dev.kyvora.api.auditlog.entity.AuditEventType;
 import dev.kyvora.api.agent.event.AgentChangedEvent;
 import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
 
@@ -15,4 +18,6 @@ public interface AuditLogService {
 	void recordServerInventoryChange(ServerInventoryChangedEvent event);
 
 	void recordAgentChange(AgentChangedEvent event);
+
+	void recordAuthEvent(AuditEventType eventType, UUID userId, String actor, String message);
 }

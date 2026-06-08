@@ -3,6 +3,7 @@ package dev.kyvora.api.auditlog.service;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,7 @@ import dev.kyvora.api.auditlog.mapper.AuditLogMapper;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
 import dev.kyvora.api.auditlog.repository.AuditLogSpecifications;
 import dev.kyvora.api.agent.event.AgentChangedEvent;
+import dev.kyvora.api.auth.security.AuthenticatedUser;
 import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
 
 @Service
@@ -27,7 +29,9 @@ public class DefaultAuditLogService implements AuditLogService {
 
 	private static final String SERVER_AGGREGATE_TYPE = "SERVER";
 	private static final String AGENT_AGGREGATE_TYPE = "AGENT";
+	private static final String AUTH_AGGREGATE_TYPE = "AUTH";
 	private static final String SYSTEM_ACTOR = "system";
+	private static final UUID EMPTY_AGGREGATE_ID = new UUID(0, 0);
 
 	private final AuditLogRepository repository;
 	private final AuditLogMapper mapper;
@@ -67,10 +71,24 @@ public class DefaultAuditLogService implements AuditLogService {
 				metadataFor(event)));
 	}
 
+	@Override
+	public void recordAuthEvent(AuditEventType eventType, UUID userId, String actor, String message) {
+		repository.save(new AuditLog(
+				eventType,
+				AUTH_AGGREGATE_TYPE,
+				userId == null ? EMPTY_AGGREGATE_ID : userId,
+				actor == null || actor.isBlank() ? currentActor() : actor,
+				message,
+				Map.of()));
+	}
+
 	private String currentActor() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
 			return SYSTEM_ACTOR;
+		}
+		if (authentication.getPrincipal() instanceof AuthenticatedUser user) {
+			return user.email();
 		}
 		return authentication.getName();
 	}

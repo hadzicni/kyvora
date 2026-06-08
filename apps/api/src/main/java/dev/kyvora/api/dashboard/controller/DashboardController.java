@@ -16,7 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/v1/dashboard")
 @Tag(name = "Dashboard", description = "Summary metrics for the Kyvora dashboard.")
-@SecurityRequirement(name = OpenApiConfig.BASIC_AUTH_SCHEME)
+@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH_SCHEME)
 public class DashboardController {
 
 	private final DashboardSummaryService service;

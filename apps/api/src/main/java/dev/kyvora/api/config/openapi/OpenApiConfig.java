@@ -12,10 +12,11 @@ import org.springframework.context.annotation.Configuration;
 		description = "Open-source Homelab Control Plane API",
 		version = "0.1.0"))
 @SecurityScheme(
-		name = OpenApiConfig.BASIC_AUTH_SCHEME,
+		name = OpenApiConfig.BEARER_AUTH_SCHEME,
 		type = SecuritySchemeType.HTTP,
-		scheme = "basic")
+		scheme = "bearer",
+		bearerFormat = "JWT")
 public class OpenApiConfig {
 
-	public static final String BASIC_AUTH_SCHEME = "basicAuth";
+	public static final String BEARER_AUTH_SCHEME = "bearerAuth";
 }

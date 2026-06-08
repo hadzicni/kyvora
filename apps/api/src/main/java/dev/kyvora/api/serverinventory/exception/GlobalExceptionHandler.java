@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import dev.kyvora.api.agent.exception.AgentNotFoundException;
 import dev.kyvora.api.agent.exception.DuplicateAgentException;
+import dev.kyvora.api.auth.service.InvalidCredentialsException;
+import dev.kyvora.api.auth.service.InvalidTokenException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 
@@ -58,6 +60,13 @@ public class GlobalExceptionHandler {
 			DataIntegrityViolationException exception,
 			HttpServletRequest request) {
 		return buildResponse(HttpStatus.CONFLICT, "Request conflicts with existing data", request.getRequestURI(), List.of(detectConflictDetail(exception)));
+	}
+
+	@ExceptionHandler({InvalidCredentialsException.class, InvalidTokenException.class})
+	public ResponseEntity<ApiErrorResponse> handleAuthenticationFailure(
+			RuntimeException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
 	@ExceptionHandler(DuplicateServerInventoryException.class)

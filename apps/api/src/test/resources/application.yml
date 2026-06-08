@@ -12,3 +12,5 @@ spring:
 
   flyway:
     enabled: true
+
+KYVORA_JWT_SECRET: 60DOqzj6KPg/nw0l+hCwpGwNL2VEldlpvGGMkwvyArmcFwM5eiFbihgIJZji9IGm

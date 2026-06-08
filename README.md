@@ -120,25 +120,34 @@ npm run dev
 
 ## Configuration
 
-The backend uses HTTP Basic Auth in local development. By default, Spring Boot
-creates a stable development user from these environment variables:
+The backend API uses JWT Bearer authentication. Access tokens are short-lived
+and refresh tokens are stored server-side as SHA-256 hashes.
+
+Required backend secret:
 
 ```env
-KYVORA_SECURITY_USERNAME=user
-KYVORA_SECURITY_PASSWORD=dev-password
+KYVORA_JWT_SECRET=replace-with-at-least-32-random-characters
 ```
 
-The Next.js API proxy sends matching credentials from server-only environment
-variables:
+Optional token lifetime settings:
 
 ```env
-API_BASE_URL=http://localhost:8080
-API_USERNAME=user
-API_PASSWORD=dev-password
+KYVORA_JWT_ACCESS_TOKEN_TTL_SECONDS=900
+KYVORA_REFRESH_TOKEN_TTL_SECONDS=2592000
 ```
 
-Override these values locally as needed. Do not use the development defaults as
-production credentials.
+For local development only, start the API with the `local` Spring profile to
+bootstrap an admin user when the users table is empty:
+
+```env
+SPRING_PROFILES_ACTIVE=local
+KYVORA_BOOTSTRAP_ADMIN_EMAIL=admin@kyvora.local
+KYVORA_BOOTSTRAP_ADMIN_PASSWORD=admin-password
+KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME=Kyvora Admin
+```
+
+The bootstrap defaults are development-only. Do not use a weak JWT secret or
+the default admin email/password in production.
 
 ## Usage
 
@@ -154,6 +163,25 @@ Example workflow:
 1. Start the application
 2. Provide data or input
 3. Review the result
+
+Login example:
+
+```bash
+curl -s http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@kyvora.local","password":"admin-password"}'
+```
+
+Use the returned access token with protected API endpoints:
+
+```bash
+curl http://localhost:8080/api/v1/servers \
+  -H "Authorization: Bearer <token>"
+```
+
+When the access token expires, call `/api/v1/auth/refresh` with the refresh
+token from the login response. Refresh tokens are rotated on use; store the
+new refresh token returned by the refresh response.
 
 ## Development
 
