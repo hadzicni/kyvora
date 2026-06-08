@@ -126,22 +126,26 @@ export function toServerInput(payload: ServerFormPayload): CreateServerInput {
 
 export function ServerForm({
   cancelLabel = "Cancel",
+  childrenBeforeFooter,
   form,
   formError,
   idPrefix,
   isPending,
   onCancel,
   onSubmit,
+  showStatusField = true,
   submitIcon,
   submitLabel,
 }: {
   cancelLabel?: string;
+  childrenBeforeFooter?: ReactNode;
   form: UseFormReturn<ServerFormValues, unknown, ServerFormPayload>;
   formError: string | null;
   idPrefix: string;
   isPending: boolean;
   onCancel: () => void;
   onSubmit: (values: ServerFormPayload) => Promise<void>;
+  showStatusField?: boolean;
   submitIcon: ReactNode;
   submitLabel: string;
 }) {
@@ -218,37 +222,39 @@ export function ServerForm({
           />
         </FormField>
 
-        <FormField
-          error={errors.status?.message}
-          htmlFor={`${idPrefix}-status`}
-          label="Status"
-        >
-          <Select
-            value={selectedStatus}
-            onValueChange={(value) => {
-              form.setValue("status", value as ServerStatus, {
-                shouldDirty: true,
-                shouldTouch: true,
-                shouldValidate: true,
-              });
-            }}
+        {showStatusField ? (
+          <FormField
+            error={errors.status?.message}
+            htmlFor={`${idPrefix}-status`}
+            label="Operational state"
           >
-            <SelectTrigger
-              id={`${idPrefix}-status`}
-              className="w-full"
-              aria-invalid={Boolean(errors.status)}
+            <Select
+              value={selectedStatus}
+              onValueChange={(value) => {
+                form.setValue("status", value as ServerStatus, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                });
+              }}
             >
-              <SelectValue placeholder="Choose a status" />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              {serverStatuses.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
+              <SelectTrigger
+                id={`${idPrefix}-status`}
+                className="w-full"
+                aria-invalid={Boolean(errors.status)}
+              >
+                <SelectValue placeholder="Choose a status" />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                {serverStatuses.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+        ) : null}
 
         <FormField
           error={errors.tags?.message}
@@ -276,6 +282,8 @@ export function ServerForm({
           {...register("description")}
         />
       </FormField>
+
+      {childrenBeforeFooter}
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
