@@ -2,6 +2,7 @@
 
 import { AlertCircle, Loader2, LogIn } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -24,18 +25,35 @@ export default function LoginPage() {
   }, [router, status]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
-      <div className="w-full max-w-sm space-y-8">
-
-        {/* Wordmark */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-7 items-center justify-center rounded-md bg-foreground">
-            <span className="text-xs font-bold text-background">K</span>
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#05070a] px-4 py-10 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.20),transparent_32%),radial-gradient(circle_at_20%_25%,rgba(20,184,166,0.10),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.055),transparent_35%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px] opacity-20 [mask-image:radial-gradient(circle_at_center,black,transparent_72%)]" />
+      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950/70 p-6 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-8">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="mb-4 flex items-center gap-3">
+          <span className="flex size-8 items-center justify-center">
+            <Image
+              src="/icon.svg"
+              alt=""
+              width={32}
+              height={32}
+              priority
+              aria-hidden="true"
+              className="size-8"
+            />
+          </span>
+            <span className="text-xl font-semibold tracking-tight text-white">
+              Kyvora
+            </span>
           </div>
-          <span className="text-lg font-medium tracking-tight">Kyvora</span>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">
+            Welcome back
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-zinc-400">
+            Sign in to access your Kyvora dashboard.
+          </p>
         </div>
 
-        {/* Form */}
         <form
           className="space-y-5"
           onSubmit={async (event) => {
@@ -57,12 +75,13 @@ export default function LoginPage() {
               return;
             }
 
+            router.refresh();
             router.replace(result.url ?? "/");
           }}
         >
           <div className="space-y-1.5">
             <Label
-              className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              className="text-xs font-medium uppercase tracking-wide text-zinc-400"
               htmlFor="email"
             >
               Email
@@ -72,16 +91,17 @@ export default function LoginPage() {
               id="email"
               name="email"
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="Your Email"
+              placeholder="admin@kyvora.local"
               required
               type="email"
               value={email}
+              className="h-10 border-white/10 bg-white/5 text-white placeholder:text-zinc-600 focus-visible:border-white/25 focus-visible:ring-white/15"
             />
           </div>
 
           <div className="space-y-1.5">
             <Label
-              className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              className="text-xs font-medium uppercase tracking-wide text-zinc-400"
               htmlFor="password"
             >
               Password
@@ -91,28 +111,29 @@ export default function LoginPage() {
               id="password"
               name="password"
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="Your Password"
+              placeholder="Enter your password"
               required
               type="password"
               value={password}
+              className="h-10 border-white/10 bg-white/5 text-white placeholder:text-zinc-600 focus-visible:border-white/25 focus-visible:ring-white/15"
             />
           </div>
 
           {error ? (
             <div
-              className="flex gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-3 text-sm text-destructive"
+              className="flex gap-3 rounded-xl border border-red-400/25 bg-red-500/10 px-3 py-3 text-sm text-red-200"
               role="alert"
             >
               <AlertCircle className="mt-0.5 size-4 shrink-0" />
               <div className="space-y-1">
                 <p className="font-medium">Sign in failed</p>
-                <p className="text-destructive/90">{error}</p>
+                <p className="text-red-200/80">{error}</p>
               </div>
             </div>
           ) : null}
 
           <Button
-            className="w-full gap-2"
+            className="h-10 w-full gap-2 bg-white text-zinc-950 shadow-lg shadow-white/10 hover:bg-zinc-200"
             disabled={isSubmitting}
             type="submit"
           >
@@ -124,10 +145,6 @@ export default function LoginPage() {
             Sign in
           </Button>
         </form>
-
-        <p className="text-xs text-muted-foreground">
-          Sign in with your backend credentials to access the dashboard.
-        </p>
       </div>
     </main>
   );
