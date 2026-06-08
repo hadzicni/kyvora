@@ -15,19 +15,14 @@ export function AgentTableSkeleton() {
         <TableRow>
           {[
             "Name",
+            "Server",
             "Hostname",
             "Version",
             "Status",
             "Last seen",
             "Registered",
-            "Actions",
           ].map((heading) => (
-            <TableHead
-              className={heading === "Actions" ? "text-right" : undefined}
-              key={heading}
-            >
-              {heading}
-            </TableHead>
+            <TableHead key={heading}>{heading}</TableHead>
           ))}
         </TableRow>
       </TableHeader>

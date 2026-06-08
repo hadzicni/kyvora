@@ -6,7 +6,11 @@ public class DuplicateAgentException extends RuntimeException {
 	private final String value;
 
 	public DuplicateAgentException(String field, String value) {
-		super(field + " already exists");
+		this(field, value, field + " already exists");
+	}
+
+	public DuplicateAgentException(String field, String value, String message) {
+		super(message);
 		this.field = field;
 		this.value = value;
 	}

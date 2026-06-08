@@ -3,6 +3,9 @@ export type AgentStatus = "PENDING" | "ONLINE" | "OFFLINE" | "UNKNOWN";
 export type Agent = {
   id: string;
   name: string;
+  serverId: string | null;
+  serverName: string | null;
+  serverHostname: string | null;
   hostname: string;
   version: string;
   status: AgentStatus;
@@ -29,8 +32,8 @@ export type ListAgentsParams = {
 };
 
 export type RegisterAgentInput = {
-  name: string;
-  hostname?: string;
+  serverId: string;
+  name?: string;
   version?: string;
 };
 

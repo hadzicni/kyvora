@@ -148,8 +148,8 @@ npm run dev:api
 
 #### Start the Go agent
 
-Enroll an agent in the web UI first, then start the agent with the generated
-agent ID and token:
+Create or select a server inventory entry in the web UI, enroll an agent for
+that server, then start the agent with the generated agent ID and token:
 
 ```bash
 KYVORA_API_URL=http://localhost:8080 \
@@ -223,9 +223,10 @@ KYVORA_AGENT_ID=<agent-id>
 KYVORA_AGENT_TOKEN=<agent-token>
 ```
 
-Create an agent from the web dashboard to receive `KYVORA_AGENT_ID` and
-`KYVORA_AGENT_TOKEN`. Agent tokens are shown only once. Do not commit tokens or
-store them in `NEXT_PUBLIC_*` variables.
+Create or register a server from the web dashboard, then enroll an agent for
+that server to receive `KYVORA_AGENT_ID` and `KYVORA_AGENT_TOKEN`. Agent tokens
+are shown only once. Do not commit tokens or store them in `NEXT_PUBLIC_*`
+variables.
 
 ## Usage
 
@@ -270,14 +271,15 @@ Agent enrollment uses one-time plaintext tokens. Kyvora stores only token
 hashes and authenticates heartbeats with the `X-Kyvora-Agent-Token` header.
 
 1. Log in to the web dashboard.
-2. Go to Agents.
-3. Create an agent by entering a name.
+2. Create or select an existing server inventory entry.
+3. Enroll an agent for that server from Agents or the server detail page.
 4. Copy the one-time token and generated run command.
 5. Start the agent with `KYVORA_API_URL`, `KYVORA_AGENT_ID`, and
    `KYVORA_AGENT_TOKEN`.
 
 The token is shown only once immediately after creation. Store it securely and
-do not commit it to Git.
+do not commit it to Git. Successful heartbeats update the assigned agent status
+and the linked server status and last-seen timestamp.
 
 ## Development
 

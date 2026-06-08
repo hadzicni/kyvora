@@ -7,12 +7,17 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+
+import dev.kyvora.api.serverinventory.entity.ServerInventory;
 
 @Entity
 @Table(name = "agents")
@@ -56,14 +61,19 @@ public class Agent {
 	@Column(name = "token_revoked_at")
 	private Instant tokenRevokedAt;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "server_id")
+	private ServerInventory server;
+
 	protected Agent() {
 	}
 
-	public Agent(String name, String hostname, String version, AgentStatus status) {
+	public Agent(String name, String hostname, String version, AgentStatus status, ServerInventory server) {
 		this.name = name;
 		this.hostname = hostname;
 		this.version = version;
 		this.status = status;
+		this.server = server;
 	}
 
 	@PrePersist
@@ -162,5 +172,13 @@ public class Agent {
 
 	public void setTokenRevokedAt(Instant tokenRevokedAt) {
 		this.tokenRevokedAt = tokenRevokedAt;
+	}
+
+	public ServerInventory getServer() {
+		return server;
+	}
+
+	public void setServer(ServerInventory server) {
+		this.server = server;
 	}
 }

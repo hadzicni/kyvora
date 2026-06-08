@@ -18,6 +18,7 @@ import {
   type RegisterAgentInput,
 } from "@/lib/api/agents";
 import { dashboardKeys } from "@/lib/api/dashboard";
+import { serverKeys } from "@/lib/api/servers";
 
 export function useAgents(params: ListAgentsParams = {}) {
   return useQuery({
@@ -49,6 +50,7 @@ export function useRegisterAgent() {
         queryClient.invalidateQueries({ queryKey: agentKeys.all }),
         queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
         queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+        queryClient.invalidateQueries({ queryKey: serverKeys.all }),
       ]);
     },
   });

@@ -11,6 +11,12 @@ public record AgentResponse(
 		String id,
 		@Schema(description = "Human-readable agent name.", example = "Homelab Agent 01")
 		String name,
+		@Schema(description = "Linked server inventory entry identifier.", example = "00000000-0000-0000-0000-000000000001")
+		String serverId,
+		@Schema(description = "Linked server name.", example = "Web 01")
+		String serverName,
+		@Schema(description = "Linked server hostname.", example = "web01.example.com")
+		String serverHostname,
 		@Schema(description = "Hostname reported by the agent.", example = "node01.example.com")
 		String hostname,
 		@Schema(description = "Agent software version.", example = "0.1.0")

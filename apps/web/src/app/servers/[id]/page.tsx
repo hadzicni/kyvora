@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  Bot,
   CalendarClock,
   Cpu,
   Fingerprint,
@@ -25,11 +26,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AgentStatusBadge } from "@/features/agents/agent-status-badge";
+import { RegisterAgentDialog } from "@/features/agents/register-agent-dialog";
+import { useAgents } from "@/features/agents/use-agents";
 import { DeleteServerDialog } from "@/features/servers/delete-server-dialog";
 import { EditServerDialog } from "@/features/servers/edit-server-dialog";
 import { ServerErrorState } from "@/features/servers/server-error-state";
 import { ServerStatusBadge } from "@/features/servers/server-status-badge";
 import { useServer } from "@/features/servers/use-servers";
+import type { Agent } from "@/lib/api/agents";
 import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
 import { cn } from "@/lib/utils";
 
@@ -182,7 +187,67 @@ function formatDetailDateTime(value: string | null | undefined) {
   }).format(new Date(value));
 }
 
-function ServerDetails({ server }: { server: ServerInventoryItem }) {
+function AgentSection({
+  agent,
+  isLoading,
+}: {
+  agent?: Agent;
+  isLoading: boolean;
+}) {
+  return (
+    <Card>
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2">
+          <Bot className="size-4" />
+          Agent
+        </CardTitle>
+        <CardDescription>
+          Software agent assigned to this server.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-4">
+        {isLoading ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        ) : null}
+        {!isLoading && agent ? (
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <Field label="Name" value={agent.name} />
+            <Field
+              label="Status"
+              value={<AgentStatusBadge status={agent.status} />}
+            />
+            <Field label="Agent hostname" value={agent.hostname} mono />
+            <Field label="Version" value={agent.version} mono />
+            <Field
+              label="Last heartbeat"
+              value={formatDetailDateTime(agent.lastSeenAt)}
+              muted={!agent.lastSeenAt}
+            />
+            <Field label="Agent ID" value={agent.id} mono />
+          </dl>
+        ) : null}
+        {!isLoading && !agent ? (
+          <p className="text-sm leading-6 text-muted-foreground">
+            No agent is assigned to this server.
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ServerDetails({
+  linkedAgent,
+  linkedAgentLoading,
+  server,
+}: {
+  linkedAgent?: Agent;
+  linkedAgentLoading: boolean;
+  server: ServerInventoryItem;
+}) {
   const description = server.description.trim();
 
   return (
@@ -206,6 +271,12 @@ function ServerDetails({ server }: { server: ServerInventoryItem }) {
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
+              {!linkedAgent && !linkedAgentLoading ? (
+                <RegisterAgentDialog
+                  initialServer={server}
+                  triggerLabel="Enroll Agent"
+                />
+              ) : null}
               <EditServerDialog server={server} triggerLabel="Edit" />
               <DeleteServerDialog server={server} triggerLabel="Delete" />
               <Button asChild variant="outline">
@@ -263,6 +334,11 @@ function ServerDetails({ server }: { server: ServerInventoryItem }) {
           />
         </DetailSection>
 
+        <AgentSection
+          agent={linkedAgent}
+          isLoading={linkedAgentLoading}
+        />
+
         <DetailSection
           title="Tags"
           description="Labels used for filtering and organization."
@@ -302,6 +378,10 @@ export default function ServerDetailPage() {
   const params = useParams<{ id?: string | string[] }>();
   const id = getParamId(params.id);
   const serverQuery = useServer(id);
+  const agentsQuery = useAgents({ size: 200 });
+  const linkedAgent = agentsQuery.data?.content.find(
+    (agent) => agent.serverId === id
+  );
   const isNotFound =
     serverQuery.error instanceof ApiError && serverQuery.error.status === 404;
 
@@ -348,7 +428,11 @@ export default function ServerDetailPage() {
           />
         ) : null}
         {serverQuery.isSuccess ? (
-          <ServerDetails server={serverQuery.data} />
+          <ServerDetails
+            linkedAgent={linkedAgent}
+            linkedAgentLoading={agentsQuery.isLoading}
+            server={serverQuery.data}
+          />
         ) : null}
       </div>
     </AppShell>

@@ -7,8 +7,8 @@ register itself automatically.
 ## Enrollment
 
 1. Log in to the Kyvora web dashboard.
-2. Go to Agents.
-3. Create an agent by entering a name.
+2. Create or select a server inventory entry.
+3. Enroll an agent for that server from Agents or the server detail page.
 4. Copy the one-time token and run command.
 5. Start the agent.
 
@@ -23,6 +23,9 @@ npm run dev:agent
 
 Agent tokens are shown only once. Do not commit tokens or store them in
 browser-exposed environment variables.
+
+Successful heartbeats update the assigned agent status and the linked server
+status and last-seen timestamp.
 
 ## Configuration
 

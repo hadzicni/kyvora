@@ -32,6 +32,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.kyvora.api.agent.entity.Agent;
 import dev.kyvora.api.agent.repository.AgentRepository;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
+import dev.kyvora.api.serverinventory.entity.ServerInventory;
+import dev.kyvora.api.serverinventory.entity.ServerStatus;
+import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -48,6 +51,9 @@ class AgentControllerIT {
 	@Autowired
 	private AuditLogRepository auditLogRepository;
 
+	@Autowired
+	private ServerInventoryRepository serverInventoryRepository;
+
 	private ObjectMapper objectMapper;
 
 	private MockMvc mockMvc;
@@ -60,20 +66,26 @@ class AgentControllerIT {
 				.build();
 		auditLogRepository.deleteAll();
 		agentRepository.deleteAll();
+		serverInventoryRepository.deleteAll();
 	}
 
 	@Test
 	void enrollReturnsCreatedAgentPlaintextTokenAndAuditLog() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+
 		String createdJson = mockMvc.perform(post("/api/v1/agents")
 				.with(user("alice"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(
+						server.getId(),
 						"Homelab Agent 01",
-						"NODE01.EXAMPLE.COM",
 						"0.1.0"))))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.agent.id", notNullValue()))
 				.andExpect(jsonPath("$.agent.name", is("Homelab Agent 01")))
+				.andExpect(jsonPath("$.agent.serverId", is(server.getId().toString())))
+				.andExpect(jsonPath("$.agent.serverName", is("Node 01")))
+				.andExpect(jsonPath("$.agent.serverHostname", is("node01.example.com")))
 				.andExpect(jsonPath("$.agent.hostname", is("node01.example.com")))
 				.andExpect(jsonPath("$.agent.version", is("0.1.0")))
 				.andExpect(jsonPath("$.agent.status", is("PENDING")))
@@ -95,6 +107,7 @@ class AgentControllerIT {
 		org.assertj.core.api.Assertions.assertThat(stored.getTokenHash()).isNotEqualTo(agentToken);
 		org.assertj.core.api.Assertions.assertThat(stored.getTokenCreatedAt()).isNotNull();
 		org.assertj.core.api.Assertions.assertThat(stored.getTokenLastUsedAt()).isNull();
+		org.assertj.core.api.Assertions.assertThat(stored.getServer().getId()).isEqualTo(server.getId());
 
 		mockMvc.perform(get("/api/v1/audit-logs")
 				.with(user("alice"))
@@ -115,24 +128,56 @@ class AgentControllerIT {
 	}
 
 	@Test
-	void duplicateHostnameReturnsConflict() throws Exception {
-		registerAgent("Agent 01", "dup.example.com", "0.1.0");
+	void enrollDefaultsAgentNameFromServerNameWhenNameIsOmitted() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
 
 		mockMvc.perform(post("/api/v1/agents")
 				.with(user("alice"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(
+						server.getId(),
+						null,
+						"0.1.0"))))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.agent.name", is("Node 01 Agent")));
+	}
+
+	@Test
+	void enrollMissingServerReturnsNotFound() throws Exception {
+		UUID missingServerId = UUID.fromString("00000000-0000-0000-0000-000000000010");
+
+		mockMvc.perform(post("/api/v1/agents")
+				.with(user("alice"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(registerPayload(
+						missingServerId,
+						"Agent 01",
+						"0.1.0"))))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message", is("Server inventory item not found: " + missingServerId)));
+	}
+
+	@Test
+	void enrollSecondAgentForSameServerReturnsConflict() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		registerAgent(server.getId(), "Agent 01", "0.1.0");
+
+		mockMvc.perform(post("/api/v1/agents")
+				.with(user("alice"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(registerPayload(
+						server.getId(),
 						"Agent 02",
-						"DUP.EXAMPLE.COM",
 						"0.1.0"))))
 				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.message", is("hostname already exists")))
-				.andExpect(jsonPath("$.details[0]", is("hostname: dup.example.com")));
+				.andExpect(jsonPath("$.message", is("server already has an agent")))
+				.andExpect(jsonPath("$.details[0]", is("serverId: " + server.getId())));
 	}
 
 	@Test
 	void heartbeatUpdatesStatusLastSeenVersionAndAuditLog() throws Exception {
-		String createdJson = registerAgent("Agent 01", "node01.example.com", "0.1.0");
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		String createdJson = registerAgent(server.getId(), "Agent 01", "0.1.0");
 		JsonNode created = objectMapper.readTree(createdJson);
 		String id = created.get("agent").get("id").asText();
 		String agentToken = created.get("agentToken").asText();
@@ -149,6 +194,9 @@ class AgentControllerIT {
 
 		Agent stored = agentRepository.findById(UUID.fromString(id)).orElseThrow();
 		org.assertj.core.api.Assertions.assertThat(stored.getTokenLastUsedAt()).isNotNull();
+		ServerInventory storedServer = serverInventoryRepository.findById(server.getId()).orElseThrow();
+		org.assertj.core.api.Assertions.assertThat(storedServer.getStatus()).isEqualTo(ServerStatus.ONLINE);
+		org.assertj.core.api.Assertions.assertThat(storedServer.getLastSeenAt()).isNotNull();
 
 		mockMvc.perform(get("/api/v1/audit-logs")
 				.with(user("alice"))
@@ -168,7 +216,10 @@ class AgentControllerIT {
 
 	@Test
 	void heartbeatFailsWithMissingToken() throws Exception {
-		String createdJson = registerAgent("Agent 01", "node01.example.com", "0.1.0");
+		String createdJson = registerAgent(
+				createServer("Node 01", "node01.example.com", "10.0.0.11").getId(),
+				"Agent 01",
+				"0.1.0");
 		String id = objectMapper.readTree(createdJson).get("agent").get("id").asText();
 
 		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
@@ -180,7 +231,10 @@ class AgentControllerIT {
 
 	@Test
 	void heartbeatFailsWithInvalidToken() throws Exception {
-		String createdJson = registerAgent("Agent 01", "node01.example.com", "0.1.0");
+		String createdJson = registerAgent(
+				createServer("Node 01", "node01.example.com", "10.0.0.11").getId(),
+				"Agent 01",
+				"0.1.0");
 		String id = objectMapper.readTree(createdJson).get("agent").get("id").asText();
 
 		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
@@ -193,7 +247,10 @@ class AgentControllerIT {
 
 	@Test
 	void heartbeatFailsWithRevokedToken() throws Exception {
-		String createdJson = registerAgent("Agent 01", "node01.example.com", "0.1.0");
+		String createdJson = registerAgent(
+				createServer("Node 01", "node01.example.com", "10.0.0.11").getId(),
+				"Agent 01",
+				"0.1.0");
 		JsonNode created = objectMapper.readTree(createdJson);
 		String id = created.get("agent").get("id").asText();
 		String agentToken = created.get("agentToken").asText();
@@ -211,8 +268,10 @@ class AgentControllerIT {
 
 	@Test
 	void listSupportsPagination() throws Exception {
-		registerAgent("Agent 01", "node01.example.com", "0.1.0");
-		registerAgent("Agent 02", "node02.example.com", "0.1.0");
+		ServerInventory node01 = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		ServerInventory node02 = createServer("Node 02", "node02.example.com", "10.0.0.12");
+		registerAgent(node01.getId(), "Agent 01", "0.1.0");
+		registerAgent(node02.getId(), "Agent 02", "0.1.0");
 
 		mockMvc.perform(get("/api/v1/agents")
 				.with(user("alice"))
@@ -228,18 +287,23 @@ class AgentControllerIT {
 				.andExpect(jsonPath("$.first", is(true)))
 				.andExpect(jsonPath("$.last", is(false)))
 				.andExpect(jsonPath("$.empty", is(false)))
-				.andExpect(jsonPath("$.content[0].hostname", is("node01.example.com")));
+				.andExpect(jsonPath("$.content[0].hostname", is("node01.example.com")))
+				.andExpect(jsonPath("$.content[0].serverId", is(node01.getId().toString())))
+				.andExpect(jsonPath("$.content[0].serverName", is("Node 01")))
+				.andExpect(jsonPath("$.content[0].serverHostname", is("node01.example.com")));
 	}
 
 	@Test
 	void findByIdReturnsAgent() throws Exception {
-		String createdJson = registerAgent("Agent 01", "node01.example.com", "0.1.0");
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		String createdJson = registerAgent(server.getId(), "Agent 01", "0.1.0");
 		String id = objectMapper.readTree(createdJson).get("agent").get("id").asText();
 
 		mockMvc.perform(get("/api/v1/agents/{id}", id)
 				.with(user("alice")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id", is(id)))
+				.andExpect(jsonPath("$.serverId", is(server.getId().toString())))
 				.andExpect(jsonPath("$.hostname", is("node01.example.com")));
 	}
 
@@ -265,27 +329,39 @@ class AgentControllerIT {
 
 		mockMvc.perform(post("/api/v1/agents")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(registerPayload("Agent 01", "node01.example.com", "0.1.0"))))
+				.content(objectMapper.writeValueAsString(registerPayload(UUID.randomUUID(), "Agent 01", "0.1.0"))))
 				.andExpect(status().isUnauthorized());
 	}
 
-	private String registerAgent(String name, String hostname, String version) throws Exception {
+	private String registerAgent(UUID serverId, String name, String version) throws Exception {
 		return mockMvc.perform(post("/api/v1/agents")
 				.with(user("alice"))
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(registerPayload(name, hostname, version))))
+				.content(objectMapper.writeValueAsString(registerPayload(serverId, name, version))))
 				.andExpect(status().isCreated())
 				.andReturn()
 				.getResponse()
 				.getContentAsString();
 	}
 
-	private Map<String, Object> registerPayload(String name, String hostname, String version) {
+	private Map<String, Object> registerPayload(UUID serverId, String name, String version) {
 		Map<String, Object> payload = new LinkedHashMap<>();
+		payload.put("serverId", serverId);
 		payload.put("name", name);
-		payload.put("hostname", hostname);
 		payload.put("version", version);
 		return payload;
+	}
+
+	private ServerInventory createServer(String name, String hostname, String ipAddress) {
+		return serverInventoryRepository.save(new ServerInventory(
+				name,
+				hostname,
+				ipAddress,
+				"",
+				java.util.Set.of(),
+				"Ubuntu 24.04",
+				ServerStatus.UNKNOWN,
+				null));
 	}
 
 	private Map<String, Object> heartbeatPayload(String status, String version) {

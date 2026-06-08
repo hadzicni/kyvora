@@ -23,6 +23,10 @@ import dev.kyvora.api.agent.exception.DuplicateAgentException;
 import dev.kyvora.api.agent.mapper.AgentMapper;
 import dev.kyvora.api.agent.repository.AgentRepository;
 import dev.kyvora.api.auditlog.service.AuditLogService;
+import dev.kyvora.api.serverinventory.entity.ServerInventory;
+import dev.kyvora.api.serverinventory.entity.ServerStatus;
+import dev.kyvora.api.serverinventory.exception.ServerInventoryNotFoundException;
+import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
 
 @Service
 @Transactional
@@ -32,16 +36,19 @@ public class DefaultAgentService implements AgentService {
 	private final AgentMapper mapper;
 	private final AuditLogService auditLogService;
 	private final AgentTokenService agentTokenService;
+	private final ServerInventoryRepository serverInventoryRepository;
 
 	public DefaultAgentService(
 			AgentRepository repository,
 			AgentMapper mapper,
 			AuditLogService auditLogService,
-			AgentTokenService agentTokenService) {
+			AgentTokenService agentTokenService,
+			ServerInventoryRepository serverInventoryRepository) {
 		this.repository = repository;
 		this.mapper = mapper;
 		this.auditLogService = auditLogService;
 		this.agentTokenService = agentTokenService;
+		this.serverInventoryRepository = serverInventoryRepository;
 	}
 
 	@Override
@@ -58,17 +65,21 @@ public class DefaultAgentService implements AgentService {
 
 	@Override
 	public AgentEnrollmentResponse enroll(AgentRegisterRequest request) {
-		String hostname = mapper.normalizeHostname(request.hostname());
-		if (hostname != null && repository.existsByHostnameIgnoreCase(hostname)) {
+		ServerInventory server = serverInventoryRepository.findById(request.serverId())
+				.orElseThrow(() -> new ServerInventoryNotFoundException(request.serverId()));
+		if (repository.existsByServer(server)) {
+			throw new DuplicateAgentException(
+					"serverId",
+					server.getId().toString(),
+					"server already has an agent");
+		}
+		String hostname = mapper.normalizeHostname(server.getHostname());
+		if (repository.existsByHostnameIgnoreCase(hostname)) {
 			throw new DuplicateAgentException("hostname", hostname);
 		}
 
 		String token = agentTokenService.generateToken();
-		Agent agent = new Agent(
-				request.name().trim(),
-				hostname == null ? generatedEnrollmentHostname() : hostname,
-				mapper.normalizeVersion(request.version()),
-				AgentStatus.PENDING);
+		Agent agent = mapper.toEntity(request, server);
 		agent.setTokenHash(agentTokenService.hash(token));
 		agent.setTokenCreatedAt(Instant.now());
 
@@ -82,6 +93,7 @@ public class DefaultAgentService implements AgentService {
 		Agent agent = getRequiredEntity(id);
 		verifyAgentToken(agent, agentToken);
 
+		Instant heartbeatAt = Instant.now();
 		agent.setStatus(request.status());
 		if (request.version() != null && !request.version().isBlank()) {
 			agent.setVersion(request.version().trim());
@@ -89,8 +101,9 @@ public class DefaultAgentService implements AgentService {
 		if (request.hostname() != null && !request.hostname().isBlank()) {
 			agent.setHostname(mapper.normalizeHostname(request.hostname()));
 		}
-		agent.setLastSeenAt(Instant.now());
-		agent.setTokenLastUsedAt(Instant.now());
+		agent.setLastSeenAt(heartbeatAt);
+		agent.setTokenLastUsedAt(heartbeatAt);
+		updateLinkedServer(agent, heartbeatAt);
 		Agent saved = repository.save(agent);
 		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_HEARTBEAT_RECEIVED, saved));
 		return mapper.toResponse(saved);
@@ -108,8 +121,13 @@ public class DefaultAgentService implements AgentService {
 		}
 	}
 
-	private String generatedEnrollmentHostname() {
-		return "agent-" + UUID.randomUUID() + ".local";
+	private void updateLinkedServer(Agent agent, Instant heartbeatAt) {
+		ServerInventory server = agent.getServer();
+		if (server == null) {
+			return;
+		}
+		server.setStatus(ServerStatus.valueOf(agent.getStatus().name()));
+		server.setLastSeenAt(heartbeatAt);
 	}
 
 	private Agent getRequiredEntity(UUID id) {
