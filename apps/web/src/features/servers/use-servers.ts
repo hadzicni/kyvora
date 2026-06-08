@@ -5,9 +5,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createServer,
   deleteServer,
+  getServer,
   listServers,
   serverKeys,
   updateServer,
+  ApiError,
   type CreateServerInput,
   type ListServersParams,
   type UpdateServerInput,
@@ -17,6 +19,18 @@ export function useServers(params: ListServersParams = {}) {
   return useQuery({
     queryKey: serverKeys.list(params),
     queryFn: () => listServers(params),
+  });
+}
+
+export function useServer(id: string) {
+  return useQuery({
+    queryKey: serverKeys.detail(id),
+    queryFn: () => getServer(id),
+    enabled: id.length > 0,
+    retry: (failureCount, error) =>
+      error instanceof ApiError && error.status === 404
+        ? false
+        : failureCount < 3,
   });
 }
 

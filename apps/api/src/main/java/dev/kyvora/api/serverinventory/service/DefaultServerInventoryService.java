@@ -13,6 +13,8 @@ import dev.kyvora.api.serverinventory.dto.ServerInventorySearchRequest;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryResponse;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryUpdateRequest;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;
+import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
+import dev.kyvora.api.serverinventory.event.ServerInventoryEventType;
 import dev.kyvora.api.serverinventory.exception.DuplicateServerInventoryException;
 import dev.kyvora.api.serverinventory.exception.ServerInventoryNotFoundException;
 import dev.kyvora.api.serverinventory.mapper.ServerInventoryMapper;
@@ -47,6 +49,7 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 	public ServerInventoryResponse create(ServerInventoryCreateRequest request) {
 		validateUniqueFields(request.hostname(), request.ipAddress(), null);
 		ServerInventory saved = repository.save(mapper.toEntity(request));
+		handleInventoryEvent(ServerInventoryChangedEvent.from(ServerInventoryEventType.SERVER_CREATED, saved));
 		return mapper.toResponse(saved);
 	}
 
@@ -55,13 +58,20 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 		ServerInventory entity = getRequiredEntity(id);
 		validateUniqueFields(request.hostname(), request.ipAddress(), id);
 		mapper.updateEntity(entity, request);
-		return mapper.toResponse(repository.save(entity));
+		ServerInventory saved = repository.save(entity);
+		handleInventoryEvent(ServerInventoryChangedEvent.from(ServerInventoryEventType.SERVER_UPDATED, saved));
+		return mapper.toResponse(saved);
 	}
 
 	@Override
 	public void delete(UUID id) {
 		ServerInventory entity = getRequiredEntity(id);
+		handleInventoryEvent(ServerInventoryChangedEvent.from(ServerInventoryEventType.SERVER_DELETED, entity));
 		repository.delete(entity);
+	}
+
+	private void handleInventoryEvent(ServerInventoryChangedEvent event) {
+		// Future audit logging can persist or publish this internal event.
 	}
 
 	private ServerInventory getRequiredEntity(UUID id) {

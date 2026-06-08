@@ -127,6 +127,12 @@ export async function listServers(
   );
 }
 
+export async function getServer(id: string): Promise<ServerInventoryItem> {
+  return request<ServerInventoryItem>(
+    `/api/server-inventory/${encodeURIComponent(id)}`
+  );
+}
+
 export async function createServer(
   input: CreateServerInput
 ): Promise<ServerInventoryItem> {
@@ -168,4 +174,5 @@ export const serverKeys = {
   all: ["servers"] as const,
   list: (params: ListServersParams = {}) =>
     [...serverKeys.all, "list", params] as const,
+  detail: (id: string) => [...serverKeys.all, "detail", id] as const,
 };

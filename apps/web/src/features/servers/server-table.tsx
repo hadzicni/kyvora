@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import {
   Table,
   TableBody,
@@ -15,6 +17,12 @@ import { formatDateTime } from "./format";
 import { ServerStatusBadge } from "./server-status-badge";
 
 export function ServerTable({ servers }: { servers: ServerInventoryItem[] }) {
+  const router = useRouter();
+
+  function openServer(serverId: string) {
+    router.push(`/servers/${encodeURIComponent(serverId)}`);
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -31,7 +39,19 @@ export function ServerTable({ servers }: { servers: ServerInventoryItem[] }) {
       </TableHeader>
       <TableBody>
         {servers.map((server) => (
-          <TableRow key={server.id}>
+          <TableRow
+            className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            key={server.id}
+            onClick={() => openServer(server.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openServer(server.id);
+              }
+            }}
+            role="link"
+            tabIndex={0}
+          >
             <TableCell>
               <div className="font-medium">{server.name}</div>
               <div className="max-w-52 truncate text-xs text-muted-foreground">
@@ -63,7 +83,10 @@ export function ServerTable({ servers }: { servers: ServerInventoryItem[] }) {
             <TableCell className="text-muted-foreground">
               {formatDateTime(server.lastSeenAt)}
             </TableCell>
-            <TableCell>
+            <TableCell
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
               <div className="flex justify-end gap-1">
                 <EditServerDialog server={server} />
                 <DeleteServerDialog server={server} />
