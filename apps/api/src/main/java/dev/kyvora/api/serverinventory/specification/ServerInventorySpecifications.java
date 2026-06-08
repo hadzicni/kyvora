@@ -21,6 +21,9 @@ public final class ServerInventorySpecifications {
 		if (filter == null) {
 			return specification;
 		}
+		if (StringUtils.hasText(filter.q())) {
+			specification = specification.and(searchAcrossInventoryFields(filter.q()));
+		}
 		if (StringUtils.hasText(filter.name())) {
 			specification = specification.and(containsIgnoreCase("name", filter.name()));
 		}
@@ -42,6 +45,14 @@ public final class ServerInventorySpecifications {
 	private static Specification<ServerInventory> containsIgnoreCase(String field, String value) {
 		String pattern = "%" + value.trim().toLowerCase() + "%";
 		return (root, query, cb) -> cb.like(cb.lower(root.get(field)), pattern);
+	}
+
+	private static Specification<ServerInventory> searchAcrossInventoryFields(String value) {
+		String pattern = "%" + value.trim().toLowerCase() + "%";
+		return (root, query, cb) -> cb.or(
+				cb.like(cb.lower(root.get("name")), pattern),
+				cb.like(cb.lower(root.get("hostname")), pattern),
+				cb.like(cb.lower(root.get("ipAddress")), pattern));
 	}
 
 	private static boolean hasTags(Collection<String> tags) {

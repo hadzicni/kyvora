@@ -1,6 +1,14 @@
 "use client";
 
-import { RefreshCw, Server } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Search,
+  Server,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
 import { Button } from "@/components/ui/button";
@@ -11,6 +19,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { CreateServerDialog } from "@/features/servers/create-server-dialog";
 import { formatNumber } from "@/features/servers/format";
 import { ServerEmptyState } from "@/features/servers/server-empty-state";
@@ -18,11 +28,37 @@ import { ServerErrorState } from "@/features/servers/server-error-state";
 import { ServerTable } from "@/features/servers/server-table";
 import { ServerTableSkeleton } from "@/features/servers/server-table-skeleton";
 import { useServers } from "@/features/servers/use-servers";
+import type { ServerStatus } from "@/lib/api/servers";
 import { cn } from "@/lib/utils";
 
+const serverStatuses = ["ONLINE", "OFFLINE", "UNKNOWN"] as const;
+const pageSizeOptions = [20, 50, 100] as const;
+
 export default function ServerInventoryPage() {
-  const serversQuery = useServers({ size: 50 });
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<ServerStatus | "ALL">("ALL");
+  const [tags, setTags] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState<(typeof pageSizeOptions)[number]>(
+    50
+  );
+  const debouncedSearch = useDebouncedValue(search.trim(), 300);
+  const parsedTags = useMemo(() => parseTags(tags), [tags]);
+  const hasActiveFilters =
+    debouncedSearch.length > 0 || status !== "ALL" || parsedTags.length > 0;
+  const serversQuery = useServers({
+    page,
+    size: pageSize,
+    q: debouncedSearch,
+    status: status === "ALL" ? undefined : status,
+    tags: parsedTags,
+  });
   const servers = serversQuery.data?.content ?? [];
+  const totalElements = serversQuery.data?.totalElements ?? 0;
+  const totalPages = serversQuery.data?.totalPages ?? 0;
+  const canGoBack = page > 0 && !serversQuery.isFetching;
+  const canGoForward =
+    totalPages > 0 && page + 1 < totalPages && !serversQuery.isFetching;
 
   return (
     <AppShell>
@@ -65,14 +101,83 @@ export default function ServerInventoryPage() {
                 <CardDescription>
                   {serversQuery.data
                     ? `${formatNumber(
-                        serversQuery.data.totalElements
-                      )} servers total`
+                        totalElements
+                      )} ${hasActiveFilters ? "matching " : ""}servers`
                     : "Loading inventory"}
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-4">
+          <CardContent className="space-y-4 pt-4">
+            <div className="grid gap-3 lg:grid-cols-[minmax(16rem,1fr)_12rem_minmax(12rem,18rem)_auto] lg:items-end">
+              <div className="grid gap-2">
+                <Label htmlFor="server-search">Search</Label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="server-search"
+                    className="pl-8"
+                    placeholder="Name, hostname, or IP address"
+                    value={search}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setPage(0);
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="server-status">Status</Label>
+                <select
+                  id="server-status"
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                  value={status}
+                  onChange={(event) => {
+                    setStatus(event.target.value as ServerStatus | "ALL");
+                    setPage(0);
+                  }}
+                >
+                  <option value="ALL">All statuses</option>
+                  {serverStatuses.map((serverStatus) => (
+                    <option key={serverStatus} value={serverStatus}>
+                      {serverStatus}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="server-tags">Tags</Label>
+                <Input
+                  id="server-tags"
+                  placeholder="prod, api"
+                  value={tags}
+                  onChange={(event) => {
+                    setTags(event.target.value);
+                    setPage(0);
+                  }}
+                />
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                disabled={
+                  !hasActiveFilters && search.length === 0 && tags.length === 0
+                }
+                onClick={() => {
+                  setSearch("");
+                  setStatus("ALL");
+                  setTags("");
+                  setPage(0);
+                }}
+              >
+                <X className="size-4" />
+                Clear
+              </Button>
+            </div>
+
             {serversQuery.isLoading ? <ServerTableSkeleton /> : null}
             {serversQuery.isError ? (
               <ServerErrorState
@@ -90,9 +195,80 @@ export default function ServerInventoryPage() {
             {serversQuery.isSuccess && servers.length > 0 ? (
               <ServerTable servers={servers} />
             ) : null}
+            {serversQuery.isSuccess ? (
+              <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Page {totalPages === 0 ? 0 : page + 1} of {totalPages}
+                  {serversQuery.isFetching ? " - Updating" : ""}
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    aria-label="Rows per page"
+                    className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(
+                        Number(
+                          event.target.value
+                        ) as (typeof pageSizeOptions)[number]
+                      );
+                      setPage(0);
+                    }}
+                  >
+                    {pageSizeOptions.map((size) => (
+                      <option key={size} value={size}>
+                        {size} rows
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    aria-label="Previous page"
+                    disabled={!canGoBack}
+                    onClick={() =>
+                      setPage((currentPage) => Math.max(0, currentPage - 1))
+                    }
+                    size="icon"
+                    variant="outline"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Button>
+                  <Button
+                    aria-label="Next page"
+                    disabled={!canGoForward}
+                    onClick={() => setPage((currentPage) => currentPage + 1)}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>
     </AppShell>
   );
+}
+
+function parseTags(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+function useDebouncedValue<T>(value: T, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedValue(value), delay);
+    return () => window.clearTimeout(timeout);
+  }, [delay, value]);
+
+  return debouncedValue;
 }

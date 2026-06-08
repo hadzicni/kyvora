@@ -26,6 +26,7 @@ export type ServerInventoryPage = {
 export type ListServersParams = {
   page?: number;
   size?: number;
+  q?: string;
   status?: ServerStatus;
   name?: string;
   hostname?: string;
@@ -116,6 +117,7 @@ export async function listServers(
 
   appendParam(searchParams, "page", params.page ?? 0);
   appendParam(searchParams, "size", params.size ?? 20);
+  appendParam(searchParams, "q", params.q);
   appendParam(searchParams, "status", params.status);
   appendParam(searchParams, "name", params.name);
   appendParam(searchParams, "hostname", params.hostname);

@@ -62,6 +62,8 @@ public class ServerInventoryController {
 							content = @Content)
 			})
 	public ResponseEntity<Page<ServerInventoryResponse>> findAll(
+			@Parameter(description = "Case-insensitive search across name, hostname, and IP address.", example = "web")
+			@RequestParam(required = false, name = "q") String q,
 			@Parameter(description = "Case-insensitive partial match on the display name.", example = "web")
 			@RequestParam(required = false) String name,
 			@Parameter(description = "Case-insensitive partial match on hostname.", example = "web01.example.com")
@@ -75,7 +77,7 @@ public class ServerInventoryController {
 			@RequestParam(required = false, name = "tags") List<String> tags,
 			@Parameter(description = "Pagination and sorting options. Supports page, size, and sort query parameters.")
 			@PageableDefault(size = 20) Pageable pageable) {
-		ServerInventoryFilter filter = new ServerInventoryFilter(name, hostname, ipAddress, status, tags);
+		ServerInventoryFilter filter = new ServerInventoryFilter(q, name, hostname, ipAddress, status, tags);
 		return ResponseEntity.ok(service.findAll(filter, pageable));
 	}
 

@@ -94,6 +94,28 @@ class ServerInventoryControllerIT {
 	}
 
 	@Test
+	void listSearchesNameHostnameAndIpAddress() throws Exception {
+		createServer("Application 01", "app01.example.com", "10.0.0.11", List.of("prod", "app"), "ONLINE");
+		createServer("Database 01", "db01.example.com", "10.0.0.12", List.of("prod", "db"), "OFFLINE");
+		createServer("Cache 01", "cache01.example.com", "10.0.0.13", List.of("prod", "cache"), "UNKNOWN");
+
+		mockMvc.perform(get("/api/v1/servers").param("q", "database"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content", hasSize(1)))
+				.andExpect(jsonPath("$.content[0].hostname", is("db01.example.com")));
+
+		mockMvc.perform(get("/api/v1/servers").param("q", "cache01"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content", hasSize(1)))
+				.andExpect(jsonPath("$.content[0].name", is("Cache 01")));
+
+		mockMvc.perform(get("/api/v1/servers").param("q", "10.0.0.11"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content", hasSize(1)))
+				.andExpect(jsonPath("$.content[0].name", is("Application 01")));
+	}
+
+	@Test
 	void validationRejectsBadPayload() throws Exception {
 		mockMvc.perform(post("/api/v1/servers")
 				.contentType(MediaType.APPLICATION_JSON)

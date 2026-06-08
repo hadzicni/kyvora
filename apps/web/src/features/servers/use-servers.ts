@@ -1,6 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { auditLogKeys } from "@/lib/api/audit-logs";
 import { dashboardKeys } from "@/lib/api/dashboard";
@@ -21,6 +26,7 @@ export function useServers(params: ListServersParams = {}) {
   return useQuery({
     queryKey: serverKeys.list(params),
     queryFn: () => listServers(params),
+    placeholderData: keepPreviousData,
   });
 }
 
