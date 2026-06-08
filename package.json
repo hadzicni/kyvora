@@ -17,7 +17,9 @@
     "dev:agent": "cd apps/agent && go run ./cmd/kyvora-agent",
     "db:up": "docker compose -f infrastructure/docker-compose.yml up -d",
     "db:down": "docker compose -f infrastructure/docker-compose.yml down",
-    "db:logs": "docker compose -f infrastructure/docker-compose.yml logs -f postgres"
+    "db:logs": "docker compose -f infrastructure/docker-compose.yml logs -f postgres",
+    "release:prepare": "bash scripts/prepare-release.sh",
+    "release:check": "bash scripts/check-release.sh"
   },
   "keywords": [],
   "author": "",

@@ -3,11 +3,13 @@
 import {
   AlertTriangle,
   BadgeCheck,
+  GitBranch,
   Fingerprint,
   LogOut,
   ShieldCheck,
   UserCircle,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -24,6 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getStatus, statusKeys } from "@/lib/api/status";
 
 async function logout() {
   toast.info("Signing out...");
@@ -93,6 +96,11 @@ function ProfileLoadingState() {
 export default function ProfilePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const statusQuery = useQuery({
+    queryKey: statusKeys.status,
+    queryFn: getStatus,
+    enabled: status === "authenticated",
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -200,6 +208,16 @@ export default function ProfilePage() {
                     <div className="text-sm font-medium">Token storage</div>
                     <div className="text-sm text-muted-foreground">
                       Managed by Auth.js session cookies
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 rounded-md border bg-muted/20 p-3">
+                  <GitBranch className="mt-0.5 size-4 text-muted-foreground" />
+                  <div>
+                    <div className="text-sm font-medium">Kyvora version</div>
+                    <div className="text-sm text-muted-foreground">
+                      {statusQuery.data?.version ??
+                        (statusQuery.isLoading ? "Loading..." : "Unavailable")}
                     </div>
                   </div>
                 </div>

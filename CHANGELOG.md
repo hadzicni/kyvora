@@ -2,9 +2,19 @@
 
 All notable changes to Kyvora will be documented in this file.
 
-This project follows semantic versioning once versioned releases begin.
+This project follows semantic versioning.
 
 ## Unreleased
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Security
+
+## [0.1.0] - 2026-06-08
 
 ### Added
 
@@ -14,3 +24,9 @@ This project follows semantic versioning once versioned releases begin.
 - Next.js marketing website.
 - Go-based agent foundation.
 - GitHub Actions CI.
+
+### Changed
+
+### Fixed
+
+### Security

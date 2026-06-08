@@ -8,6 +8,8 @@
 
 An open-source Homelab Control Plane for managing, monitoring, and operating self-hosted infrastructure from one modern dashboard.
 
+[Current version: 0.1.0](./VERSION)
+
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
 [![Status](https://img.shields.io/badge/status-development-success.svg)](#overview)
 [![Language](https://img.shields.io/badge/language-NextJS/SpringBoot-blue.svg)](#overview)
@@ -36,6 +38,7 @@ An open-source Homelab Control Plane for managing, monitoring, and operating sel
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Development](#development)
+- [Releases](#releases)
 - [Build and Deployment](#build-and-deployment)
 - [Security](#security)
 - [Contributing](#contributing)
@@ -308,6 +311,8 @@ Useful commands:
 npm run dev:web
 npm run dev:agent
 
+npm run release:check
+
 npm run lint -w apps/web
 npm run build -w apps/web
 
@@ -316,6 +321,28 @@ gradle -p apps/api test
 cd apps/agent
 go test ./...
 ```
+
+## Releases
+
+Kyvora uses a single product version for the full monorepo. The root `VERSION`
+file is the source of truth, versions follow SemVer, and release tags use
+`v<version>`, for example `v0.1.0`.
+
+Release metadata must stay aligned:
+
+- `VERSION`
+- `CHANGELOG.md`
+- Git tag
+
+Useful commands:
+
+```bash
+npm run release:prepare -- 0.1.0
+npm run release:check
+```
+
+See [docs/RELEASE.md](./docs/RELEASE.md) for the full release checklist,
+hotfix flow, and tag workflow.
 
 ## Build and Deployment
 

@@ -5,7 +5,9 @@ plugins {
 }
 
 group = 'dev.kyvora'
-version = '0.0.1-SNAPSHOT'
+
+def kyvoraVersionFile = file('../../VERSION')
+version = kyvoraVersionFile.exists() ? kyvoraVersionFile.text.trim() : '0.0.0-SNAPSHOT'
 
 java {
 	toolchain {
@@ -40,4 +42,10 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.named('processResources') {
+	from(kyvoraVersionFile) {
+		rename { 'kyvora-version.txt' }
+	}
 }

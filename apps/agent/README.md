@@ -4,6 +4,9 @@ The Go agent is enrolled from the Kyvora web UI and authenticates heartbeats
 with an agent token. It does not log in with admin credentials and does not
 register itself automatically.
 
+The agent version is part of the single Kyvora product release version recorded
+in the repository root `VERSION` file.
+
 ## Enrollment
 
 1. Log in to the Kyvora web dashboard.
