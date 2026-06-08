@@ -32,7 +32,7 @@ import type { ServerStatus } from "@/lib/api/servers";
 import { cn } from "@/lib/utils";
 
 const serverStatuses = ["ONLINE", "OFFLINE", "UNKNOWN"] as const;
-const pageSizeOptions = [20, 50, 100] as const;
+const pageSizeOptions = [10, 20, 50] as const;
 
 export default function ServerInventoryPage() {
   const [search, setSearch] = useState("");
@@ -40,7 +40,7 @@ export default function ServerInventoryPage() {
   const [tags, setTags] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState<(typeof pageSizeOptions)[number]>(
-    50
+    20
   );
   const debouncedSearch = useDebouncedValue(search.trim(), 300);
   const parsedTags = useMemo(() => parseTags(tags), [tags]);
@@ -56,6 +56,13 @@ export default function ServerInventoryPage() {
   const servers = serversQuery.data?.content ?? [];
   const totalElements = serversQuery.data?.totalElements ?? 0;
   const totalPages = serversQuery.data?.totalPages ?? 0;
+  const displayedPage =
+    serversQuery.data?.number ?? serversQuery.data?.page ?? page;
+  const rangeStart = totalElements === 0 ? 0 : displayedPage * pageSize + 1;
+  const rangeEnd =
+    totalElements === 0
+      ? 0
+      : Math.min(rangeStart + servers.length - 1, totalElements);
   const canGoBack = page > 0 && !serversQuery.isFetching;
   const canGoForward =
     totalPages > 0 && page + 1 < totalPages && !serversQuery.isFetching;
@@ -198,13 +205,26 @@ export default function ServerInventoryPage() {
             {serversQuery.isSuccess ? (
               <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Page {totalPages === 0 ? 0 : page + 1} of {totalPages}
-                  {serversQuery.isFetching ? " - Updating" : ""}
+                  Showing {formatNumber(rangeStart)}-{formatNumber(rangeEnd)}{" "}
+                  of {formatNumber(totalElements)}
+                  <span className="ml-2 text-xs">
+                    Page {totalPages === 0 ? 0 : displayedPage + 1} of{" "}
+                    {totalPages}
+                    {serversQuery.isFetching ? " - Updating" : ""}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Label
+                    className="text-xs font-medium text-muted-foreground"
+                    htmlFor="server-page-size"
+                  >
+                    Rows
+                  </Label>
                   <select
                     aria-label="Rows per page"
+                    id="server-page-size"
                     className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                    disabled={serversQuery.isFetching}
                     value={pageSize}
                     onChange={(event) => {
                       setPageSize(
