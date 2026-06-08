@@ -15,6 +15,7 @@ import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,8 @@ const navItems = [
 ];
 
 async function logout() {
+  toast.info("Signing out...");
+
   await fetch("/api/session/logout", { method: "POST" }).catch(() => {
     // The local session should still be cleared even if backend logout fails.
   });

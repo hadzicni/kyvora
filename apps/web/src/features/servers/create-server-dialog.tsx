@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -63,9 +64,12 @@ export function CreateServerDialog() {
     setFormError(null);
 
     try {
-      await createServer.mutateAsync(toServerInput(values));
+      const server = await createServer.mutateAsync(toServerInput(values));
       form.reset(emptyServerFormValues);
       setOpen(false);
+      toast.success("Server created.", {
+        description: server.hostname,
+      });
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         const field = getConflictField(error);
@@ -77,6 +81,9 @@ export function CreateServerDialog() {
               : "A server with matching unique inventory data already exists.";
 
         setFormError(message);
+        toast.error("Unable to create server.", {
+          description: message,
+        });
 
         if (field) {
           form.setError(field, { type: "server", message });
@@ -84,11 +91,15 @@ export function CreateServerDialog() {
         return;
       }
 
-      setFormError(
+      const message =
         error instanceof Error
           ? error.message
-          : "Unable to create the server right now."
-      );
+          : "Unable to create the server right now.";
+
+      setFormError(message);
+      toast.error("Unable to create server.", {
+        description: message,
+      });
     }
   }
 

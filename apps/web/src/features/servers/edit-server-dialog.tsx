@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,9 +45,16 @@ export function EditServerDialog({ server }: { server: ServerInventoryItem }) {
         input: toServerInput(values),
       });
       setOpen(false);
+      toast.success("Server updated.", {
+        description: server.hostname,
+      });
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
-        setFormError("This server no longer exists. Refresh the inventory.");
+        const message = "This server no longer exists. Refresh the inventory.";
+        setFormError(message);
+        toast.error("Unable to update server.", {
+          description: message,
+        });
         return;
       }
 
@@ -60,6 +68,9 @@ export function EditServerDialog({ server }: { server: ServerInventoryItem }) {
               : "Another server has matching unique inventory data.";
 
         setFormError(message);
+        toast.error("Unable to update server.", {
+          description: message,
+        });
 
         if (field) {
           form.setError(field, { type: "server", message });
@@ -67,11 +78,15 @@ export function EditServerDialog({ server }: { server: ServerInventoryItem }) {
         return;
       }
 
-      setFormError(
+      const message =
         error instanceof Error
           ? error.message
-          : "Unable to update the server right now."
-      );
+          : "Unable to update the server right now.";
+
+      setFormError(message);
+      toast.error("Unable to update server.", {
+        description: message,
+      });
     }
   }
 

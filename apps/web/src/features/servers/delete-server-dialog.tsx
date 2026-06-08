@@ -2,6 +2,7 @@
 
 import { Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,24 +28,38 @@ export function DeleteServerDialog({ server }: { server: ServerInventoryItem }) 
     try {
       await deleteServer.mutateAsync(server.id);
       setOpen(false);
+      toast.success("Server deleted.", {
+        description: server.hostname,
+      });
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
-        setErrorMessage("This server no longer exists. Refresh the inventory.");
+        const message = "This server no longer exists. Refresh the inventory.";
+        setErrorMessage(message);
+        toast.error("Unable to delete server.", {
+          description: message,
+        });
         return;
       }
 
       if (error instanceof ApiError && error.status === 409) {
-        setErrorMessage(
-          "This server cannot be deleted because it is still referenced elsewhere."
-        );
+        const message =
+          "This server cannot be deleted because it is still referenced elsewhere.";
+        setErrorMessage(message);
+        toast.error("Unable to delete server.", {
+          description: message,
+        });
         return;
       }
 
-      setErrorMessage(
+      const message =
         error instanceof Error
           ? error.message
-          : "Unable to delete the server right now."
-      );
+          : "Unable to delete the server right now.";
+
+      setErrorMessage(message);
+      toast.error("Unable to delete server.", {
+        description: message,
+      });
     }
   }
 

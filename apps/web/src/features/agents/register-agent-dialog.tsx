@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -97,22 +98,32 @@ export function RegisterAgentDialog() {
     setFormError(null);
 
     try {
-      await registerAgent.mutateAsync(toRegisterAgentInput(values));
+      const agent = await registerAgent.mutateAsync(toRegisterAgentInput(values));
       form.reset(emptyRegisterAgentValues);
       setOpen(false);
+      toast.success("Agent registered.", {
+        description: agent.hostname,
+      });
     } catch (error) {
       if (error instanceof AgentApiError && error.status === 409) {
         const message = getDuplicateHostnameMessage(error);
         setFormError(message);
         form.setError("hostname", { type: "server", message });
+        toast.error("Unable to register agent.", {
+          description: message,
+        });
         return;
       }
 
-      setFormError(
+      const message =
         error instanceof Error
           ? error.message
-          : "Unable to register the agent right now."
-      );
+          : "Unable to register the agent right now.";
+
+      setFormError(message);
+      toast.error("Unable to register agent.", {
+        description: message,
+      });
     }
   }
 

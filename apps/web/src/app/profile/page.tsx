@@ -11,6 +11,7 @@ import {
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 async function logout() {
+  toast.info("Signing out...");
+
   await fetch("/api/session/logout", { method: "POST" }).catch(() => {
     // Auth.js session cleanup should continue even if backend revocation fails.
   });

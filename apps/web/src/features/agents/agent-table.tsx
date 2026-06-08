@@ -30,13 +30,18 @@ export function AgentTable({ agents }: { agents: Agent[] }) {
           version: agent.version,
         },
       });
-      toast.success(`Heartbeat sent for ${agent.hostname}`);
+      toast.success("Heartbeat sent.", {
+        description: agent.hostname,
+      });
     } catch (error) {
-      toast.error(
+      const message =
         error instanceof Error
           ? error.message
-          : "Unable to send heartbeat right now."
-      );
+          : "Unable to send heartbeat right now.";
+
+      toast.error("Unable to send heartbeat.", {
+        description: message,
+      });
     }
   }
 
