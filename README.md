@@ -8,8 +8,6 @@
 
 An open-source Homelab Control Plane for managing, monitoring, and operating self-hosted infrastructure from one modern dashboard.
 
-[Current version: 0.1.0](./VERSION)
-
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
 [![Status](https://img.shields.io/badge/status-development-success.svg)](#overview)
 [![Language](https://img.shields.io/badge/language-NextJS/SpringBoot-blue.svg)](#overview)
