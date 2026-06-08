@@ -60,12 +60,12 @@ You can also mention here:
 
 | Category   | Technology   |
 | ---------- | ------------ |
-| Language   | [Technology] |
-| Framework  | [Technology] |
-| Database   | [Technology] |
+| Frontend   | Next.js      |
+| Backend    | Spring Boot  |
+| Database   | PostgreSQL   |
 | Testing    | [Technology] |
-| CI/CD      | [Technology] |
-| Deployment | [Technology] |
+| CI/CD      | GitHub Actions |
+| Deployment | Docker       |
 
 ## Features
 
