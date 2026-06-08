@@ -157,6 +157,7 @@ class AgentControllerIT {
 				.param("eventType", "AGENT_HEARTBEAT_RECEIVED"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.content", hasSize(1)))
+				.andExpect(jsonPath("$.content[0].actor", is("agent:node01.example.com")))
 				.andExpect(jsonPath("$.content[0].message", is("Agent heartbeat received: node01.example.com")))
 				.andExpect(jsonPath("$.content[0].metadata.status", is("ONLINE")))
 				.andExpect(jsonPath("$.content[0].metadata.lastSeenAt", matchesPattern(ISO_8601_INSTANT_PATTERN)))

@@ -20,6 +20,7 @@ import dev.kyvora.api.auditlog.mapper.AuditLogMapper;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
 import dev.kyvora.api.auditlog.repository.AuditLogSpecifications;
 import dev.kyvora.api.agent.event.AgentChangedEvent;
+import dev.kyvora.api.agent.event.AgentEventType;
 import dev.kyvora.api.auth.security.AuthenticatedUser;
 import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
 
@@ -66,7 +67,7 @@ public class DefaultAuditLogService implements AuditLogService {
 				eventType,
 				AGENT_AGGREGATE_TYPE,
 				event.agentId(),
-				currentActor(),
+				actorFor(event),
 				messageFor(event),
 				metadataFor(event)));
 	}
@@ -91,6 +92,16 @@ public class DefaultAuditLogService implements AuditLogService {
 			return user.email();
 		}
 		return authentication.getName();
+	}
+
+	private String actorFor(AgentChangedEvent event) {
+		if (event.type() != AgentEventType.AGENT_HEARTBEAT_RECEIVED) {
+			return currentActor();
+		}
+		if (event.hostname() != null && !event.hostname().isBlank()) {
+			return "agent:" + event.hostname();
+		}
+		return "agent:" + event.agentId();
 	}
 
 	private String messageFor(ServerInventoryChangedEvent event) {
