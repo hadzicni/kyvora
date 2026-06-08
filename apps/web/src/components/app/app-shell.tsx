@@ -9,12 +9,33 @@ import {
   Menu,
   Search,
   Server,
+  UserCircle,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -23,6 +44,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useAgents } from "@/features/agents/use-agents";
+import { useServers } from "@/features/servers/use-servers";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -46,7 +69,31 @@ const navItems = [
     label: "Activity",
     icon: Activity,
   },
+  {
+    href: "/profile",
+    label: "Profile",
+    icon: UserCircle,
+  },
 ];
+
+async function logout() {
+  await fetch("/api/session/logout", { method: "POST" }).catch(() => {
+    // The local session should still be cleared even if backend logout fails.
+  });
+
+  await signOut({ callbackUrl: "/login" });
+}
+
+function getInitials(displayName?: string, email?: string) {
+  const source = displayName?.trim() || email?.trim() || "K";
+  const parts = source.split(/\s+/).filter(Boolean);
+
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+
+  return source.slice(0, 2).toUpperCase();
+}
 
 function SidebarContent() {
   const pathname = usePathname();
@@ -100,8 +147,152 @@ function SidebarContent() {
   );
 }
 
+function CommandPalette() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const serversQuery = useServers({ q: search, size: 8 });
+  const agentsQuery = useAgents({ size: 50 });
+  const servers = serversQuery.data?.content ?? [];
+  const agents = agentsQuery.data?.content ?? [];
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setOpen((value) => !value);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  function navigateTo(href: string) {
+    setOpen(false);
+    router.push(href);
+  }
+
+  return (
+    <>
+      <Button
+        className="hidden h-9 w-full max-w-xs justify-start gap-2 rounded-md border bg-muted/30 px-3 text-sm font-normal text-muted-foreground xl:flex"
+        onClick={() => setOpen(true)}
+        variant="ghost"
+      >
+        <Search className="size-4" />
+        <span className="flex-1 text-left">Search navigation</span>
+        <span className="rounded border bg-background px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
+          Ctrl K
+        </span>
+      </Button>
+      <CommandDialog
+        className="sm:max-w-xl"
+        description="Search navigation, servers, and agents."
+        onOpenChange={setOpen}
+        open={open}
+        title="Command palette"
+      >
+        <Command shouldFilter>
+          <CommandInput
+            autoFocus
+            onValueChange={setSearch}
+            placeholder="Search Kyvora..."
+            value={search}
+          />
+          <CommandList>
+            <CommandEmpty>
+              {serversQuery.isLoading || agentsQuery.isLoading
+                ? "Loading results..."
+                : "No results found."}
+            </CommandEmpty>
+            <CommandGroup heading="Navigation">
+              {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    item.href === "/"
+                      ? pathname === "/"
+                      : pathname.startsWith(item.href);
+
+                  return (
+                    <CommandItem
+                      data-checked={isActive}
+                      key={item.href}
+                      onSelect={() => navigateTo(item.href)}
+                      value={`${item.label} ${item.href}`}
+                    >
+                      <Icon className="size-4" />
+                      <span>{item.label}</span>
+                    </CommandItem>
+                  );
+                })}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="Servers">
+              {serversQuery.isLoading ? (
+                <CommandItem disabled value="loading servers">
+                  Loading servers...
+                </CommandItem>
+              ) : null}
+              {serversQuery.isError ? (
+                <CommandItem disabled value="unable to load servers">
+                  Unable to load servers.
+                </CommandItem>
+              ) : null}
+              {servers.map((server) => (
+                <CommandItem
+                  key={server.id}
+                  onSelect={() =>
+                    navigateTo(`/servers/${encodeURIComponent(server.id)}`)
+                  }
+                  value={`${server.name} ${server.hostname} ${server.ipAddress} ${server.operatingSystem} ${server.tags.join(" ")}`}
+                >
+                  <Server className="size-4" />
+                  <span className="min-w-0 flex-1 truncate">{server.name}</span>
+                  <span className="truncate font-mono text-xs text-muted-foreground">
+                    {server.hostname}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="Agents">
+              {agentsQuery.isLoading ? (
+                <CommandItem disabled value="loading agents">
+                  Loading agents...
+                </CommandItem>
+              ) : null}
+              {agentsQuery.isError ? (
+                <CommandItem disabled value="unable to load agents">
+                  Unable to load agents.
+                </CommandItem>
+              ) : null}
+              {agents.map((agent) => (
+                <CommandItem
+                  key={agent.id}
+                  onSelect={() => navigateTo("/agents")}
+                  value={`${agent.name} ${agent.hostname} ${agent.version} ${agent.status}`}
+                >
+                  <Bot className="size-4" />
+                  <span className="min-w-0 flex-1 truncate">{agent.name}</span>
+                  <span className="truncate font-mono text-xs text-muted-foreground">
+                    {agent.hostname}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </CommandDialog>
+    </>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
+  const initials = getInitials(session?.user.displayName, session?.user.email);
 
   return (
     <div className="min-h-screen bg-background">
@@ -136,10 +327,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="hidden h-9 w-full max-w-xs items-center gap-2 rounded-md border bg-muted/30 px-3 text-sm text-muted-foreground xl:flex">
-            <Search className="size-4" />
-            <span>Search infrastructure</span>
-          </div>
+          <CommandPalette />
 
           <div className="ml-auto flex items-center gap-3">
             <div className="hidden min-w-0 text-right text-xs text-muted-foreground sm:block">
@@ -152,20 +340,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {session?.user.role || "Authenticated"}
               </div>
             </div>
-            <Button
-              aria-label="Sign out"
-              onClick={async () => {
-                await fetch("/api/session/logout", { method: "POST" }).catch(() => {
-                  // The local session should still be cleared even if backend logout fails.
-                });
-
-                await signOut({ callbackUrl: "/login" });
-              }}
-              size="icon"
-              variant="outline"
-            >
-              <LogOut className="size-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button aria-label="Open user menu" size="icon" variant="outline">
+                  <Avatar size="sm">
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>
+                  <div className="min-w-0 space-y-1">
+                    <div className="truncate text-sm font-medium text-foreground">
+                      {session?.user.displayName ||
+                        session?.user.email ||
+                        "Signed in"}
+                    </div>
+                    <div className="truncate text-xs">
+                      {session?.user.email || "Authenticated session"}
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">
+                    <UserCircle className="size-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void logout()} variant="destructive">
+                  <LogOut className="size-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">

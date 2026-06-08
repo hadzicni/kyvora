@@ -14,5 +14,11 @@ export default withAuth({
 });
 
 export const config = {
-  matcher: ["/", "/servers/:path*", "/agents/:path*", "/activity/:path*"],
+  matcher: [
+    "/",
+    "/servers/:path*",
+    "/agents/:path*",
+    "/activity/:path*",
+    "/profile/:path*",
+  ],
 };
