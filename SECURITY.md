@@ -17,7 +17,8 @@ Do not open public GitHub issues for security vulnerabilities.
 
 Report suspected vulnerabilities privately:
 
-TODO: Add security contact email
+- Email:
+  - nikolahadzic7@icloud.com
 
 If no private contact is available yet, avoid publishing exploit details. Open a
 minimal public issue asking maintainers to add a private security contact, but
