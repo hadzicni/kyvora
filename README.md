@@ -1,6 +1,6 @@
 <div align="center">
 
-<h1>Kyvora</h1>
+<h1>Kyvora — Open-source Homelab Control Plane</h1>
 
 <img src="./docs/branding/banner.png" alt="Project banner" width="100%" />
 
