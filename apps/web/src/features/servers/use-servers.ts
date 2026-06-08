@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { dashboardKeys } from "@/lib/api/dashboard";
 import {
   createServer,
   deleteServer,
@@ -40,7 +41,10 @@ export function useCreateServer() {
   return useMutation({
     mutationFn: (input: CreateServerInput) => createServer(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: serverKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: serverKeys.all }),
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+      ]);
     },
   });
 }
@@ -52,7 +56,10 @@ export function useUpdateServer() {
     mutationFn: ({ id, input }: { id: string; input: UpdateServerInput }) =>
       updateServer({ id, input }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: serverKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: serverKeys.all }),
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+      ]);
     },
   });
 }
@@ -63,7 +70,10 @@ export function useDeleteServer() {
   return useMutation({
     mutationFn: (id: string) => deleteServer(id),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: serverKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: serverKeys.all }),
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+      ]);
     },
   });
 }

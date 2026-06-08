@@ -43,4 +43,10 @@ class SecurityConfigIT {
 		mockMvc.perform(get("/api/v1/servers"))
 				.andExpect(status().isUnauthorized());
 	}
+
+	@Test
+	void dashboardSummaryEndpointRequiresAuthentication() throws Exception {
+		mockMvc.perform(get("/api/v1/dashboard/summary"))
+				.andExpect(status().isUnauthorized());
+	}
 }
