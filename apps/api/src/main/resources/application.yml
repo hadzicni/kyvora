@@ -38,9 +38,3 @@ kyvora:
       email: ${KYVORA_BOOTSTRAP_ADMIN_EMAIL:admin@kyvora.local}
       password: ${KYVORA_BOOTSTRAP_ADMIN_PASSWORD:admin-password}
       display-name: ${KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME:Kyvora Admin}
-
-springdoc:
-  api-docs:
-    enabled: false
-  swagger-ui:
-    enabled: false
