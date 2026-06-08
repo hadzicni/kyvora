@@ -151,6 +151,8 @@ export function ServerForm({
     watch,
   } = form;
 
+  const selectedStatus = watch("status");
+
   return (
     <form
       className="grid gap-4"
@@ -222,7 +224,7 @@ export function ServerForm({
           label="Status"
         >
           <Select
-            value={watch("status")}
+            value={selectedStatus}
             onValueChange={(value) => {
               form.setValue("status", value as ServerStatus, {
                 shouldDirty: true,
