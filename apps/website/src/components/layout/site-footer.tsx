@@ -1,7 +1,8 @@
 import Link from "next/link"
 
-import { siteConfig } from "@/config/site"
 import { Separator } from "@/components/ui/separator"
+import { siteConfig } from "@/config/site"
+import Image from "next/image"
 
 const footerLinkGroups = [
   {
@@ -56,8 +57,16 @@ export function SiteFooter() {
         <div className="grid gap-8 pt-8 lg:grid-cols-[1fr_auto] lg:items-start">
           <div className="max-w-md">
             <div className="flex items-center gap-2 text-sm font-semibold text-white">
-              <span className="flex size-7 items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-400/10 text-xs text-emerald-200">
-                K
+              <span className="flex size-8 items-center justify-center">
+                <Image
+                src="/icon.svg"
+                alt=""
+                width={32}
+                height={32}
+                priority
+                aria-hidden="true"
+                className="size-8"
+              />
               </span>
               {siteConfig.name}
             </div>
