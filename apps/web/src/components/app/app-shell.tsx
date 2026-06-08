@@ -3,6 +3,7 @@
 import {
   Activity,
   Bot,
+  CircleHelp,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -69,6 +70,11 @@ const navItems = [
     href: "/activity",
     label: "Activity",
     icon: Activity,
+  },
+  {
+    href: "/help",
+    label: "Help",
+    icon: CircleHelp,
   },
   {
     href: "/profile",
