@@ -1,8 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, Copy, Loader2, Plus, Terminal } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Plus } from "lucide-react";
+import { useCallback, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -11,7 +11,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -31,10 +30,9 @@ import {
   AgentApiError,
   type AgentEnrollment,
 } from "@/lib/api/agents";
+import { AgentEnrollmentToken } from "@/features/agents/agent-enrollment-token";
 import { useCreateServer } from "@/features/servers/use-servers";
 import { ApiError } from "@/lib/api/servers";
-
-const defaultAgentApiUrl = "http://localhost:8080";
 
 export function getConflictField(error: ApiError): "hostname" | "ipAddress" | null {
   const duplicateDetail = error.details.find(
@@ -68,7 +66,7 @@ export function CreateServerDialog() {
   const [agentName, setAgentName] = useState("");
   const [agentNameTouched, setAgentNameTouched] = useState(false);
   const [enrollment, setEnrollment] = useState<AgentEnrollment | null>(null);
-  const [copied, setCopied] = useState<"token" | "command" | null>(null);
+  const [agentConnected, setAgentConnected] = useState(false);
   const createServer = useCreateServer();
   const registerAgent = useRegisterAgent();
   const form = useForm<ServerFormValues, unknown, ServerFormPayload>({
@@ -166,6 +164,10 @@ export function CreateServerDialog() {
   }
 
   function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && enrollment && !agentConnected) {
+      return;
+    }
+
     setOpen(nextOpen);
 
     if (!nextOpen) {
@@ -175,26 +177,28 @@ export function CreateServerDialog() {
       setAgentName("");
       setAgentNameTouched(false);
       setEnrollment(null);
-      setCopied(null);
+      setAgentConnected(false);
     }
   }
+
+  const handleAgentConnectionChange = useCallback((connected: boolean) => {
+    setAgentConnected(connected);
+  }, []);
 
   function handleEnrollAgentChange(checked: boolean) {
     setEnrollAgent(checked);
   }
 
-  async function copyValue(kind: "token" | "command", value: string) {
-    await navigator.clipboard.writeText(value);
-    setCopied(kind);
-    window.setTimeout(() => setCopied(null), 1500);
+  function closeEnrollmentDialog() {
+    setOpen(false);
+    form.reset(emptyServerFormValues);
+    setFormError(null);
+    setEnrollAgent(false);
+    setAgentName("");
+    setAgentNameTouched(false);
+    setEnrollment(null);
+    setAgentConnected(false);
   }
-
-  const runCommand = enrollment
-    ? `KYVORA_API_URL=${defaultAgentApiUrl} \\
-KYVORA_AGENT_ID=${enrollment.agent.id} \\
-KYVORA_AGENT_TOKEN=${enrollment.agentToken} \\
-npm run dev:agent`
-    : "";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -204,7 +208,20 @@ npm run dev:agent`
           Create server
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
+      <DialogContent
+        className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl"
+        showCloseButton={!enrollment || agentConnected}
+        onEscapeKeyDown={(event) => {
+          if (enrollment && !agentConnected) {
+            event.preventDefault();
+          }
+        }}
+        onPointerDownOutside={(event) => {
+          if (enrollment && !agentConnected) {
+            event.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{enrollment ? "Agent token" : "Create server"}</DialogTitle>
           <DialogDescription>
@@ -215,68 +232,11 @@ npm run dev:agent`
         </DialogHeader>
 
         {enrollment ? (
-          <div className="grid gap-4">
-            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-              This token is shown only once. Store it securely before closing
-              this dialog.
-            </div>
-
-            <TokenDetail label="Agent ID" value={enrollment.agent.id} />
-            <TokenDetail label="API Server URL" value={defaultAgentApiUrl} />
-
-            <div className="grid gap-2">
-              <Label>Agent Token</Label>
-              <div className="flex min-w-0 gap-2">
-                <code className="min-w-0 flex-1 overflow-x-auto rounded-md border bg-muted px-3 py-2 font-mono text-xs">
-                  {enrollment.agentToken}
-                </code>
-                <Button
-                  aria-label="Copy agent token"
-                  size="icon"
-                  type="button"
-                  variant="outline"
-                  onClick={() => void copyValue("token", enrollment.agentToken)}
-                >
-                  {copied === "token" ? (
-                    <Check className="size-4" />
-                  ) : (
-                    <Copy className="size-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Run command</Label>
-              <div className="rounded-md border bg-muted">
-                <div className="flex items-center justify-between border-b px-3 py-2">
-                  <Terminal className="size-4 text-muted-foreground" />
-                  <Button
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                    onClick={() => void copyValue("command", runCommand)}
-                  >
-                    {copied === "command" ? (
-                      <Check className="size-4" />
-                    ) : (
-                      <Copy className="size-4" />
-                    )}
-                    Copy command
-                  </Button>
-                </div>
-                <pre className="overflow-x-auto p-3 text-xs">
-                  <code>{runCommand}</code>
-                </pre>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" onClick={() => handleOpenChange(false)}>
-                Done
-              </Button>
-            </DialogFooter>
-          </div>
+          <AgentEnrollmentToken
+            enrollment={enrollment}
+            onClose={closeEnrollmentDialog}
+            onConnectionChange={handleAgentConnectionChange}
+          />
         ) : (
           <ServerForm
             childrenBeforeFooter={
@@ -345,15 +305,4 @@ npm run dev:agent`
 function defaultAgentName(serverName: string) {
   const trimmed = serverName.trim();
   return trimmed ? `${trimmed} Agent` : "Server Agent";
-}
-
-function TokenDetail({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid gap-2">
-      <Label>{label}</Label>
-      <code className="overflow-x-auto rounded-md border bg-muted px-3 py-2 font-mono text-xs">
-        {value}
-      </code>
-    </div>
-  );
 }

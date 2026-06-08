@@ -5,6 +5,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type UseQueryOptions,
 } from "@tanstack/react-query";
 
 import { auditLogKeys } from "@/lib/api/audit-logs";
@@ -15,6 +16,7 @@ import {
   listAgents,
   registerAgent,
   type ListAgentsParams,
+  type Agent,
   type RegisterAgentInput,
 } from "@/lib/api/agents";
 import { dashboardKeys } from "@/lib/api/dashboard";
@@ -28,11 +30,18 @@ export function useAgents(params: ListAgentsParams = {}) {
   });
 }
 
-export function useAgent(id: string) {
+export function useAgent(
+  id: string,
+  options: Pick<
+    UseQueryOptions<Agent, AgentApiError>,
+    "enabled" | "refetchInterval"
+  > = {}
+) {
   return useQuery({
     queryKey: agentKeys.detail(id),
     queryFn: () => getAgent(id),
-    enabled: id.length > 0,
+    enabled: id.length > 0 && (options.enabled ?? true),
+    refetchInterval: options.refetchInterval,
     retry: (failureCount, error) =>
       error instanceof AgentApiError && error.status === 404
         ? false
