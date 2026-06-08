@@ -41,6 +41,11 @@ const navItems = [
     label: "Agents",
     icon: Bot,
   },
+  {
+    href: "/activity",
+    label: "Activity",
+    icon: Activity,
+  },
 ];
 
 function SidebarContent() {
