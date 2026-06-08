@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import dev.kyvora.api.auditlog.service.AuditLogService;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryCreateRequest;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryFilter;
 import dev.kyvora.api.serverinventory.dto.ServerInventorySearchRequest;
@@ -27,10 +28,15 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 
 	private final ServerInventoryRepository repository;
 	private final ServerInventoryMapper mapper;
+	private final AuditLogService auditLogService;
 
-	public DefaultServerInventoryService(ServerInventoryRepository repository, ServerInventoryMapper mapper) {
+	public DefaultServerInventoryService(
+			ServerInventoryRepository repository,
+			ServerInventoryMapper mapper,
+			AuditLogService auditLogService) {
 		this.repository = repository;
 		this.mapper = mapper;
+		this.auditLogService = auditLogService;
 	}
 
 	@Override
@@ -71,7 +77,7 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 	}
 
 	private void handleInventoryEvent(ServerInventoryChangedEvent event) {
-		// Future audit logging can persist or publish this internal event.
+		auditLogService.recordServerInventoryChange(event);
 	}
 
 	private ServerInventory getRequiredEntity(UUID id) {

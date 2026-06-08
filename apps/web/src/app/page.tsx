@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RecentActivityWidget } from "@/features/audit-logs/recent-activity-widget";
 import { useDashboardSummary } from "@/features/dashboard/use-dashboard-summary";
 import { formatNumber } from "@/features/servers/format";
 import { ServerEmptyState } from "@/features/servers/server-empty-state";
@@ -194,6 +195,8 @@ export default function DashboardOverviewPage() {
             </CardContent>
           </Card>
         </div>
+
+        <RecentActivityWidget />
       </div>
     </AppShell>
   );

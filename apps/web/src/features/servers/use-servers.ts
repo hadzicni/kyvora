@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { auditLogKeys } from "@/lib/api/audit-logs";
 import { dashboardKeys } from "@/lib/api/dashboard";
 import {
   createServer,
@@ -42,6 +43,7 @@ export function useCreateServer() {
     mutationFn: (input: CreateServerInput) => createServer(input),
     onSuccess: async () => {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
         queryClient.invalidateQueries({ queryKey: serverKeys.all }),
         queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
       ]);
@@ -57,6 +59,7 @@ export function useUpdateServer() {
       updateServer({ id, input }),
     onSuccess: async () => {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
         queryClient.invalidateQueries({ queryKey: serverKeys.all }),
         queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
       ]);
@@ -71,6 +74,7 @@ export function useDeleteServer() {
     mutationFn: (id: string) => deleteServer(id),
     onSuccess: async () => {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
         queryClient.invalidateQueries({ queryKey: serverKeys.all }),
         queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
       ]);
