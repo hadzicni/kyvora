@@ -9,13 +9,19 @@ import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type {
   CreateServerInput,
   ServerInventoryItem,
   ServerStatus,
 } from "@/lib/api/servers";
-import { cn } from "@/lib/utils";
 
 export const serverStatuses = ["ONLINE", "OFFLINE", "UNKNOWN"] as const;
 
@@ -142,6 +148,7 @@ export function ServerForm({
   const {
     formState: { errors },
     register,
+    watch,
   } = form;
 
   return (
@@ -214,20 +221,31 @@ export function ServerForm({
           htmlFor={`${idPrefix}-status`}
           label="Status"
         >
-          <select
-            id={`${idPrefix}-status`}
-            className={cn(
-              "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
-            )}
-            aria-invalid={Boolean(errors.status)}
-            {...register("status")}
+          <Select
+            value={watch("status")}
+            onValueChange={(value) => {
+              form.setValue("status", value as ServerStatus, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              });
+            }}
           >
-            {serverStatuses.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              id={`${idPrefix}-status`}
+              className="w-full"
+              aria-invalid={Boolean(errors.status)}
+            >
+              <SelectValue placeholder="Choose a status" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              {serverStatuses.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FormField>
 
         <FormField
