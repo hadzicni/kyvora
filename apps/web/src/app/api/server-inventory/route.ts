@@ -24,6 +24,16 @@ function createBackendUrl(request: NextRequest) {
   return backendUrl;
 }
 
+function createBackendResponse(response: Response, body: string) {
+  return new NextResponse(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: {
+      "Content-Type": response.headers.get("Content-Type") ?? "application/json",
+    },
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const response = await fetch(createBackendUrl(request), {
@@ -36,14 +46,31 @@ export async function GET(request: NextRequest) {
 
     const body = await response.text();
 
-    return new NextResponse(body, {
-      status: response.status,
-      statusText: response.statusText,
+    return createBackendResponse(response, body);
+  } catch {
+    return NextResponse.json(
+      { message: "Unable to connect to the inventory API." },
+      { status: 502 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const response = await fetch(createBackendUrl(request), {
+      method: "POST",
       headers: {
-        "Content-Type":
-          response.headers.get("Content-Type") ?? "application/json",
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...createAuthorizationHeader(),
       },
+      body: await request.text(),
+      cache: "no-store",
     });
+
+    const body = await response.text();
+
+    return createBackendResponse(response, body);
   } catch {
     return NextResponse.json(
       { message: "Unable to connect to the inventory API." },

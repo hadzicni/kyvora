@@ -33,10 +33,21 @@ export type ListServersParams = {
   tags?: string[];
 };
 
-class ApiError extends Error {
+export type CreateServerInput = {
+  name: string;
+  hostname: string;
+  ipAddress: string;
+  description: string;
+  tags: string[];
+  operatingSystem: string;
+  status: ServerStatus;
+};
+
+export class ApiError extends Error {
   constructor(
     message: string,
-    readonly status: number
+    readonly status: number,
+    readonly details: string[] = []
   ) {
     super(message);
     this.name = "ApiError";
@@ -67,15 +78,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     let message = `Request failed with status ${response.status}`;
+    let details: string[] = [];
 
     try {
-      const body = (await response.json()) as { message?: string };
+      const body = (await response.json()) as {
+        message?: string;
+        details?: string[];
+      };
       message = body.message ?? message;
+      details = Array.isArray(body.details) ? body.details : [];
     } catch {
       // Keep the status-derived fallback if the response is not JSON.
     }
 
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, details);
   }
 
   return response.json() as Promise<T>;
@@ -97,6 +113,18 @@ export async function listServers(
   return request<ServerInventoryPage>(
     `/api/server-inventory?${searchParams.toString()}`
   );
+}
+
+export async function createServer(
+  input: CreateServerInput
+): Promise<ServerInventoryItem> {
+  return request<ServerInventoryItem>("/api/server-inventory", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
 }
 
 export const serverKeys = {

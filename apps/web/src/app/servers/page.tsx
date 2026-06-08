@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { CreateServerDialog } from "@/features/servers/create-server-dialog";
 import { formatNumber } from "@/features/servers/format";
 import { ServerEmptyState } from "@/features/servers/server-empty-state";
 import { ServerErrorState } from "@/features/servers/server-error-state";
@@ -35,16 +36,22 @@ export default function ServerInventoryPage() {
               Browse servers reported by /api/v1/servers.
             </p>
           </div>
-          <Button
-            disabled={serversQuery.isFetching}
-            onClick={() => void serversQuery.refetch()}
-            variant="outline"
-          >
-            <RefreshCw
-              className={cn("size-4", serversQuery.isFetching && "animate-spin")}
-            />
-            Refresh
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <CreateServerDialog />
+            <Button
+              disabled={serversQuery.isFetching}
+              onClick={() => void serversQuery.refetch()}
+              variant="outline"
+            >
+              <RefreshCw
+                className={cn(
+                  "size-4",
+                  serversQuery.isFetching && "animate-spin"
+                )}
+              />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <Card>
