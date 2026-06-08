@@ -35,6 +35,13 @@ async function createBackendUrl(request: NextRequest, context: RouteContext) {
 }
 
 function createBackendResponse(response: Response, body: string) {
+  if ([204, 205, 304].includes(response.status)) {
+    return new NextResponse(null, {
+      status: response.status,
+      statusText: response.statusText,
+    });
+  }
+
   return new NextResponse(body, {
     status: response.status,
     statusText: response.statusText,
