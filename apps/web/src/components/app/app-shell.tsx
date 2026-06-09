@@ -102,6 +102,44 @@ const navItems = [
   },
 ];
 
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "kyvora.sidebar.collapsed";
+let sidebarCollapsedCache: boolean | undefined;
+
+function readStoredSidebarCollapsed() {
+  if (sidebarCollapsedCache !== undefined) {
+    return sidebarCollapsedCache;
+  }
+
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    sidebarCollapsedCache =
+      window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true";
+    return sidebarCollapsedCache;
+  } catch {
+    return false;
+  }
+}
+
+function storeSidebarCollapsed(collapsed: boolean) {
+  sidebarCollapsedCache = collapsed;
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      SIDEBAR_COLLAPSED_STORAGE_KEY,
+      String(collapsed)
+    );
+  } catch {
+    // The in-memory state still keeps navigation behavior correct for this session.
+  }
+}
+
 async function logout() {
   toast.info("Signing out...");
 
@@ -385,10 +423,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const settingsQuery = useSettings(mayManageSettings);
   const instance = getInstanceSettings(settingsQuery.data);
   const initials = getInitials(session?.user.displayName, session?.user.email);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    readStoredSidebarCollapsed
+  );
 
   function toggleSidebarCollapsed() {
-    setSidebarCollapsed((current) => !current);
+    setSidebarCollapsed((current) => {
+      const nextCollapsed = !current;
+      storeSidebarCollapsed(nextCollapsed);
+      return nextCollapsed;
+    });
   }
 
   return (
