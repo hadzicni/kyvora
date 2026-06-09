@@ -7,6 +7,8 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Search,
   Settings,
   Server,
@@ -112,15 +114,28 @@ function getInitials(displayName?: string, email?: string) {
   return source.slice(0, 2).toUpperCase();
 }
 
-function SidebarContent() {
+function SidebarContent({
+  collapsed = false,
+  onToggleCollapsed,
+}: {
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
+}) {
   const pathname = usePathname();
   const settingsQuery = useSettings();
   const instance = getInstanceSettings(settingsQuery.data);
+  const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-16 items-center gap-3 px-5">
-          <span className="flex size-8 items-center justify-center">
+      <div
+        className={cn(
+          "flex h-16 items-center gap-3 px-5",
+          collapsed && "justify-center px-3"
+        )}
+      >
+        {!collapsed ? (
+          <span className="flex size-8 shrink-0 items-center justify-center">
             <Image
               src="/icon.svg"
               alt=""
@@ -131,17 +146,32 @@ function SidebarContent() {
               className="size-8"
             />
           </span>
-        <div>
-          <div className="max-w-44 truncate text-sm font-semibold leading-tight">
-            {instance.name}
+        ) : null}
+        {!collapsed ? (
+          <div className="min-w-0 flex-1">
+            <div className="max-w-44 truncate text-sm font-semibold leading-tight">
+              {instance.name}
+            </div>
+            <div className="max-w-44 truncate text-xs text-muted-foreground">
+              {instance.description}
+            </div>
           </div>
-          <div className="max-w-44 truncate text-xs text-muted-foreground">
-            {instance.description}
-          </div>
-        </div>
+        ) : null}
+        {onToggleCollapsed ? (
+          <Button
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="hidden size-8 shrink-0 md:inline-flex"
+            onClick={onToggleCollapsed}
+            size="icon"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            variant="ghost"
+          >
+            <ToggleIcon className="size-4" />
+          </Button>
+        ) : null}
       </div>
       <Separator />
-      <nav className="flex flex-1 flex-col gap-1 p-3">
+      <nav className={cn("flex flex-1 flex-col gap-1 p-3", collapsed && "px-2")}>
         {navItems.map((item) => {
           const isActive =
             item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -151,27 +181,37 @@ function SidebarContent() {
             <Link
               key={item.href}
               href={item.href}
+              title={collapsed ? item.label : undefined}
               className={cn(
                 "flex h-10 items-center gap-3 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                collapsed && "justify-center px-0",
                 isActive &&
                   "bg-sidebar-accent text-sidebar-accent-foreground ring-1 ring-sidebar-border"
               )}
             >
-              <Icon className="size-4" />
-              {item.label}
+              <Icon className="size-4 shrink-0" />
+              {!collapsed ? item.label : <span className="sr-only">{item.label}</span>}
             </Link>
           );
         })}
       </nav>
-      <div className="border-t border-sidebar-border p-4">
-        <div className="flex items-center gap-3 rounded-md bg-muted/40 p-3">
-          <Activity className="size-4 text-emerald-400" />
-          <div className="min-w-0">
-            <div className="text-xs font-medium">API status</div>
-            <div className="truncate text-xs text-muted-foreground">
-              Inventory endpoint ready
+      <div className={cn("border-t border-sidebar-border p-4", collapsed && "p-3")}>
+        <div
+          className={cn(
+            "flex items-center gap-3 rounded-md bg-muted/40 p-3",
+            collapsed && "justify-center p-2"
+          )}
+          title={collapsed ? "API status: Inventory endpoint ready" : undefined}
+        >
+          <Activity className="size-4 shrink-0 text-emerald-400" />
+          {!collapsed ? (
+            <div className="min-w-0">
+              <div className="text-xs font-medium">API status</div>
+              <div className="truncate text-xs text-muted-foreground">
+                Inventory endpoint ready
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -326,13 +366,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const settingsQuery = useSettings();
   const instance = getInstanceSettings(settingsQuery.data);
   const initials = getInitials(session?.user.displayName, session?.user.email);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  function toggleSidebarCollapsed() {
+    setSidebarCollapsed((current) => !current);
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 border-r border-sidebar-border bg-sidebar md:block">
-        <SidebarContent />
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-20 hidden border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:block",
+          sidebarCollapsed ? "w-16" : "w-64"
+        )}
+      >
+        <SidebarContent
+          collapsed={sidebarCollapsed}
+          onToggleCollapsed={toggleSidebarCollapsed}
+        />
       </aside>
-      <div className="min-h-screen md:pl-64">
+      <div
+        className={cn(
+          "min-h-screen transition-[padding-left] duration-200",
+          sidebarCollapsed ? "md:pl-16" : "md:pl-64"
+        )}
+      >
         <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur md:px-6">
           <Sheet>
             <SheetTrigger asChild>
