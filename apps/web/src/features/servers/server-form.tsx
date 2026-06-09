@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
@@ -149,6 +150,7 @@ export function ServerForm({
   submitIcon: ReactNode;
   submitLabel: string;
 }) {
+  const t = useTranslations();
   const {
     formState: { errors },
     register,
@@ -172,7 +174,7 @@ export function ServerForm({
         <FormField
           error={errors.name?.message}
           htmlFor={`${idPrefix}-name`}
-          label="Name"
+          label={t("forms.name")}
         >
           <Input
             id={`${idPrefix}-name`}
@@ -185,7 +187,7 @@ export function ServerForm({
         <FormField
           error={errors.hostname?.message}
           htmlFor={`${idPrefix}-hostname`}
-          label="Hostname"
+          label={t("forms.hostname")}
         >
           <Input
             id={`${idPrefix}-hostname`}
@@ -198,7 +200,7 @@ export function ServerForm({
         <FormField
           error={errors.ipAddress?.message}
           htmlFor={`${idPrefix}-ipAddress`}
-          label="IP address"
+          label={t("forms.ipAddress")}
         >
           <Input
             id={`${idPrefix}-ipAddress`}
@@ -212,7 +214,7 @@ export function ServerForm({
         <FormField
           error={errors.operatingSystem?.message}
           htmlFor={`${idPrefix}-operatingSystem`}
-          label="Operating system"
+          label={t("forms.operatingSystem")}
         >
           <Input
             id={`${idPrefix}-operatingSystem`}
@@ -226,7 +228,7 @@ export function ServerForm({
           <FormField
             error={errors.status?.message}
             htmlFor={`${idPrefix}-status`}
-            label="Operational state"
+            label={t("servers.statusOperational")}
           >
             <Select
               value={selectedStatus}
@@ -243,12 +245,12 @@ export function ServerForm({
                 className="w-full"
                 aria-invalid={Boolean(errors.status)}
               >
-                <SelectValue placeholder="Choose a status" />
+                <SelectValue placeholder={t("forms.status")} />
               </SelectTrigger>
               <SelectContent position="popper">
                 {serverStatuses.map((status) => (
                   <SelectItem key={status} value={status}>
-                    {status}
+                    {t(`statuses.${status}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -259,7 +261,7 @@ export function ServerForm({
         <FormField
           error={errors.tags?.message}
           htmlFor={`${idPrefix}-tags`}
-          label="Tags"
+          label={t("forms.tags")}
         >
           <Input
             id={`${idPrefix}-tags`}
@@ -273,7 +275,7 @@ export function ServerForm({
       <FormField
         error={errors.description?.message}
         htmlFor={`${idPrefix}-description`}
-        label="Description"
+        label={t("forms.description")}
       >
         <Textarea
           id={`${idPrefix}-description`}

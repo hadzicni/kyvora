@@ -9,6 +9,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useLocale, useTranslations } from "next-intl";
 
 import { AppShell } from "@/components/app/app-shell";
 import { HealthBar, type HealthSegment } from "@/components/app/health-bar";
@@ -143,11 +144,13 @@ function HealthMetric({
   helper: string;
   status: React.ReactNode;
 }) {
+  const locale = useLocale();
+
   return (
     <div className="rounded-md border bg-muted/20 p-3">
       <div className="flex items-center justify-between gap-2">
         {status}
-        <span className="text-sm font-semibold">{formatNumber(count)}</span>
+        <span className="text-sm font-semibold">{formatNumber(count, locale)}</span>
       </div>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">{helper}</p>
     </div>
@@ -155,6 +158,8 @@ function HealthMetric({
 }
 
 export default function DashboardOverviewPage() {
+  const t = useTranslations();
+  const locale = useLocale();
   const { data: session } = useSession();
   const summaryQuery = useDashboardSummary();
   const serversQuery = useServers({ size: 20 });
@@ -182,7 +187,9 @@ export default function DashboardOverviewPage() {
           badge={
             <Badge className="w-fit" variant="outline">
               <Radio className="size-3" />
-              {summaryQuery.isLoading ? "Checking" : "Live overview"}
+              {summaryQuery.isLoading
+                ? t("common.checking")
+                : t("dashboard.liveOverview")}
             </Badge>
           }
           subtitle={instance.description}
@@ -192,19 +199,19 @@ export default function DashboardOverviewPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             accentClassName="bg-sky-500/10 text-sky-300"
-            description="Servers tracked in inventory."
+            description={t("dashboard.serversTracked")}
             icon={Server}
             loading={summaryQuery.isLoading}
-            title="Servers"
-            value={formatNumber(totalServers)}
+            title={t("navigation.servers")}
+            value={formatNumber(totalServers, locale)}
           />
           <StatCard
             accentClassName="bg-emerald-500/10 text-emerald-300"
-            description="Servers currently reporting online."
+            description={t("dashboard.serversOnline")}
             icon={CheckCircle2}
             loading={summaryQuery.isLoading}
-            title="Online servers"
-            value={formatNumber(onlineCount)}
+            title={t("dashboard.onlineServers")}
+            value={formatNumber(onlineCount, locale)}
           />
           <StatCard
             accentClassName={
@@ -212,19 +219,19 @@ export default function DashboardOverviewPage() {
                 ? "bg-red-500/10 text-red-300"
                 : "bg-muted text-muted-foreground"
             }
-            description="Offline or unknown server records."
+            description={t("dashboard.needsAttentionDescription")}
             icon={WifiOff}
             loading={summaryQuery.isLoading}
-            title="Needs attention"
-            value={formatNumber(attentionServers)}
+            title={t("dashboard.needsAttention")}
+            value={formatNumber(attentionServers, locale)}
           />
           <StatCard
             accentClassName="bg-violet-500/10 text-violet-300"
-            description="Registered agents returned by the API."
+            description={t("dashboard.registeredAgentsDescription")}
             icon={Bot}
             loading={agentsQuery.isLoading}
-            title="Agents"
-            value={formatNumber(totalAgents)}
+            title={t("navigation.agents")}
+            value={formatNumber(totalAgents, locale)}
           />
         </div>
 
@@ -232,8 +239,10 @@ export default function DashboardOverviewPage() {
           <HealthSummary
             description={
               summary?.generatedAt
-                ? `Generated ${new Date(summary.generatedAt).toLocaleString()}`
-                : "Inventory health at a glance."
+                ? t("dashboard.generatedAt", {
+                    date: new Date(summary.generatedAt).toLocaleString(locale),
+                  })
+                : t("dashboard.inventoryHealth")
             }
             empty={<ServerEmptyState />}
             error={
@@ -242,7 +251,7 @@ export default function DashboardOverviewPage() {
                 message={
                   summaryQuery.error instanceof Error
                     ? summaryQuery.error.message
-                    : "The dashboard API returned an unexpected error."
+                    : t("errors.unexpected")
                 }
                 onRetry={() => void summaryQuery.refetch()}
               />
@@ -252,17 +261,17 @@ export default function DashboardOverviewPage() {
               <>
                 <HealthMetric
                   count={onlineCount}
-                  helper="Accepting recent heartbeats."
+                  helper={t("dashboard.acceptingHeartbeats")}
                   status={<ServerStatusBadge status="ONLINE" />}
                 />
                 <HealthMetric
                   count={offlineCount}
-                  helper="No recent heartbeat detected."
+                  helper={t("dashboard.noRecentHeartbeat")}
                   status={<ServerStatusBadge status="OFFLINE" />}
                 />
                 <HealthMetric
                   count={unknownCount}
-                  helper="No clear operating state yet."
+                  helper={t("dashboard.noClearState")}
                   status={<ServerStatusBadge status="UNKNOWN" />}
                 />
               </>
@@ -271,22 +280,22 @@ export default function DashboardOverviewPage() {
             segments={[
               {
                 className: "bg-emerald-500",
-                label: "Online",
+                label: t("statuses.ONLINE"),
                 value: onlineCount,
               },
-              { className: "bg-red-500", label: "Offline", value: offlineCount },
+              { className: "bg-red-500", label: t("statuses.OFFLINE"), value: offlineCount },
               {
                 className: "bg-amber-500",
-                label: "Unknown",
+                label: t("statuses.UNKNOWN"),
                 value: unknownCount,
               },
             ]}
-            title="Server health"
+            title={t("dashboard.serverHealth")}
             total={totalServers}
           />
 
           <HealthSummary
-            description="Agent lifecycle and heartbeat status."
+            description={t("dashboard.agentHealthDescription")}
             empty={<AgentEmptyState />}
             error={
               agentsQuery.isError ? (
@@ -294,7 +303,7 @@ export default function DashboardOverviewPage() {
                 message={
                   agentsQuery.error instanceof Error
                     ? agentsQuery.error.message
-                    : "The agent management API returned an unexpected error."
+                    : t("agents.unexpectedError")
                 }
                 onRetry={() => void agentsQuery.refetch()}
               />
@@ -304,17 +313,17 @@ export default function DashboardOverviewPage() {
               <>
                 <HealthMetric
                   count={onlineAgents}
-                  helper="Agents reporting heartbeats."
+                  helper={t("dashboard.agentsReporting")}
                   status={<AgentStatusBadge status="ONLINE" />}
                 />
                 <HealthMetric
                   count={offlineAgents}
-                  helper="Agents missing heartbeats."
+                  helper={t("dashboard.agentsMissing")}
                   status={<AgentStatusBadge status="OFFLINE" />}
                 />
                 <HealthMetric
                   count={pendingAgents + unknownAgents}
-                  helper="Pending or unknown lifecycle state."
+                  helper={t("dashboard.pendingUnknownAgents")}
                   status={<AgentStatusBadge status="PENDING" />}
                 />
               </>
@@ -323,17 +332,17 @@ export default function DashboardOverviewPage() {
             segments={[
               {
                 className: "bg-emerald-500",
-                label: "Online",
+                label: t("statuses.ONLINE"),
                 value: onlineAgents,
               },
-              { className: "bg-red-500", label: "Offline", value: offlineAgents },
+              { className: "bg-red-500", label: t("statuses.OFFLINE"), value: offlineAgents },
               {
                 className: "bg-amber-500",
-                label: "Pending",
+                label: t("statuses.PENDING"),
                 value: pendingAgents + unknownAgents,
               },
             ]}
-            title="Agent health"
+            title={t("dashboard.agentHealth")}
             total={totalAgents}
           />
         </div>
@@ -343,10 +352,10 @@ export default function DashboardOverviewPage() {
             <CardHeader className="border-b">
               <CardTitle className="flex items-center gap-2">
                 <Server className="size-4" />
-                Recent servers
+                {t("dashboard.recentServers")}
               </CardTitle>
               <CardDescription>
-                Latest server inventory records from the API.
+                {t("dashboard.recentServersDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4">
@@ -356,7 +365,7 @@ export default function DashboardOverviewPage() {
                   message={
                     serversQuery.error instanceof Error
                       ? serversQuery.error.message
-                      : "The inventory API returned an unexpected error."
+                      : t("servers.unexpectedError")
                   }
                   onRetry={() => void serversQuery.refetch()}
                 />
@@ -378,10 +387,10 @@ export default function DashboardOverviewPage() {
             <CardHeader className="border-b">
               <CardTitle className="flex items-center gap-2">
                 <Bot className="size-4" />
-                Recent agents
+                {t("dashboard.recentAgents")}
               </CardTitle>
               <CardDescription>
-                Agent records with heartbeat and version status.
+                {t("dashboard.recentAgentsDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4">
@@ -391,16 +400,16 @@ export default function DashboardOverviewPage() {
                   message={
                     agentsQuery.error instanceof Error
                       ? agentsQuery.error.message
-                      : "The agent management API returned an unexpected error."
+                      : t("agents.unexpectedError")
                   }
                   onRetry={() => void agentsQuery.refetch()}
                 />
               ) : null}
               {agentsQuery.isSuccess && agents.length === 0 ? (
                 <SectionState
-                  description="Enroll an agent from a server detail page to begin collecting heartbeats and host facts."
+                  description={t("dashboard.noAgentsEnrolledDescription")}
                   icon={<Bot className="size-5" />}
-                  title="No agents enrolled"
+                  title={t("dashboard.noAgentsEnrolled")}
                 />
               ) : null}
               {agentsQuery.isSuccess && agents.length > 0 ? (
@@ -415,11 +424,14 @@ export default function DashboardOverviewPage() {
             <CardContent className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center">
               <AlertCircle className="size-5 shrink-0 text-amber-300" />
               <div className="min-w-0">
-                <div className="text-sm font-medium">Operational attention</div>
+                <div className="text-sm font-medium">
+                  {t("dashboard.operationalAttention")}
+                </div>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  {formatNumber(attentionServers)} server records and{" "}
-                  {formatNumber(attentionAgents)} agent records are offline,
-                  unknown, or pending.
+                  {t("dashboard.attentionSummary", {
+                    servers: formatNumber(attentionServers, locale),
+                    agents: formatNumber(attentionAgents, locale),
+                  })}
                 </p>
               </div>
             </CardContent>

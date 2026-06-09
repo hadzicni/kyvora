@@ -12,9 +12,11 @@ import {
   Search,
   Settings,
   Server,
+  UserCircle,
   Users,
-  UserCircle
 } from "lucide-react";
+import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -52,52 +54,68 @@ import {
 import { useAgents } from "@/features/agents/use-agents";
 import { useSettings } from "@/features/settings/use-settings";
 import { useServers } from "@/features/servers/use-servers";
+import { supportedLocales } from "@/i18n/config";
+import { useLocalePreference } from "@/i18n/locale-provider";
 import { getInstanceSettings } from "@/lib/api/settings";
 import { canManageSettings, canManageUsers } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
-const navItems = [
+type NavItem = {
+  href: string;
+  labelKey:
+    | "overview"
+    | "servers"
+    | "agents"
+    | "activity"
+    | "users"
+    | "settings"
+    | "help"
+    | "profile";
+  icon: React.ComponentType<{ className?: string }>;
+  requiredPermission?: (role: string | undefined) => boolean;
+};
+
+const navItems: NavItem[] = [
   {
     href: "/",
-    label: "Overview",
+    labelKey: "overview",
     icon: LayoutDashboard,
   },
   {
     href: "/servers",
-    label: "Servers",
+    labelKey: "servers",
     icon: Server,
   },
   {
     href: "/agents",
-    label: "Agents",
+    labelKey: "agents",
     icon: Bot,
   },
   {
     href: "/activity",
-    label: "Activity",
+    labelKey: "activity",
     icon: Activity,
   },
   {
     href: "/users",
-    label: "Users",
+    labelKey: "users",
     icon: Users,
     requiredPermission: canManageUsers,
   },
   {
     href: "/settings",
-    label: "Settings",
+    labelKey: "settings",
     icon: Settings,
     requiredPermission: canManageSettings,
   },
   {
     href: "/help",
-    label: "Help",
+    labelKey: "help",
     icon: CircleHelp,
   },
   {
     href: "/profile",
-    label: "Profile",
+    labelKey: "profile",
     icon: UserCircle,
   },
 ];
@@ -141,8 +159,6 @@ function storeSidebarCollapsed(collapsed: boolean) {
 }
 
 async function logout() {
-  toast.info("Signing out...");
-
   await fetch("/api/session/logout", { method: "POST" }).catch(() => {
     // The local session should still be cleared even if backend logout fails.
   });
@@ -168,6 +184,7 @@ function SidebarContent({
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
 }) {
+  const t = useTranslations();
   const pathname = usePathname();
   const { data: session } = useSession();
   const mayManageSettings = canManageSettings(session?.user.role);
@@ -175,8 +192,12 @@ function SidebarContent({
   const instance = getInstanceSettings(settingsQuery.data);
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
   const visibleNavItems = navItems.filter(
-    (item) => !item.requiredPermission || item.requiredPermission(session?.user.role)
+    (item) =>
+      !item.requiredPermission || item.requiredPermission(session?.user.role)
   );
+  const toggleLabel = collapsed
+    ? t("navigation.expandSidebar")
+    : t("navigation.collapseSidebar");
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
@@ -211,11 +232,11 @@ function SidebarContent({
         ) : null}
         {onToggleCollapsed ? (
           <Button
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={toggleLabel}
             className="hidden size-8 shrink-0 md:inline-flex"
             onClick={onToggleCollapsed}
             size="icon"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={toggleLabel}
             variant="ghost"
           >
             <ToggleIcon className="size-4" />
@@ -228,12 +249,13 @@ function SidebarContent({
           const isActive =
             item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const Icon = item.icon;
+          const label = t(`navigation.${item.labelKey}`);
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? label : undefined}
               className={cn(
                 "flex h-10 items-center gap-3 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 collapsed && "justify-center px-0",
@@ -242,7 +264,7 @@ function SidebarContent({
               )}
             >
               <Icon className="size-4 shrink-0" />
-              {!collapsed ? item.label : <span className="sr-only">{item.label}</span>}
+              {!collapsed ? label : <span className="sr-only">{label}</span>}
             </Link>
           );
         })}
@@ -253,14 +275,20 @@ function SidebarContent({
             "flex items-center gap-3 rounded-md bg-muted/40 p-3",
             collapsed && "justify-center p-2"
           )}
-          title={collapsed ? "API status: Inventory endpoint ready" : undefined}
+          title={
+            collapsed
+              ? `${t("navigation.apiStatus")}: ${t("navigation.inventoryEndpointReady")}`
+              : undefined
+          }
         >
           <Activity className="size-4 shrink-0 text-emerald-400" />
           {!collapsed ? (
             <div className="min-w-0">
-              <div className="text-xs font-medium">API status</div>
+              <div className="text-xs font-medium">
+                {t("navigation.apiStatus")}
+              </div>
               <div className="truncate text-xs text-muted-foreground">
-                Inventory endpoint ready
+                {t("navigation.inventoryEndpointReady")}
               </div>
             </div>
           ) : null}
@@ -271,6 +299,7 @@ function SidebarContent({
 }
 
 function CommandPalette() {
+  const t = useTranslations();
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -281,7 +310,8 @@ function CommandPalette() {
   const agents = agentsQuery.data?.content ?? [];
   const { data: session } = useSession();
   const visibleNavItems = navItems.filter(
-    (item) => !item.requiredPermission || item.requiredPermission(session?.user.role)
+    (item) =>
+      !item.requiredPermission || item.requiredPermission(session?.user.role)
   );
 
   useEffect(() => {
@@ -310,14 +340,14 @@ function CommandPalette() {
         variant="ghost"
       >
         <Search className="size-4" />
-        <span className="flex-1 text-left">Search navigation</span>
+        <span className="flex-1 text-left">{t("forms.search")}</span>
         <span className="rounded border bg-background px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
           Ctrl K
         </span>
       </Button>
       <CommandDialog
         className="sm:max-w-xl"
-        description="Search navigation, servers, and agents."
+        description={`${t("navigation.navigation")}, ${t("navigation.servers")}, ${t("navigation.agents")}`}
         onOpenChange={setOpen}
         open={open}
         title="Command palette"
@@ -326,46 +356,45 @@ function CommandPalette() {
           <CommandInput
             autoFocus
             onValueChange={setSearch}
-            placeholder="Search Kyvora..."
+            placeholder={`${t("forms.search")} Kyvora...`}
             value={search}
           />
           <CommandList>
             <CommandEmpty>
               {serversQuery.isLoading || agentsQuery.isLoading
-                ? "Loading results..."
+                ? `${t("common.loading")}...`
                 : "No results found."}
             </CommandEmpty>
-            <CommandGroup heading="Navigation">
+            <CommandGroup heading={t("navigation.navigation")}>
               {visibleNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive =
-                    item.href === "/"
-                      ? pathname === "/"
-                      : pathname.startsWith(item.href);
+                const Icon = item.icon;
+                const label = t(`navigation.${item.labelKey}`);
+                const isActive =
+                  item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
-                  return (
-                    <CommandItem
-                      data-checked={isActive}
-                      key={item.href}
-                      onSelect={() => navigateTo(item.href)}
-                      value={`${item.label} ${item.href}`}
-                    >
-                      <Icon className="size-4" />
-                      <span>{item.label}</span>
-                    </CommandItem>
-                  );
-                })}
+                return (
+                  <CommandItem
+                    data-checked={isActive}
+                    key={item.href}
+                    onSelect={() => navigateTo(item.href)}
+                    value={`${label} ${item.href}`}
+                  >
+                    <Icon className="size-4" />
+                    <span>{label}</span>
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
             <CommandSeparator />
-            <CommandGroup heading="Servers">
+            <CommandGroup heading={t("navigation.servers")}>
               {serversQuery.isLoading ? (
                 <CommandItem disabled value="loading servers">
-                  Loading servers...
+                  {t("servers.loadingInventory")}
                 </CommandItem>
               ) : null}
               {serversQuery.isError ? (
                 <CommandItem disabled value="unable to load servers">
-                  Unable to load servers.
+                  {t("servers.errorTitle")}
                 </CommandItem>
               ) : null}
               {servers.map((server) => (
@@ -385,15 +414,15 @@ function CommandPalette() {
               ))}
             </CommandGroup>
             <CommandSeparator />
-            <CommandGroup heading="Agents">
+            <CommandGroup heading={t("navigation.agents")}>
               {agentsQuery.isLoading ? (
                 <CommandItem disabled value="loading agents">
-                  Loading agents...
+                  {t("agents.loadingAgents")}
                 </CommandItem>
               ) : null}
               {agentsQuery.isError ? (
                 <CommandItem disabled value="unable to load agents">
-                  Unable to load agents.
+                  {t("agents.errorTitle")}
                 </CommandItem>
               ) : null}
               {agents.map((agent) => (
@@ -418,6 +447,8 @@ function CommandPalette() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const t = useTranslations();
+  const { locale, setLocale } = useLocalePreference();
   const { data: session, status } = useSession();
   const mayManageSettings = canManageSettings(session?.user.role);
   const settingsQuery = useSettings(mayManageSettings);
@@ -433,6 +464,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       storeSidebarCollapsed(nextCollapsed);
       return nextCollapsed;
     });
+  }
+
+  function handleLogout() {
+    toast.info(t("auth.signingOut"));
+    void logout();
   }
 
   return (
@@ -458,7 +494,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Sheet>
             <SheetTrigger asChild>
               <Button
-                aria-label="Open navigation"
+                aria-label={t("navigation.openNavigation")}
                 className="md:hidden"
                 size="icon"
                 variant="ghost"
@@ -468,7 +504,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SheetTrigger>
             <SheetContent className="w-72 p-0" side="left">
               <SheetHeader className="sr-only">
-                <SheetTitle>Navigation</SheetTitle>
+                <SheetTitle>{t("navigation.navigation")}</SheetTitle>
               </SheetHeader>
               <SidebarContent />
             </SheetContent>
@@ -487,11 +523,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="hidden min-w-0 text-right text-xs text-muted-foreground sm:block">
               <div className="truncate font-medium text-foreground">
                 {status === "loading"
-                  ? "Loading session"
-                  : session?.user.displayName || session?.user.email || "Signed in"}
+                  ? t("common.loadingSession")
+                  : session?.user.displayName ||
+                    session?.user.email ||
+                    t("common.signedIn")}
               </div>
               <div className="truncate">
-                {session?.user.role || "Authenticated"}
+                {session?.user.role
+                  ? t(`roles.${session.user.role}`)
+                  : t("common.authenticated")}
               </div>
             </div>
             <DropdownMenu>
@@ -508,24 +548,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <div className="truncate text-sm font-medium text-foreground">
                       {session?.user.displayName ||
                         session?.user.email ||
-                        "Signed in"}
+                        t("common.signedIn")}
                     </div>
                     <div className="truncate text-xs">
-                      {session?.user.email || "Authenticated session"}
+                      {session?.user.email || t("common.authenticatedSession")}
                     </div>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+                  {t("common.language")}
+                </DropdownMenuLabel>
+                {supportedLocales.map((supportedLocale) => (
+                  <DropdownMenuItem
+                    key={supportedLocale}
+                    onClick={() => setLocale(supportedLocale)}
+                  >
+                    <span className="w-4 text-xs">
+                      {locale === supportedLocale ? "✓" : ""}
+                    </span>
+                    {supportedLocale === "en"
+                      ? t("common.english")
+                      : t("common.german")}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/profile">
                     <UserCircle className="size-4" />
-                    Profile
+                    {t("navigation.profile")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => void logout()} variant="destructive">
+                <DropdownMenuItem onClick={handleLogout} variant="destructive">
                   <LogOut className="size-4" />
-                  Sign out
+                  {t("auth.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

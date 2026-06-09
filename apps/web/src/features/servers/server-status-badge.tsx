@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import type { ServerStatus } from "@/lib/api/servers";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const statusClasses: Record<ServerStatus, string> = {
   ONLINE:
@@ -10,9 +11,11 @@ const statusClasses: Record<ServerStatus, string> = {
 };
 
 export function ServerStatusBadge({ status }: { status: ServerStatus }) {
+  const t = useTranslations("statuses");
+
   return (
     <Badge className={cn("border", statusClasses[status])} variant="outline">
-      {status}
+      {t(status)}
     </Badge>
   );
 }

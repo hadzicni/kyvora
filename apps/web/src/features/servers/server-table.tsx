@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 
 import {
   Table,
@@ -16,27 +17,23 @@ import { EditServerDialog } from "./edit-server-dialog";
 import { formatDateTime } from "./format";
 import { ServerStatusBadge } from "./server-status-badge";
 
-function formatRelativeLastSeen(value: string | null) {
+function formatRelativeLastSeen(
+  value: string | null,
+  format: ReturnType<typeof useFormatter>,
+  t: ReturnType<typeof useTranslations>
+) {
   if (!value) {
-    return "Never";
+    return t("common.never");
   }
 
   const elapsedMs = Date.now() - new Date(value).getTime();
   const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60_000));
 
   if (elapsedMinutes < 1) {
-    return "Just now";
-  }
-  if (elapsedMinutes < 60) {
-    return `${elapsedMinutes} min ago`;
+    return t("common.justNow");
   }
 
-  const elapsedHours = Math.round(elapsedMinutes / 60);
-  if (elapsedHours < 24) {
-    return `${elapsedHours} hr ago`;
-  }
-
-  return `${Math.round(elapsedHours / 24)} d ago`;
+  return format.relativeTime(new Date(value), new Date());
 }
 
 export function ServerTable({
@@ -48,6 +45,9 @@ export function ServerTable({
   canEdit?: boolean;
   servers: ServerInventoryItem[];
 }) {
+  const t = useTranslations();
+  const format = useFormatter();
+  const locale = useLocale();
   const router = useRouter();
   const showActions = canDelete || canEdit;
 
@@ -59,15 +59,17 @@ export function ServerTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Hostname</TableHead>
-          <TableHead>IP address</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>OS</TableHead>
-          <TableHead>Tags</TableHead>
-          <TableHead>Last seen</TableHead>
+          <TableHead>{t("servers.nameHeader")}</TableHead>
+          <TableHead>{t("servers.hostnameHeader")}</TableHead>
+          <TableHead>{t("servers.ipHeader")}</TableHead>
+          <TableHead>{t("forms.status")}</TableHead>
+          <TableHead>{t("servers.osHeader")}</TableHead>
+          <TableHead>{t("servers.tagsHeader")}</TableHead>
+          <TableHead>{t("servers.lastSeenHeader")}</TableHead>
           {showActions ? (
-            <TableHead className="w-20 text-right">Actions</TableHead>
+            <TableHead className="w-20 text-right">
+              {t("servers.actionsHeader")}
+            </TableHead>
           ) : null}
         </TableRow>
       </TableHeader>
@@ -89,7 +91,7 @@ export function ServerTable({
             <TableCell className="min-w-56">
               <div className="font-medium">{server.name}</div>
               <div className="max-w-52 truncate text-xs text-muted-foreground">
-                {server.description || "No description"}
+                {server.description || t("servers.noDescription")}
               </div>
             </TableCell>
             <TableCell>
@@ -103,19 +105,21 @@ export function ServerTable({
                 <ServerStatusBadge status={server.status} />
                 {server.status === "OFFLINE" ? (
                   <span className="text-xs text-red-300/90">
-                    No recent heartbeat
+                    {t("servers.noRecentHeartbeat")}
                   </span>
                 ) : null}
                 {server.status === "UNKNOWN" ? (
                   <span className="text-xs text-amber-300/90">
-                    Awaiting signal
+                    {t("servers.awaitingSignal")}
                   </span>
                 ) : null}
               </div>
             </TableCell>
             <TableCell className="max-w-48 truncate">
               {server.operatingSystem || (
-                <span className="text-muted-foreground">Unknown</span>
+                <span className="text-muted-foreground">
+                  {t("common.unknown")}
+                </span>
               )}
             </TableCell>
             <TableCell>
@@ -130,15 +134,21 @@ export function ServerTable({
                     </span>
                   ))
                 ) : (
-                  <span className="text-xs text-muted-foreground">None</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t("common.none")}
+                  </span>
                 )}
               </div>
             </TableCell>
             <TableCell className="text-muted-foreground">
               <div className="font-medium text-foreground">
-                {formatRelativeLastSeen(server.lastSeenAt)}
+                {formatRelativeLastSeen(server.lastSeenAt, format, t)}
               </div>
-              <div className="text-xs">{formatDateTime(server.lastSeenAt)}</div>
+              <div className="text-xs">
+                {server.lastSeenAt
+                  ? formatDateTime(server.lastSeenAt, locale)
+                  : t("common.never")}
+              </div>
             </TableCell>
             {showActions ? (
               <TableCell

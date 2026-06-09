@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
@@ -63,6 +64,8 @@ import { cn } from "@/lib/utils";
 const pageSizeOptions = [10, 20, 50] as const;
 
 export default function ActivityPage() {
+  const t = useTranslations();
+  const locale = useLocale();
   const [aggregateType, setAggregateType] = useState<string>("ALL");
   const [eventType, setEventType] = useState<AuditEventType | "ALL">("ALL");
   const [search, setSearch] = useState("");
@@ -113,8 +116,8 @@ export default function ActivityPage() {
     <AppShell>
       <div className="space-y-6">
         <PageHeader
-          subtitle="Inspect lifecycle, token, and infrastructure audit events."
-          title="Activity"
+          subtitle={t("activity.subtitle")}
+          title={t("activity.title")}
           actions={
           <Button
             disabled={auditLogsQuery.isFetching}
@@ -127,7 +130,7 @@ export default function ActivityPage() {
                 auditLogsQuery.isFetching && "animate-spin"
               )}
             />
-            Refresh
+            {t("actions.refresh")}
           </Button>
           }
         />
@@ -136,24 +139,24 @@ export default function ActivityPage() {
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <History className="size-4" />
-              Audit logs
+              {t("activity.auditLogs")}
             </CardTitle>
             <CardDescription>
               {auditLogsQuery.data
-                ? `${formatNumber(totalElements)} recorded events`
-                : "Loading activity"}
+                ? t("activity.recordedEvents", { count: totalElements })
+                : t("activity.loadingActivity")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-3 rounded-md border bg-muted/10 p-3 xl:grid-cols-[minmax(16rem,1fr)_12rem_16rem_auto] xl:items-end">
               <div className="grid gap-2">
-                <Label htmlFor="activity-search">Search</Label>
+                <Label htmlFor="activity-search">{t("forms.search")}</Label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="activity-search"
                     className="pl-8"
-                    placeholder="Message or actor"
+                    placeholder={t("forms.messageOrActor")}
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                   />
@@ -161,7 +164,7 @@ export default function ActivityPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="activity-aggregate-type">Aggregate</Label>
+                <Label htmlFor="activity-aggregate-type">{t("activity.aggregate")}</Label>
                 <Select
                   value={aggregateType}
                   onValueChange={(value) => {
@@ -173,10 +176,10 @@ export default function ActivityPage() {
                     id="activity-aggregate-type"
                     className="w-full"
                   >
-                    <SelectValue placeholder="All aggregates" />
+                    <SelectValue placeholder={t("forms.allAggregates")} />
                   </SelectTrigger>
                   <SelectContent position="popper">
-                    <SelectItem value="ALL">All aggregates</SelectItem>
+                    <SelectItem value="ALL">{t("forms.allAggregates")}</SelectItem>
                     {aggregateTypes.map((type) => (
                       <SelectItem key={type} value={type}>
                         {type}
@@ -187,7 +190,7 @@ export default function ActivityPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="activity-event-type">Event type</Label>
+                <Label htmlFor="activity-event-type">{t("activity.eventType")}</Label>
                 <Select
                   value={eventType}
                   onValueChange={(value) => {
@@ -196,10 +199,10 @@ export default function ActivityPage() {
                   }}
                 >
                   <SelectTrigger id="activity-event-type" className="w-full">
-                    <SelectValue placeholder="All events" />
+                    <SelectValue placeholder={t("forms.allEvents")} />
                   </SelectTrigger>
                   <SelectContent position="popper">
-                    <SelectItem value="ALL">All events</SelectItem>
+                    <SelectItem value="ALL">{t("forms.allEvents")}</SelectItem>
                     {auditEventTypes.map((type) => (
                       <SelectItem key={type} value={type}>
                         {formatAuditEventType(type)}
@@ -221,7 +224,7 @@ export default function ActivityPage() {
                 }}
               >
                 <X className="size-4" />
-                Clear
+                {t("actions.clear")}
               </Button>
             </div>
 
@@ -231,7 +234,7 @@ export default function ActivityPage() {
                 message={
                   auditLogsQuery.error instanceof Error
                     ? auditLogsQuery.error.message
-                    : "The audit log API returned an unexpected error."
+                    : t("activity.unexpectedError")
                 }
                 onRetry={() => void auditLogsQuery.refetch()}
               />
@@ -253,18 +256,22 @@ export default function ActivityPage() {
             {auditLogsQuery.isSuccess ? (
               <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Showing {formatNumber(rangeStart)}-{formatNumber(rangeEnd)}{" "}
-                  of {formatNumber(totalElements)}
+                  {t("actions.showingRange", {
+                    start: formatNumber(rangeStart, locale),
+                    end: formatNumber(rangeEnd, locale),
+                    total: formatNumber(totalElements, locale),
+                  })}
                   {normalizedSearch ? (
                     <span className="ml-2 text-xs">
-                      {formatNumber(visibleLogs.length)} matching rows on this
-                      page
+                      {t("activity.matchingRows", { count: visibleLogs.length })}
                     </span>
                   ) : null}
                   <span className="ml-2 text-xs">
-                    Page {totalPages === 0 ? 0 : displayedPage + 1} of{" "}
-                    {totalPages}
-                    {auditLogsQuery.isFetching ? " - Updating" : ""}
+                    {t("actions.pageOf", {
+                      page: totalPages === 0 ? 0 : displayedPage + 1,
+                      total: totalPages,
+                    })}
+                    {auditLogsQuery.isFetching ? ` - ${t("actions.updating")}` : ""}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -272,7 +279,7 @@ export default function ActivityPage() {
                     className="text-xs font-medium text-muted-foreground"
                     htmlFor="activity-page-size"
                   >
-                    Rows
+                    {t("actions.rows")}
                   </Label>
                   <Select
                     value={String(pageSize)}
@@ -286,7 +293,7 @@ export default function ActivityPage() {
                   >
                     <SelectTrigger
                       id="activity-page-size"
-                      aria-label="Rows per page"
+                      aria-label={t("actions.rows")}
                       className="w-[7.5rem]"
                     >
                       <SelectValue />
@@ -294,13 +301,13 @@ export default function ActivityPage() {
                     <SelectContent position="popper">
                       {pageSizeOptions.map((size) => (
                         <SelectItem key={size} value={String(size)}>
-                          {size} rows
+                          {t("actions.rowsCount", { count: size })}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <Button
-                    aria-label="Previous page"
+                    aria-label={t("actions.previousPage")}
                     disabled={!canGoBack}
                     onClick={() =>
                       setPage((currentPage) => Math.max(0, currentPage - 1))
@@ -311,7 +318,7 @@ export default function ActivityPage() {
                     <ChevronLeft className="size-4" />
                   </Button>
                   <Button
-                    aria-label="Next page"
+                    aria-label={t("actions.nextPage")}
                     disabled={!canGoForward}
                     onClick={() => setPage((currentPage) => currentPage + 1)}
                     size="icon"
@@ -430,17 +437,19 @@ function ActivityTable({
   auditLogs: AuditLog[];
   onInspect: (auditLog: AuditLog) => void;
 }) {
+  const t = useTranslations();
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Event</TableHead>
-          <TableHead>Target</TableHead>
-          <TableHead>Actor</TableHead>
-          <TableHead>Message</TableHead>
-          <TableHead>Created</TableHead>
+          <TableHead>{t("activity.event")}</TableHead>
+          <TableHead>{t("activity.target")}</TableHead>
+          <TableHead>{t("activity.actor")}</TableHead>
+          <TableHead>{t("activity.message")}</TableHead>
+          <TableHead>{t("activity.created")}</TableHead>
           <TableHead>
-            <span className="sr-only">Details</span>
+            <span className="sr-only">{t("activity.details")}</span>
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -495,16 +504,18 @@ function ActivityTable({
 }
 
 function ActivityTableSkeleton() {
+  const t = useTranslations();
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
           {[
-            "Event",
-            "Target",
-            "Actor",
-            "Message",
-            "Created",
+            t("activity.event"),
+            t("activity.target"),
+            t("activity.actor"),
+            t("activity.message"),
+            t("activity.created"),
             "",
           ].map((heading, index) => (
             <TableHead key={`${heading}-${index}`}>{heading}</TableHead>
@@ -527,29 +538,32 @@ function ActivityTableSkeleton() {
 }
 
 function ActivityEmptyState() {
+  const t = useTranslations("activity");
+
   return (
     <div className="flex min-h-72 flex-col items-center justify-center rounded-md border border-dashed bg-muted/20 p-8 text-center">
       <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-muted">
         <History className="size-5 text-muted-foreground" />
       </div>
-      <h2 className="text-base font-medium">No activity found</h2>
+      <h2 className="text-base font-medium">{t("emptyTitle")}</h2>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        Audit events will appear here once Kyvora records infrastructure
-        changes.
+        {t("emptyDescription")}
       </p>
     </div>
   );
 }
 
 function ActivityEmptySearchState() {
+  const t = useTranslations("activity");
+
   return (
     <div className="flex min-h-72 flex-col items-center justify-center rounded-md border border-dashed bg-muted/20 p-8 text-center">
       <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-muted">
         <Search className="size-5 text-muted-foreground" />
       </div>
-      <h2 className="text-base font-medium">No matching activity</h2>
+      <h2 className="text-base font-medium">{t("emptySearchTitle")}</h2>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        No audit events on this page match the current message or actor search.
+        {t("emptySearchDescription")}
       </p>
     </div>
   );
@@ -562,15 +576,17 @@ function ActivityErrorState({
   message: string;
   onRetry: () => void;
 }) {
+  const t = useTranslations();
+
   return (
     <div className="flex min-h-72 flex-col items-center justify-center rounded-md border border-destructive/30 bg-destructive/5 p-8 text-center">
       <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-destructive/10 text-destructive">
         <AlertTriangle className="size-5" />
       </div>
-      <h2 className="text-base font-medium">Unable to load activity</h2>
+      <h2 className="text-base font-medium">{t("activity.errorTitle")}</h2>
       <p className="mt-2 max-w-md text-sm text-muted-foreground">{message}</p>
       <Button className="mt-5" onClick={onRetry} variant="outline">
-        Retry
+        {t("actions.retry")}
       </Button>
     </div>
   );
@@ -583,6 +599,7 @@ function ActivityDetailSheet({
   auditLog: AuditLog | null;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations("activity");
   const metadataJson = auditLog
     ? JSON.stringify(auditLog.metadata, null, 2)
     : "";
@@ -592,10 +609,10 @@ function ActivityDetailSheet({
       <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
         <SheetHeader className="border-b pr-12">
           <SheetTitle>
-            {auditLog ? formatAuditEventType(auditLog.eventType) : "Activity"}
+            {auditLog ? formatAuditEventType(auditLog.eventType) : t("sheetTitle")}
           </SheetTitle>
           <SheetDescription>
-            {auditLog ? formatActivityMessage(auditLog) : "Audit log details"}
+            {auditLog ? formatActivityMessage(auditLog) : t("sheetDescription")}
           </SheetDescription>
         </SheetHeader>
         {auditLog ? (

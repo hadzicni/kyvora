@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { NextIntlClientProvider } from "next-intl";
 import "./globals.css";
 import { Providers } from "./providers";
+import enMessages from "@/i18n/messages/en.json";
 
 const geistSans = localFont({
   src: [
@@ -32,7 +34,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} dark h-full antialiased`}>
       <body className="min-h-full bg-background text-foreground">
-        <Providers>{children}</Providers>
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

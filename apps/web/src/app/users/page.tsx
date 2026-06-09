@@ -12,6 +12,7 @@ import {
   UserX,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -89,17 +90,6 @@ type CreateUserValues = z.output<typeof userFormSchema>;
 type EditUserValues = z.output<typeof editUserSchema>;
 type ResetPasswordValues = z.output<typeof resetPasswordSchema>;
 
-function formatTimestamp(value: string | null) {
-  if (!value) {
-    return "Never";
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
 function errorMessage(error: unknown) {
   if (error instanceof UsersApiError && error.details.length > 0) {
     return `${error.message}: ${error.details.join(", ")}`;
@@ -119,6 +109,8 @@ function UserTableSkeleton() {
 }
 
 export default function UsersPage() {
+  const t = useTranslations();
+  const locale = useLocale();
   const { data: session, status } = useSession();
   const mayManageUsers = canManageUsers(session?.user.role);
   const usersQuery = useUsers(status === "authenticated" && mayManageUsers);
@@ -198,7 +190,7 @@ export default function UsersPage() {
   async function onCreate(values: CreateUserValues) {
     try {
       await createMutation.mutateAsync(values);
-      toast.success("User created");
+      toast.success(t("users.createdToast"));
       setCreateOpen(false);
       createForm.reset({
         displayName: "",
@@ -222,7 +214,7 @@ export default function UsersPage() {
         id: editingUser.id,
         input: values,
       });
-      toast.success("User updated");
+      toast.success(t("users.updatedToast"));
       setEditingUser(null);
     } catch (error) {
       toast.error(errorMessage(error));
@@ -237,10 +229,10 @@ export default function UsersPage() {
     try {
       if (toggleUser.enabled) {
         await disableMutation.mutateAsync(toggleUser.id);
-        toast.success("User disabled");
+        toast.success(t("users.disabledToast"));
       } else {
         await enableMutation.mutateAsync(toggleUser.id);
-        toast.success("User enabled");
+        toast.success(t("users.enabledToast"));
       }
       setToggleUser(null);
     } catch (error) {
@@ -258,7 +250,7 @@ export default function UsersPage() {
         id: resetUser.id,
         input: values,
       });
-      toast.success("Password reset");
+      toast.success(t("users.passwordResetToast"));
       setResetUser(null);
       resetForm.reset({
         newTemporaryPassword: generateTemporaryPassword(),
@@ -271,7 +263,7 @@ export default function UsersPage() {
   if (status !== "loading" && !mayManageUsers) {
     return (
       <AppShell>
-        <NotAuthorized description="User management requires an ADMIN account." />
+        <NotAuthorized description={t("users.notAuthorized")} />
       </AppShell>
     );
   }
@@ -283,12 +275,12 @@ export default function UsersPage() {
           badge={
             usersQuery.data ? (
               <span className="text-sm text-muted-foreground">
-                {users.length} accounts
+                {t("users.accounts", { count: users.length })}
               </span>
             ) : null
           }
-          subtitle="Manage local Kyvora accounts and access roles."
-          title="Users"
+          subtitle={t("users.subtitle")}
+          title={t("users.title")}
           actions={
           <Button
             onClick={() => {
@@ -303,16 +295,16 @@ export default function UsersPage() {
             }}
           >
             <Plus className="size-4" />
-            Create user
+            {t("users.createUser")}
           </Button>
           }
         />
 
         <Card>
           <CardHeader className="border-b">
-            <CardTitle>Accounts</CardTitle>
+            <CardTitle>{t("users.accountsTitle")}</CardTitle>
             <CardDescription>
-              Password hashes and temporary passwords are never returned.
+              {t("users.accountsDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -322,7 +314,7 @@ export default function UsersPage() {
               <div className="flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm">
                 <AlertTriangle className="mt-0.5 size-4 text-destructive" />
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium">Unable to load users</div>
+                  <div className="font-medium">{t("users.unableToLoad")}</div>
                   <div className="mt-1 text-muted-foreground">
                     {errorMessage(usersQuery.error)}
                   </div>
@@ -334,16 +326,16 @@ export default function UsersPage() {
                   variant="outline"
                 >
                   <RefreshCw className="size-4" />
-                  Retry
+                  {t("actions.retry")}
                 </Button>
               </div>
             ) : null}
 
             {usersQuery.isSuccess && users.length === 0 ? (
               <div className="rounded-md border border-dashed p-8 text-center">
-                <div className="font-medium">No users found</div>
+                <div className="font-medium">{t("users.emptyTitle")}</div>
                 <div className="mt-1 text-sm text-muted-foreground">
-                  Create the first managed account.
+                  {t("users.emptyDescription")}
                 </div>
               </div>
             ) : null}
@@ -353,13 +345,13 @@ export default function UsersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Display name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Last login</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t("forms.displayName")}</TableHead>
+                      <TableHead>{t("users.email")}</TableHead>
+                      <TableHead>{t("forms.role")}</TableHead>
+                      <TableHead>{t("forms.status")}</TableHead>
+                      <TableHead>{t("users.lastLogin")}</TableHead>
+                      <TableHead>{t("users.created")}</TableHead>
+                      <TableHead className="text-right">{t("servers.actionsHeader")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -376,20 +368,32 @@ export default function UsersPage() {
                           </TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{user.role}</Badge>
+                            <Badge variant="outline">{t(`roles.${user.role}`)}</Badge>
                           </TableCell>
                           <TableCell>
                             <Badge variant={user.enabled ? "default" : "secondary"}>
-                              {user.enabled ? "Enabled" : "Disabled"}
+                              {user.enabled ? t("common.enabled") : t("common.disabled")}
                             </Badge>
                             {user.mustChangePassword ? (
                               <Badge className="ml-2 border-amber-500/30 text-amber-300" variant="outline">
-                                Password change required
+                                {t("users.passwordChangeRequired")}
                               </Badge>
                             ) : null}
                           </TableCell>
-                          <TableCell>{formatTimestamp(user.lastLoginAt)}</TableCell>
-                          <TableCell>{formatTimestamp(user.createdAt)}</TableCell>
+                          <TableCell>
+                            {user.lastLoginAt
+                              ? new Intl.DateTimeFormat(locale, {
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                }).format(new Date(user.lastLoginAt))
+                              : t("common.never")}
+                          </TableCell>
+                          <TableCell>
+                            {new Intl.DateTimeFormat(locale, {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            }).format(new Date(user.createdAt))}
+                          </TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-2">
                               <Button
@@ -424,7 +428,7 @@ export default function UsersPage() {
                                 size="icon"
                                 title={
                                   isLastEnabledAdmin
-                                    ? "Cannot disable the last enabled admin"
+                                    ? t("users.lastAdmin")
                                     : undefined
                                 }
                                 variant={user.enabled ? "destructive" : "outline"}
@@ -451,8 +455,8 @@ export default function UsersPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create user</DialogTitle>
-            <DialogDescription>Add a local Kyvora account.</DialogDescription>
+            <DialogTitle>{t("users.createUser")}</DialogTitle>
+            <DialogDescription>{t("users.addLocalAccount")}</DialogDescription>
           </DialogHeader>
           <form
             className="space-y-4"
@@ -467,7 +471,7 @@ export default function UsersPage() {
             <TemporaryPasswordField
               disabled={loading}
               id="temporaryPassword"
-              label="Temporary password"
+              label={t("forms.temporaryPassword")}
               value={createTemporaryPassword}
               register={createForm.register("temporaryPassword")}
               onChange={(value) =>
@@ -485,12 +489,12 @@ export default function UsersPage() {
               />
               <span className="flex min-w-0 flex-1 items-center gap-2">
                 <Check className="size-4 text-emerald-400" />
-                Require password change on next login
+                {t("users.requirePasswordChange")}
               </span>
             </label>
             <DialogFooter>
               <Button disabled={loading} type="submit">
-                Create
+                {t("actions.create")}
               </Button>
             </DialogFooter>
           </form>
@@ -503,12 +507,12 @@ export default function UsersPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit user</DialogTitle>
+            <DialogTitle>{t("users.editUser")}</DialogTitle>
             <DialogDescription>{editingUser?.email}</DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={editForm.handleSubmit(onEdit)}>
             <div className="space-y-2">
-              <Label htmlFor="editDisplayName">Display name</Label>
+              <Label htmlFor="editDisplayName">{t("forms.displayName")}</Label>
               <Input id="editDisplayName" {...editForm.register("displayName")} />
             </div>
             <RoleField
@@ -518,7 +522,7 @@ export default function UsersPage() {
             />
             <DialogFooter>
               <Button disabled={loading} type="submit">
-                Save
+                {t("actions.save")}
               </Button>
             </DialogFooter>
           </form>
@@ -532,14 +536,14 @@ export default function UsersPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {toggleUser?.enabled ? "Disable user" : "Enable user"}
+              {toggleUser?.enabled ? t("users.disableUser") : t("users.enableUser")}
             </DialogTitle>
             <DialogDescription>{toggleUser?.email}</DialogDescription>
           </DialogHeader>
           <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
             {toggleUser?.enabled
-              ? "Disabled users cannot sign in or refresh sessions."
-              : "Enabled users can sign in with their current password."}
+              ? t("users.disabledCannotSignIn")
+              : t("users.enabledCanSignIn")}
           </div>
           <DialogFooter>
             <Button
@@ -547,7 +551,7 @@ export default function UsersPage() {
               onClick={() => void onToggleUser()}
               variant={toggleUser?.enabled ? "destructive" : "default"}
             >
-              Confirm
+              {t("actions.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -559,7 +563,7 @@ export default function UsersPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reset password</DialogTitle>
+            <DialogTitle>{t("users.resetPassword")}</DialogTitle>
             <DialogDescription>{resetUser?.email}</DialogDescription>
           </DialogHeader>
           <form
@@ -567,12 +571,12 @@ export default function UsersPage() {
             onSubmit={resetForm.handleSubmit(onResetPassword)}
           >
             <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-              User will be required to change this password on next login.
+              {t("users.resetPasswordDescription")}
             </div>
             <TemporaryPasswordField
               disabled={loading}
               id="newTemporaryPassword"
-              label="New temporary password"
+              label={t("forms.newTemporaryPassword")}
               value={resetTemporaryPassword}
               register={resetForm.register("newTemporaryPassword")}
               onChange={(value) =>
@@ -584,7 +588,7 @@ export default function UsersPage() {
             />
             <DialogFooter>
               <Button disabled={loading} type="submit">
-                Reset
+                {t("actions.reset")}
               </Button>
             </DialogFooter>
           </form>
@@ -605,14 +609,16 @@ function UserFields({
   role: UserRole;
   setRole: (role: UserRole) => void;
 }) {
+  const t = useTranslations();
+
   return (
     <>
       <div className="space-y-2">
-        <Label htmlFor="displayName">Display name</Label>
+        <Label htmlFor="displayName">{t("forms.displayName")}</Label>
         <Input id="displayName" disabled={disabled} {...register("displayName")} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("users.email")}</Label>
         <Input id="email" disabled={disabled} type="email" {...register("email")} />
       </div>
       <RoleField disabled={disabled} role={role} setRole={setRole} />
@@ -629,9 +635,11 @@ function RoleField({
   role: UserRole;
   setRole: (role: UserRole) => void;
 }) {
+  const t = useTranslations();
+
   return (
     <div className="space-y-2">
-      <Label>Role</Label>
+      <Label>{t("forms.role")}</Label>
       <Select
         disabled={disabled}
         onValueChange={(value) => setRole(value as UserRole)}
@@ -641,9 +649,9 @@ function RoleField({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="ADMIN">ADMIN</SelectItem>
-          <SelectItem value="OPERATOR">OPERATOR</SelectItem>
-          <SelectItem value="VIEWER">VIEWER</SelectItem>
+          <SelectItem value="ADMIN">{t("roles.ADMIN")}</SelectItem>
+          <SelectItem value="OPERATOR">{t("roles.OPERATOR")}</SelectItem>
+          <SelectItem value="VIEWER">{t("roles.VIEWER")}</SelectItem>
         </SelectContent>
       </Select>
     </div>

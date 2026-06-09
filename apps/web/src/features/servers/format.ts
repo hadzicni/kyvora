@@ -1,9 +1,12 @@
-export function formatDateTime(value: string | null | undefined) {
+export function formatDateTime(
+  value: string | null | undefined,
+  locale = "en"
+) {
   if (!value) {
     return "Never";
   }
 
-  return new Intl.DateTimeFormat("en", {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -11,8 +14,8 @@ export function formatDateTime(value: string | null | undefined) {
   }).format(new Date(value));
 }
 
-export function formatNumber(value: number) {
-  return new Intl.NumberFormat("en").format(value);
+export function formatNumber(value: number, locale = "en") {
+  return new Intl.NumberFormat(locale).format(value);
 }
 
 export function formatBytes(value: number | null | undefined) {

@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import type { AgentStatus } from "@/lib/api/agents";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const statusClasses: Record<AgentStatus, string> = {
   PENDING: "border-sky-500/30 bg-sky-500/10 text-sky-300",
@@ -12,9 +13,11 @@ const statusClasses: Record<AgentStatus, string> = {
 };
 
 export function AgentStatusBadge({ status }: { status: AgentStatus }) {
+  const t = useTranslations("statuses");
+
   return (
     <Badge className={cn("border", statusClasses[status])} variant="outline">
-      {status}
+      {t(status)}
     </Badge>
   );
 }

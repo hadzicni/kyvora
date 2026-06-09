@@ -14,6 +14,7 @@ import {
   Settings,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -184,20 +185,21 @@ function SettingsSkeleton() {
 }
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
+  const t = useTranslations();
+
   return (
     <Card>
       <CardContent className="flex flex-col gap-4 py-10 text-center">
         <CircleAlert className="mx-auto size-8 text-destructive" />
         <div>
-          <h2 className="text-base font-medium">Settings are unavailable</h2>
+          <h2 className="text-base font-medium">{t("settings.unavailableTitle")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            The API did not return system settings. Retry after checking the
-            backend connection.
+            {t("settings.unavailableDescription")}
           </p>
         </div>
         <Button className="mx-auto" onClick={onRetry} variant="outline">
           <RotateCcw className="size-4" />
-          Retry
+          {t("actions.retry")}
         </Button>
       </CardContent>
     </Card>
@@ -222,6 +224,7 @@ function InfoRow({
 }
 
 export default function SettingsPage() {
+  const t = useTranslations();
   const { data: session, status: sessionStatus } = useSession();
   const mayManageSettings = canManageSettings(session?.user.role);
   const settingsQuery = useSettings(mayManageSettings);
@@ -279,14 +282,14 @@ export default function SettingsPage() {
         settings: changedSettings,
       });
       reset(valuesFromSettings(response));
-      toast.success("Settings saved");
+      toast.success(t("settings.savedToast"));
     } catch (error) {
       if (error instanceof SettingsApiError && error.details.length > 0) {
         toast.error(error.details[0]);
         return;
       }
       toast.error(
-        error instanceof Error ? error.message : "Settings could not be saved"
+        error instanceof Error ? error.message : t("settings.saveFailed")
       );
     }
   }
@@ -297,7 +300,7 @@ export default function SettingsPage() {
   if (sessionStatus !== "loading" && !mayManageSettings) {
     return (
       <AppShell>
-        <NotAuthorized description="Settings management requires an ADMIN account." />
+        <NotAuthorized description={t("settings.notAuthorized")} />
       </AppShell>
     );
   }
@@ -309,17 +312,17 @@ export default function SettingsPage() {
           badge={
             <Badge className="w-fit" variant="outline">
               <MonitorCog className="size-3" />
-              System
+              {t("common.system")}
             </Badge>
           }
           eyebrow={
             <>
               <Settings className="size-4" />
-              Administration
+              {t("common.administration")}
             </>
           }
-          subtitle="Configure database-backed operational settings for this Kyvora instance. Secrets and agent tokens remain outside settings."
-          title="Settings"
+          subtitle={t("settings.subtitle")}
+          title={t("settings.title")}
         />
 
         {settingsQuery.isLoading ? <SettingsSkeleton /> : null}
@@ -336,14 +339,14 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <Card>
                 <CardHeader className="border-b">
-                  <CardTitle>Instance</CardTitle>
+                  <CardTitle>{t("settings.instance")}</CardTitle>
                   <CardDescription>
-                    Name and description shown to operators in the web UI.
+                    {t("settings.instanceDescription")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 pt-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="instance-name">Instance name</Label>
+                    <Label htmlFor="instance-name">{t("settings.instanceName")}</Label>
                     <Input
                       id="instance-name"
                       aria-invalid={Boolean(errors.instanceName)}
@@ -352,7 +355,7 @@ export default function SettingsPage() {
                     {fieldError(errors.instanceName)}
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="instance-description">Description</Label>
+                    <Label htmlFor="instance-description">{t("forms.description")}</Label>
                     <Textarea
                       id="instance-description"
                       aria-invalid={Boolean(errors.instanceDescription)}
@@ -368,17 +371,16 @@ export default function SettingsPage() {
                 <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2">
                     <HeartPulse className="size-4" />
-                    Agent monitoring
+                    {t("settings.agentMonitoring")}
                   </CardTitle>
                   <CardDescription>
-                    Heartbeat windows used to mark agents and linked servers
-                    offline.
+                    {t("settings.agentMonitoringDescription")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
                   <div className="grid gap-2">
                     <Label htmlFor="offline-threshold">
-                      Offline threshold seconds
+                      {t("settings.offlineThreshold")}
                     </Label>
                     <Input
                       id="offline-threshold"
@@ -395,7 +397,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="offline-check-interval">
-                      Offline check interval seconds
+                      {t("settings.offlineCheckInterval")}
                     </Label>
                     <Input
                       id="offline-check-interval"
@@ -411,28 +413,26 @@ export default function SettingsPage() {
                     {fieldError(errors.offlineCheckIntervalSeconds)}
                   </div>
                   <div className="rounded-md border bg-muted/20 p-3 text-sm leading-6 text-muted-foreground sm:col-span-2">
-                    Threshold changes apply to stale-agent detection
-                    dynamically. Scheduler interval changes are stored in the
-                    database and take effect after the API process restarts.
+                    {t("settings.thresholdHelp")}
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="border-b">
-                  <CardTitle>UI</CardTitle>
+                  <CardTitle>{t("settings.ui")}</CardTitle>
                   <CardDescription>
-                    Presentation settings for local operator workflows.
+                    {t("settings.uiDescription")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div className="flex items-center justify-between gap-4 rounded-md border bg-muted/20 p-3">
                     <div>
                       <Label className="text-sm font-medium">
-                        Show development hints
+                        {t("settings.showDevHints")}
                       </Label>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Enables local setup hints in supported UI surfaces.
+                        {t("settings.showDevHintsDescription")}
                       </p>
                     </div>
                     <Toggle
@@ -456,27 +456,27 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BadgeInfo className="size-4" />
-                    About
+                    {t("settings.about")}
                   </CardTitle>
                   <CardDescription>
-                    Release and API status information.
+                    {t("settings.aboutDescription")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <InfoRow label="Product" value="Kyvora" />
+                  <InfoRow label={t("help.product")} value="Kyvora" />
                   <InfoRow
-                    label="Version"
+                    label={t("help.version")}
                     value={
                       statusQuery.isLoading
-                        ? "Loading..."
+                        ? `${t("common.loading")}...`
                         : status?.version && status.version !== "unknown"
                           ? status.version
-                          : "Unavailable"
+                          : t("common.unavailable")
                     }
                   />
                   <InfoRow
                     label="API"
-                    value={statusQuery.isError ? "Unavailable" : "Healthy"}
+                    value={statusQuery.isError ? t("common.unavailable") : t("common.healthy")}
                   />
                   <InfoRow label="Service" value={status?.service ?? "API"} />
                 </CardContent>
@@ -486,20 +486,18 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Info className="size-4" />
-                    Storage policy
+                    {t("settings.storagePolicy")}
                   </CardTitle>
                   <CardDescription>
-                    Settings are for operational configuration only.
+                    {t("settings.storagePolicyDescription")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm leading-6 text-muted-foreground">
                   <p>
-                    JWT secrets, database credentials, Auth.js secrets, and
-                    agent tokens are not stored in system settings.
+                    {t("settings.storagePolicyText1")}
                   </p>
                   <p>
-                    Agent tokens remain one-time plaintext values and only token
-                    hashes are persisted by agent enrollment.
+                    {t("settings.storagePolicyText2")}
                   </p>
                 </CardContent>
               </Card>
@@ -508,10 +506,10 @@ export default function SettingsPage() {
                 <CardContent className="flex items-center justify-between gap-3 pt-4">
                   <div className="min-w-0">
                     <div className="text-sm font-medium">
-                      {isDirty ? "Unsaved changes" : "No changes"}
+                      {isDirty ? t("settings.unsavedChanges") : t("settings.noChanges")}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Updates are written to the database and audit log.
+                      {t("settings.saveDescription")}
                     </div>
                   </div>
                   <Button disabled={!isDirty || saving} type="submit">
@@ -522,7 +520,7 @@ export default function SettingsPage() {
                     ) : (
                       <Check className="size-4" />
                     )}
-                    Save
+                    {t("actions.save")}
                   </Button>
                 </CardContent>
               </Card>

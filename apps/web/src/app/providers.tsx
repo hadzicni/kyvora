@@ -6,6 +6,7 @@ import { SessionProvider } from "next-auth/react";
 
 import { BackendHealthGate } from "@/components/app/backend-health-gate";
 import { Toaster } from "@/components/ui/sonner";
+import { LocaleProvider } from "@/i18n/locale-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -23,10 +24,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <SessionProvider>
-      <QueryClientProvider client={queryClient}>
-        <BackendHealthGate>{children}</BackendHealthGate>
-        <Toaster theme="dark" position="bottom-right" richColors />
-      </QueryClientProvider>
+      <LocaleProvider>
+        <QueryClientProvider client={queryClient}>
+          <BackendHealthGate>{children}</BackendHealthGate>
+          <Toaster theme="dark" position="bottom-right" richColors />
+        </QueryClientProvider>
+      </LocaleProvider>
     </SessionProvider>
   );
 }

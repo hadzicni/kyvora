@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
 
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
@@ -37,14 +38,6 @@ import { getStatus, statusKeys } from "@/lib/api/status";
 const repositoryUrl = "https://github.com/hadzicni/kyvora";
 const releasesUrl = `${repositoryUrl}/releases`;
 const releaseDocsUrl = `${repositoryUrl}/blob/main/docs/RELEASE.md`;
-
-function displayVersion(version?: string) {
-  if (!version || version.toLowerCase() === "unknown") {
-    return "Version unavailable";
-  }
-
-  return `Kyvora v${version}`;
-}
 
 function InfoRow({
   label,
@@ -87,6 +80,8 @@ function CodeBlock({ children }: { children: React.ReactNode }) {
 }
 
 export default function HelpPage() {
+  const t = useTranslations();
+  const locale = useLocale();
   const statusQuery = useQuery({
     queryKey: statusKeys.status,
     queryFn: getStatus,
@@ -101,17 +96,17 @@ export default function HelpPage() {
           badge={
             <Badge className="w-fit" variant="outline">
               <LifeBuoy className="size-3" />
-              Operator guide
+              {t("help.operatorGuide")}
             </Badge>
           }
           eyebrow={
             <>
               <CircleHelp className="size-4" />
-              Reference
+              {t("common.reference")}
             </>
           }
-          subtitle="Operational reference for running Kyvora, enrolled agents, server state, activity records, and release metadata."
-          title="Help"
+          subtitle={t("help.subtitle")}
+          title={t("help.title")}
         />
 
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
@@ -120,7 +115,7 @@ export default function HelpPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="size-4" />
-                  About {instance.name}
+                  {t("help.about", { name: instance.name })}
                 </CardTitle>
                 <CardDescription>
                   {instance.description}
@@ -128,16 +123,18 @@ export default function HelpPage() {
               </CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 <InfoRow
-                  label="Product"
+                  label={t("help.product")}
                   value={instance.name}
                 />
                 <InfoRow
-                  label="Version"
+                  label={t("help.version")}
                   value={
                     statusQuery.isLoading ? (
                       <Skeleton className="ml-auto h-4 w-24" />
                     ) : (
-                      displayVersion(status?.version)
+                      status?.version && status.version !== "unknown"
+                        ? t("help.versionValue", { version: status.version })
+                        : t("help.versionUnavailable")
                     )
                   }
                 />
@@ -148,10 +145,10 @@ export default function HelpPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Terminal className="size-4" />
-                  Agent Setup
+                  {t("help.agentSetup")}
                 </CardTitle>
                 <CardDescription>
-                  Current lifecycle for enrolling a Kyvora Agent with a server.
+                  {t("help.agentSetupDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -190,7 +187,7 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Server className="size-4" />
-                    Server Status Guide
+                  Server Status Guide
                   </CardTitle>
                   <CardDescription>
                     Server status is not manually editable once managed by an
@@ -291,10 +288,10 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <HeartPulse className="size-4" />
-                  System Status
+                    {t("help.systemStatus")}
                 </CardTitle>
                 <CardDescription>
-                  Live status from the authenticated Kyvora API status endpoint.
+                  {t("help.systemStatusDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -307,40 +304,40 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                     }
                   />
                   <div>
-                    <div className="text-sm font-medium">API status</div>
+                    <div className="text-sm font-medium">{t("navigation.apiStatus")}</div>
                     <div className="text-sm text-muted-foreground">
                       {statusQuery.isLoading
-                        ? "Checking..."
+                        ? `${t("common.checking")}...`
                         : statusQuery.isError
-                          ? "Unavailable"
-                          : "Healthy"}
+                          ? t("common.unavailable")
+                          : t("common.healthy")}
                     </div>
                   </div>
                 </div>
-                <InfoRow label="Service" value={status?.service ?? "Unavailable"} />
+                <InfoRow label="Service" value={status?.service ?? t("common.unavailable")} />
                 <InfoRow
-                  label="API version"
+                  label={t("help.apiVersion")}
                   value={
                     statusQuery.isLoading
-                      ? "Loading..."
+                      ? `${t("common.loading")}...`
                       : status?.version && status.version !== "unknown"
                         ? status.version
-                        : "Unavailable"
+                        : t("common.unavailable")
                   }
                 />
                 <InfoRow
-                  label="Inventory API"
-                  value={statusQuery.isError ? "Unavailable" : "Ready"}
+                  label={t("help.inventoryApi")}
+                  value={statusQuery.isError ? t("common.unavailable") : t("common.ready")}
                 />
                 <InfoRow
-                  label="Generated"
+                  label={t("help.generated")}
                   value={
                     status?.generatedAt
-                      ? new Intl.DateTimeFormat(undefined, {
+                      ? new Intl.DateTimeFormat(locale, {
                           dateStyle: "medium",
                           timeStyle: "short",
                         }).format(new Date(status.generatedAt))
-                      : "Unavailable"
+                      : t("common.unavailable")
                   }
                 />
               </CardContent>
@@ -350,28 +347,28 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <GitBranch className="size-4" />
-                  Release / Links
+                  {t("help.releaseLinks")}
                 </CardTitle>
                 <CardDescription>
-                  Project source, release artifacts, and release process notes.
+                  {t("help.releaseLinksDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button asChild className="w-full justify-between" variant="outline">
                   <a href={repositoryUrl} rel="noreferrer" target="_blank">
-                    GitHub repository
+                    {t("help.githubRepository")}
                     <ExternalLink className="size-4" />
                   </a>
                 </Button>
                 <Button asChild className="w-full justify-between" variant="outline">
                   <a href={releasesUrl} rel="noreferrer" target="_blank">
-                    GitHub releases
+                    {t("help.githubReleases")}
                     <ExternalLink className="size-4" />
                   </a>
                 </Button>
                 <Button asChild className="w-full justify-between" variant="outline">
                   <a href={releaseDocsUrl} rel="noreferrer" target="_blank">
-                    Release docs
+                    {t("help.releaseDocs")}
                     <ExternalLink className="size-4" />
                   </a>
                 </Button>

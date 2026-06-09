@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useLocale, useTranslations } from "next-intl";
 
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
@@ -45,6 +46,8 @@ const serverStatuses = ["ONLINE", "OFFLINE", "UNKNOWN"] as const;
 const pageSizeOptions = [10, 20, 50] as const;
 
 export default function ServerInventoryPage() {
+  const t = useTranslations();
+  const locale = useLocale();
   const { data: session } = useSession();
   const mayManageServers = canManageServers(session?.user.role);
   const mayDeleteServers = canDeleteServers(session?.user.role);
@@ -86,12 +89,12 @@ export default function ServerInventoryPage() {
           badge={
             serversQuery.data ? (
               <span className="text-sm text-muted-foreground">
-                {formatNumber(totalElements)} records
+                {t("servers.records", { count: totalElements })}
               </span>
             ) : null
           }
-          subtitle="Browse, filter, and maintain the servers tracked by Kyvora inventory."
-          title="Server inventory"
+          subtitle={t("servers.subtitle")}
+          title={t("servers.title")}
           actions={
             <>
               {mayManageServers ? <CreateServerDialog /> : null}
@@ -106,7 +109,7 @@ export default function ServerInventoryPage() {
                   serversQuery.isFetching && "animate-spin"
                 )}
               />
-              Refresh
+              {t("actions.refresh")}
             </Button>
             </>
           }
@@ -118,14 +121,14 @@ export default function ServerInventoryPage() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Server className="size-4" />
-                  Inventory
+                  {t("servers.inventory")}
                 </CardTitle>
                 <CardDescription>
                   {serversQuery.data
-                    ? `${formatNumber(
-                        totalElements
-                      )} ${hasActiveFilters ? "matching " : ""}servers`
-                    : "Loading inventory"}
+                    ? hasActiveFilters
+                      ? t("servers.matchingServerCount", { count: totalElements })
+                      : t("servers.serverCount", { count: totalElements })
+                    : t("servers.loadingInventory")}
                 </CardDescription>
               </div>
             </div>
@@ -133,13 +136,13 @@ export default function ServerInventoryPage() {
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-3 rounded-md border bg-muted/10 p-3 lg:grid-cols-[minmax(16rem,1fr)_12rem_minmax(12rem,18rem)_auto] lg:items-end">
               <div className="grid gap-2">
-                <Label htmlFor="server-search">Search</Label>
+                <Label htmlFor="server-search">{t("forms.search")}</Label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="server-search"
                     className="pl-8"
-                    placeholder="Name, hostname, or IP address"
+                    placeholder={t("forms.nameHostnameIp")}
                     value={search}
                     onChange={(event) => {
                       setSearch(event.target.value);
@@ -150,7 +153,7 @@ export default function ServerInventoryPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="server-status">Status</Label>
+                <Label htmlFor="server-status">{t("forms.status")}</Label>
                 <Select
                   value={status}
                   onValueChange={(value) => {
@@ -159,13 +162,13 @@ export default function ServerInventoryPage() {
                   }}
                 >
                   <SelectTrigger id="server-status" className="w-full">
-                    <SelectValue placeholder="All statuses" />
+                    <SelectValue placeholder={t("forms.allStatuses")} />
                   </SelectTrigger>
                   <SelectContent position="popper">
-                    <SelectItem value="ALL">All statuses</SelectItem>
+                    <SelectItem value="ALL">{t("forms.allStatuses")}</SelectItem>
                     {serverStatuses.map((serverStatus) => (
                       <SelectItem key={serverStatus} value={serverStatus}>
-                        {serverStatus}
+                        {t(`statuses.${serverStatus}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -173,7 +176,7 @@ export default function ServerInventoryPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="server-tags">Tags</Label>
+                <Label htmlFor="server-tags">{t("forms.tags")}</Label>
                 <Input
                   id="server-tags"
                   placeholder="prod, api"
@@ -199,7 +202,7 @@ export default function ServerInventoryPage() {
                 }}
               >
                 <X className="size-4" />
-                Clear
+                {t("actions.clear")}
               </Button>
             </div>
 
@@ -209,7 +212,7 @@ export default function ServerInventoryPage() {
                 message={
                   serversQuery.error instanceof Error
                     ? serversQuery.error.message
-                    : "The inventory API returned an unexpected error."
+                    : t("servers.unexpectedError")
                 }
                 onRetry={() => void serversQuery.refetch()}
               />
@@ -227,12 +230,17 @@ export default function ServerInventoryPage() {
             {serversQuery.isSuccess ? (
               <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Showing {formatNumber(rangeStart)}-{formatNumber(rangeEnd)}{" "}
-                  of {formatNumber(totalElements)}
+                  {t("actions.showingRange", {
+                    start: formatNumber(rangeStart, locale),
+                    end: formatNumber(rangeEnd, locale),
+                    total: formatNumber(totalElements, locale),
+                  })}
                   <span className="ml-2 text-xs">
-                    Page {totalPages === 0 ? 0 : displayedPage + 1} of{" "}
-                    {totalPages}
-                    {serversQuery.isFetching ? " - Updating" : ""}
+                    {t("actions.pageOf", {
+                      page: totalPages === 0 ? 0 : displayedPage + 1,
+                      total: totalPages,
+                    })}
+                    {serversQuery.isFetching ? ` - ${t("actions.updating")}` : ""}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -240,7 +248,7 @@ export default function ServerInventoryPage() {
                     className="text-xs font-medium text-muted-foreground"
                     htmlFor="server-page-size"
                   >
-                    Rows
+                    {t("actions.rows")}
                   </Label>
                   <Select
                     value={String(pageSize)}
@@ -254,7 +262,7 @@ export default function ServerInventoryPage() {
                   >
                     <SelectTrigger
                       id="server-page-size"
-                      aria-label="Rows per page"
+                      aria-label={t("actions.rows")}
                       className="w-[7.5rem]"
                     >
                       <SelectValue />
@@ -262,13 +270,13 @@ export default function ServerInventoryPage() {
                     <SelectContent position="popper">
                       {pageSizeOptions.map((size) => (
                         <SelectItem key={size} value={String(size)}>
-                          {size} rows
+                          {t("actions.rowsCount", { count: size })}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <Button
-                    aria-label="Previous page"
+                    aria-label={t("actions.previousPage")}
                     disabled={!canGoBack}
                     onClick={() =>
                       setPage((currentPage) => Math.max(0, currentPage - 1))
@@ -279,7 +287,7 @@ export default function ServerInventoryPage() {
                     <ChevronLeft className="size-4" />
                   </Button>
                   <Button
-                    aria-label="Next page"
+                    aria-label={t("actions.nextPage")}
                     disabled={!canGoForward}
                     onClick={() => setPage((currentPage) => currentPage + 1)}
                     size="icon"

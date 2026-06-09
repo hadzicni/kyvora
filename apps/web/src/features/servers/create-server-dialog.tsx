@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -60,6 +61,7 @@ export function getConflictField(error: ApiError): "hostname" | "ipAddress" | nu
 }
 
 export function CreateServerDialog() {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [enrollAgent, setEnrollAgent] = useState(false);
@@ -86,7 +88,7 @@ export function CreateServerDialog() {
         ...toServerInput(values),
         status: "UNKNOWN",
       });
-      toast.success("Server created.", {
+      toast.success(t("servers.serverCreated"), {
         description: server.hostname,
       });
 
@@ -101,7 +103,7 @@ export function CreateServerDialog() {
         const message =
           "Server was created, but the agent name must be at least 2 characters.";
         setFormError(message);
-        toast.warning("Server created. Agent enrollment skipped.", {
+        toast.warning(t("servers.createdAgentSkipped"), {
           description: message,
         });
         return;
@@ -114,7 +116,7 @@ export function CreateServerDialog() {
         });
         form.reset(emptyServerFormValues);
         setEnrollment(enrolled);
-        toast.success("Agent enrolled.", {
+        toast.success(t("servers.agentEnrolled"), {
           description: enrolled.agent.name,
         });
       } catch (agentError) {
@@ -126,7 +128,7 @@ export function CreateServerDialog() {
               : "Server was created, but agent enrollment failed.";
 
         setFormError(message);
-        toast.warning("Server created. Agent enrollment failed.", {
+        toast.warning(t("servers.createdAgentFailed"), {
           description: message,
         });
       }
@@ -141,7 +143,7 @@ export function CreateServerDialog() {
               : "A server with matching unique inventory data already exists.";
 
         setFormError(message);
-        toast.error("Unable to create server.", {
+        toast.error(t("servers.unableToCreate"), {
           description: message,
         });
 
@@ -157,7 +159,7 @@ export function CreateServerDialog() {
           : "Unable to create the server right now.";
 
       setFormError(message);
-      toast.error("Unable to create server.", {
+      toast.error(t("servers.unableToCreate"), {
         description: message,
       });
     }
@@ -205,7 +207,7 @@ export function CreateServerDialog() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="size-4" />
-          Create server
+          {t("servers.createServer")}
         </Button>
       </DialogTrigger>
       <DialogContent
@@ -223,11 +225,13 @@ export function CreateServerDialog() {
         }}
       >
         <DialogHeader>
-          <DialogTitle>{enrollment ? "Agent token" : "Create server"}</DialogTitle>
+          <DialogTitle>
+            {enrollment ? t("servers.agentToken") : t("servers.createServer")}
+          </DialogTitle>
           <DialogDescription>
             {enrollment
-              ? "This token is shown only once."
-              : "Add a managed server to the inventory."}
+              ? t("servers.tokenShownOnce")
+              : t("servers.addManagedServer")}
           </DialogDescription>
         </DialogHeader>
 
@@ -256,17 +260,19 @@ export function CreateServerDialog() {
                   />
                   <span className="grid gap-1 text-sm">
                     <span className="font-medium">
-                      Enroll an agent for this server
+                      {t("servers.enrollAgent")}
                     </span>
                     <span className="text-muted-foreground">
-                      Generate a one-time token after the server is created.
+                      {t("servers.enrollAgentDescription")}
                     </span>
                   </span>
                 </label>
 
                 {enrollAgent ? (
                   <div className="grid gap-2 pl-7">
-                    <Label htmlFor="create-server-agent-name">Agent name</Label>
+                    <Label htmlFor="create-server-agent-name">
+                      {t("servers.agentName")}
+                    </Label>
                     <Input
                       id="create-server-agent-name"
                       value={displayedAgentName}
@@ -294,7 +300,9 @@ export function CreateServerDialog() {
                 <Plus className="size-4" />
               )
             }
-            submitLabel={enrollAgent ? "Create server and enroll agent" : "Create server"}
+            submitLabel={
+              enrollAgent ? t("servers.createAndEnroll") : t("servers.createServer")
+            }
           />
         )}
       </DialogContent>

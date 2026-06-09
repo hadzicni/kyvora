@@ -2,6 +2,7 @@
 
 import { Bot, RefreshCw } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
@@ -19,11 +20,11 @@ import { AgentTable } from "@/features/agents/agent-table";
 import { AgentTableSkeleton } from "@/features/agents/agent-table-skeleton";
 import { RegisterAgentDialog } from "@/features/agents/register-agent-dialog";
 import { useAgents } from "@/features/agents/use-agents";
-import { formatNumber } from "@/features/servers/format";
 import { canManageAgents } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 export default function AgentsPage() {
+  const t = useTranslations();
   const { data: session } = useSession();
   const mayManageAgents = canManageAgents(session?.user.role);
   const agentsQuery = useAgents({ size: 50 });
@@ -37,12 +38,12 @@ export default function AgentsPage() {
           badge={
             agentsQuery.data ? (
               <span className="text-sm text-muted-foreground">
-                {formatNumber(totalElements)} registered
+                {t("agents.registered", { count: totalElements })}
               </span>
             ) : null
           }
-          subtitle="Enroll agents, rotate setup tokens, and monitor heartbeat status."
-          title="Agents"
+          subtitle={t("agents.subtitle")}
+          title={t("agents.title")}
           actions={
             <>
               {mayManageAgents ? <RegisterAgentDialog /> : null}
@@ -57,7 +58,7 @@ export default function AgentsPage() {
                   agentsQuery.isFetching && "animate-spin"
                 )}
               />
-              Refresh
+              {t("actions.refresh")}
             </Button>
             </>
           }
@@ -67,12 +68,12 @@ export default function AgentsPage() {
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <Bot className="size-4" />
-              Agent registry
+              {t("agents.registry")}
             </CardTitle>
             <CardDescription>
               {agentsQuery.data
-                ? `${formatNumber(totalElements)} registered agents`
-                : "Loading agents"}
+                ? t("agents.registeredAgents", { count: totalElements })
+                : t("agents.loadingAgents")}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -82,7 +83,7 @@ export default function AgentsPage() {
                 message={
                   agentsQuery.error instanceof Error
                     ? agentsQuery.error.message
-                    : "The agent management API returned an unexpected error."
+                    : t("agents.unexpectedError")
                 }
                 onRetry={() => void agentsQuery.refetch()}
               />

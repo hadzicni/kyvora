@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 
 import {
   Table,
@@ -15,27 +16,23 @@ import type { Agent } from "@/lib/api/agents";
 
 import { AgentStatusBadge } from "./agent-status-badge";
 
-function formatRelativeLastSeen(value: string | null) {
+function formatRelativeLastSeen(
+  value: string | null,
+  format: ReturnType<typeof useFormatter>,
+  t: ReturnType<typeof useTranslations>
+) {
   if (!value) {
-    return "Never";
+    return t("common.never");
   }
 
   const elapsedMs = Date.now() - new Date(value).getTime();
   const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60_000));
 
   if (elapsedMinutes < 1) {
-    return "Just now";
-  }
-  if (elapsedMinutes < 60) {
-    return `${elapsedMinutes} min ago`;
+    return t("common.justNow");
   }
 
-  const elapsedHours = Math.round(elapsedMinutes / 60);
-  if (elapsedHours < 24) {
-    return `${elapsedHours} hr ago`;
-  }
-
-  return `${Math.round(elapsedHours / 24)} d ago`;
+  return format.relativeTime(new Date(value), new Date());
 }
 
 export function AgentTable({
@@ -45,16 +42,20 @@ export function AgentTable({
   agents: Agent[];
   compact?: boolean;
 }) {
+  const t = useTranslations();
+  const format = useFormatter();
+  const locale = useLocale();
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Server</TableHead>
-          {!compact ? <TableHead>Hostname</TableHead> : null}
-          <TableHead>Status</TableHead>
-          <TableHead>Last seen</TableHead>
-          {!compact ? <TableHead>Version</TableHead> : null}
+          <TableHead>{t("forms.name")}</TableHead>
+          <TableHead>{t("agents.server")}</TableHead>
+          {!compact ? <TableHead>{t("forms.hostname")}</TableHead> : null}
+          <TableHead>{t("forms.status")}</TableHead>
+          <TableHead>{t("agents.lastSeen")}</TableHead>
+          {!compact ? <TableHead>{t("agents.version")}</TableHead> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -87,7 +88,9 @@ export function AgentTable({
                   </span>
                 </Link>
               ) : (
-                <span className="text-muted-foreground">Unassigned</span>
+                <span className="text-muted-foreground">
+                  {t("common.unassigned")}
+                </span>
               )}
             </TableCell>
             {!compact ? (
@@ -100,9 +103,13 @@ export function AgentTable({
             </TableCell>
             <TableCell className="text-muted-foreground">
               <div className="font-medium text-foreground">
-                {formatRelativeLastSeen(agent.lastSeenAt)}
+                {formatRelativeLastSeen(agent.lastSeenAt, format, t)}
               </div>
-              <div className="text-xs">{formatDateTime(agent.lastSeenAt)}</div>
+              <div className="text-xs">
+                {agent.lastSeenAt
+                  ? formatDateTime(agent.lastSeenAt, locale)
+                  : t("common.never")}
+              </div>
             </TableCell>
             {!compact ? (
               <TableCell className="font-mono text-xs">{agent.version}</TableCell>

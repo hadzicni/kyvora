@@ -3,14 +3,19 @@
 import { AlertCircle, Loader2, LogIn } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supportedLocales } from "@/i18n/config";
+import { useLocalePreference } from "@/i18n/locale-provider";
 
 export default function LoginPage() {
+  const t = useTranslations();
+  const { locale, setLocale } = useLocalePreference();
   const router = useRouter();
   const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
@@ -47,11 +52,29 @@ export default function LoginPage() {
             </span>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-white">
-            Welcome back
+            {t("auth.welcomeBack")}
           </h1>
           <p className="mt-2 text-sm leading-6 text-zinc-400">
-            Sign in to access your Kyvora dashboard.
+            {t("auth.loginSubtitle")}
           </p>
+          <div className="mt-4 flex rounded-md border border-white/10 bg-white/5 p-0.5">
+            {supportedLocales.map((supportedLocale) => (
+              <button
+                className={`rounded px-2.5 py-1 text-xs transition-colors ${
+                  locale === supportedLocale
+                    ? "bg-white text-zinc-950"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+                key={supportedLocale}
+                onClick={() => setLocale(supportedLocale)}
+                type="button"
+              >
+                {supportedLocale === "en"
+                  ? t("common.english")
+                  : t("common.german")}
+              </button>
+            ))}
+          </div>
         </div>
 
         <form
@@ -71,7 +94,7 @@ export default function LoginPage() {
             setIsSubmitting(false);
 
             if (!result || result.error) {
-              setError("Please check your email and password, then try again.");
+              setError(t("auth.invalidCredentials"));
               return;
             }
 
@@ -84,7 +107,7 @@ export default function LoginPage() {
               className="text-xs font-medium uppercase tracking-wide text-zinc-400"
               htmlFor="email"
             >
-              Email
+              {t("auth.email")}
             </Label>
             <Input
               autoComplete="email"
@@ -104,14 +127,14 @@ export default function LoginPage() {
               className="text-xs font-medium uppercase tracking-wide text-zinc-400"
               htmlFor="password"
             >
-              Password
+              {t("auth.password")}
             </Label>
             <Input
               autoComplete="current-password"
               id="password"
               name="password"
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter your password"
+              placeholder={t("auth.passwordPlaceholder")}
               required
               type="password"
               value={password}
@@ -126,7 +149,7 @@ export default function LoginPage() {
             >
               <AlertCircle className="mt-0.5 size-4 shrink-0" />
               <div className="space-y-1">
-                <p className="font-medium">Sign in failed</p>
+                <p className="font-medium">{t("auth.signInFailed")}</p>
                 <p className="text-red-200/80">{error}</p>
               </div>
             </div>
@@ -142,7 +165,7 @@ export default function LoginPage() {
             ) : (
               <LogIn className="size-4" />
             )}
-            Sign in
+            {t("auth.signIn")}
           </Button>
         </form>
       </div>

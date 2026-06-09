@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { signIn, signOut, useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -50,8 +51,6 @@ const changePasswordSchema = z
 type ChangePasswordValues = z.output<typeof changePasswordSchema>;
 
 async function logout() {
-  toast.info("Signing out...");
-
   await fetch("/api/session/logout", { method: "POST" }).catch(() => {
     // Auth.js session cleanup should continue even if backend revocation fails.
   });
@@ -115,6 +114,7 @@ function ProfileLoadingState() {
 }
 
 export default function ProfilePage() {
+  const t = useTranslations();
   const router = useRouter();
   const { data: session, status, update } = useSession();
   const statusQuery = useQuery({
@@ -195,11 +195,11 @@ export default function ProfilePage() {
           badge={
             <Badge className="w-fit" variant="outline">
               <BadgeCheck className="size-3" />
-              {user.role || "Authenticated"}
+              {user.role ? t(`roles.${user.role}`) : t("common.authenticated")}
             </Badge>
           }
-          subtitle="Account identity and session security details."
-          title="Profile"
+          subtitle={t("profile.subtitle")}
+          title={t("profile.title")}
         />
 
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
@@ -207,20 +207,23 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserCircle className="size-4" />
-                User information
+                {t("profile.userInformation")}
               </CardTitle>
               <CardDescription>
-                Safe fields exposed by the current Auth.js session.
+                {t("profile.userInformationDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <ProfileField
-                label="Display name"
-                value={user.displayName || "Not provided"}
+                label={t("forms.displayName")}
+                value={user.displayName || t("common.notProvided")}
               />
-              <ProfileField label="Email" value={user.email || "Not provided"} />
-              <ProfileField label="Role" value={user.role || "Not assigned"} />
-              <ProfileField label="User ID" value={user.id || "Unavailable"} />
+              <ProfileField label={t("users.email")} value={user.email || t("common.notProvided")} />
+              <ProfileField
+                label={t("forms.role")}
+                value={user.role ? t(`roles.${user.role}`) : t("common.notProvided")}
+              />
+              <ProfileField label="User ID" value={user.id || t("common.unavailable")} />
             </CardContent>
           </Card>
 
@@ -229,19 +232,19 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ShieldCheck className="size-4" />
-                  Security
+                  {t("profile.security")}
                 </CardTitle>
                 <CardDescription>
-                  Session handling for this signed-in browser.
+                  {t("profile.securityDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-3 rounded-md border bg-muted/20 p-3">
                   <BadgeCheck className="mt-0.5 size-4 text-emerald-400" />
                   <div>
-                    <div className="text-sm font-medium">Session status</div>
+                    <div className="text-sm font-medium">{t("profile.sessionStatus")}</div>
                     <div className="text-sm text-muted-foreground">
-                      Authenticated
+                      {t("common.authenticated")}
                     </div>
                   </div>
                 </div>
@@ -249,29 +252,31 @@ export default function ProfilePage() {
                   <Fingerprint className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
                     <div className="text-sm font-medium">
-                      Authentication provider
+                      {t("profile.authProvider")}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Credentials
+                      {t("profile.credentials")}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 rounded-md border bg-muted/20 p-3">
                   <ShieldCheck className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
-                    <div className="text-sm font-medium">Token storage</div>
+                    <div className="text-sm font-medium">{t("profile.tokenStorage")}</div>
                     <div className="text-sm text-muted-foreground">
-                      Managed by Auth.js session cookies
+                      {t("profile.tokenStorageDescription")}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 rounded-md border bg-muted/20 p-3">
                   <GitBranch className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
-                    <div className="text-sm font-medium">Kyvora version</div>
+                    <div className="text-sm font-medium">{t("profile.version")}</div>
                     <div className="text-sm text-muted-foreground">
                       {statusQuery.data?.version ??
-                        (statusQuery.isLoading ? "Loading..." : "Unavailable")}
+                        (statusQuery.isLoading
+                          ? `${t("common.loading")}...`
+                          : t("common.unavailable"))}
                     </div>
                   </div>
                 </div>
@@ -282,10 +287,10 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ShieldCheck className="size-4" />
-                  Change password
+                  {t("auth.changePassword")}
                 </CardTitle>
                 <CardDescription>
-                  Update the password for this Kyvora account.
+                  {t("profile.changePasswordDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -294,7 +299,7 @@ export default function ProfilePage() {
                   onSubmit={passwordForm.handleSubmit(onChangePassword)}
                 >
                   <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current password</Label>
+                    <Label htmlFor="currentPassword">{t("auth.currentPassword")}</Label>
                     <Input
                       id="currentPassword"
                       type="password"
@@ -302,7 +307,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="newPassword">New password</Label>
+                    <Label htmlFor="newPassword">{t("auth.newPassword")}</Label>
                     <Input
                       id="newPassword"
                       type="password"
@@ -315,7 +320,7 @@ export default function ProfilePage() {
                     ) : null}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmNewPassword">Confirm new password</Label>
+                    <Label htmlFor="confirmNewPassword">{t("auth.confirmPassword")}</Label>
                     <Input
                       id="confirmNewPassword"
                       type="password"
@@ -332,7 +337,7 @@ export default function ProfilePage() {
                     disabled={changePasswordMutation.isPending}
                     type="submit"
                   >
-                    Change password
+                    {t("auth.changePassword")}
                   </Button>
                 </form>
               </CardContent>
@@ -342,20 +347,23 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="size-4 text-destructive" />
-                  Account actions
+                  {t("profile.accountActions")}
                 </CardTitle>
                 <CardDescription>
-                  End this browser session and return to sign in.
+                  {t("profile.accountActionsDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
                   className="w-full justify-center"
-                  onClick={() => void logout()}
+                  onClick={() => {
+                    toast.info(t("auth.signingOut"));
+                    void logout();
+                  }}
                   variant="destructive"
                 >
                   <LogOut className="size-4" />
-                  Log out
+                  {t("profile.logOut")}
                 </Button>
               </CardContent>
             </Card>
