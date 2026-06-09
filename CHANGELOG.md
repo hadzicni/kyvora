@@ -28,3 +28,18 @@
 * Improved the web sidebar with collapsible behavior.
 * Improved agent decommissioning by supporting connected agents.
 * Removed the development hint from the backend health gate.
+
+## [0.1.3] - 2026-06-09
+
+### Added
+
+* Added interface translations to the web application.
+* Added role-based permission enforcement for authenticated users.
+* Added local font support for the web application.
+* Added local font support for the marketing website.
+
+### Changed
+
+* Improved the dashboard layout.
+* Improved sidebar behavior so the collapsed state is preserved after navigation.
+* Updated global font handling to use local font files.
