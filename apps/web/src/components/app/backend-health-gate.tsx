@@ -110,15 +110,6 @@ export function BackendHealthGate({
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm">
-            <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Local development
-            </div>
-            <div className="mt-1 font-mono text-xs text-zinc-300">
-              npm run dev:api
-            </div>
-          </div>
-
           <p className="text-center text-xs text-zinc-500">
             Last checked {formatLastChecked(lastCheckedAt)}
           </p>
