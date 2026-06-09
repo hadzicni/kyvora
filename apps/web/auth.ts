@@ -15,6 +15,7 @@ type BackendUser = {
   email: string;
   displayName: string;
   role: string;
+  mustChangePassword: boolean;
 };
 
 type BackendAuthResponse = {
@@ -78,6 +79,7 @@ async function loginBackend(
     email: response.user.email,
     displayName: response.user.displayName,
     role: response.user.role,
+    mustChangePassword: response.user.mustChangePassword,
     accessToken: response.accessToken,
     refreshToken: response.refreshToken,
     accessTokenExpiresAt:
@@ -100,6 +102,7 @@ async function refreshBackend(refreshToken: string): Promise<AuthUser | null> {
     email: response.user.email,
     displayName: response.user.displayName,
     role: response.user.role,
+    mustChangePassword: response.user.mustChangePassword,
     accessToken: response.accessToken,
     refreshToken: response.refreshToken,
     accessTokenExpiresAt:
@@ -157,6 +160,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           displayName: user.displayName,
           role: user.role,
+          mustChangePassword: user.mustChangePassword,
         };
         token.error = undefined;
         return token;
@@ -186,6 +190,7 @@ export const authOptions: NextAuthOptions = {
         email: refreshed.email,
         displayName: refreshed.displayName,
         role: refreshed.role,
+        mustChangePassword: refreshed.mustChangePassword,
       };
       token.error = undefined;
       return token;
@@ -196,6 +201,7 @@ export const authOptions: NextAuthOptions = {
         email: token.user?.email ?? "",
         displayName: token.user?.displayName ?? "",
         role: token.user?.role ?? "",
+        mustChangePassword: token.user?.mustChangePassword ?? false,
       };
 
       if (token.error) {

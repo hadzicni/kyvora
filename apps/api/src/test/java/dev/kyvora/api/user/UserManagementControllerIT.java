@@ -106,6 +106,7 @@ class UserManagementControllerIT {
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.email", is("new@example.com")))
 				.andExpect(jsonPath("$.role", is("USER")))
+				.andExpect(jsonPath("$.mustChangePassword", is(true)))
 				.andExpect(jsonPath("$.passwordHash").doesNotExist());
 
 		mockMvc.perform(post("/api/v1/users")
@@ -118,7 +119,21 @@ class UserManagementControllerIT {
 		assertThat(auditLogRepository.findAll())
 				.anyMatch(log -> log.getEventType() == AuditEventType.USER_CREATED
 						&& "USER".equals(log.getMetadata().get("role"))
+						&& Boolean.TRUE.equals(log.getMetadata().get("mustChangePassword"))
 						&& !log.getMetadata().containsKey("password"));
+	}
+
+	@Test
+	void adminCanCreateUserWithoutRequiredPasswordChangeWhenExplicitlyDisabled() throws Exception {
+		Map<String, Object> payload = createPayload("ready@example.com", "Ready User", "USER", "temporary-password");
+		payload.put("mustChangePassword", false);
+
+		mockMvc.perform(post("/api/v1/users")
+				.header(HttpHeaders.AUTHORIZATION, bearer(adminToken()))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(payload)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.mustChangePassword", is(false)));
 	}
 
 	@Test
@@ -151,10 +166,13 @@ class UserManagementControllerIT {
 				.content(objectMapper.writeValueAsString(Map.of("newTemporaryPassword", "new-temporary-password"))))
 				.andExpect(status().isNoContent());
 
+		assertThat(userRepository.findById(user.getId()).orElseThrow().isMustChangePassword()).isTrue();
+
 		mockMvc.perform(post("/api/v1/auth/login")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(loginPayload(USER_EMAIL, "new-temporary-password"))))
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.user.mustChangePassword", is(true)));
 
 		assertThat(auditLogRepository.findAll())
 				.anyMatch(log -> log.getEventType() == AuditEventType.USER_PASSWORD_RESET
@@ -179,6 +197,8 @@ class UserManagementControllerIT {
 						"newPassword", "new-password"))))
 				.andExpect(status().isNoContent());
 
+		assertThat(userRepository.findById(user.getId()).orElseThrow().isMustChangePassword()).isFalse();
+
 		mockMvc.perform(post("/api/v1/auth/login")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(loginPayload(USER_EMAIL, "new-password"))))
@@ -186,6 +206,42 @@ class UserManagementControllerIT {
 
 		assertThat(auditLogRepository.findAll())
 				.anyMatch(log -> log.getEventType() == AuditEventType.USER_PASSWORD_CHANGED);
+	}
+
+	@Test
+	void mustChangePasswordUserCanOnlyChangePasswordUntilCompleted() throws Exception {
+		user.setMustChangePassword(true);
+		userRepository.save(user);
+
+		String token = userToken();
+
+		mockMvc.perform(get("/api/v1/servers")
+				.header(HttpHeaders.AUTHORIZATION, bearer(token)))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("Password change required before accessing this resource.")));
+
+		mockMvc.perform(get("/api/v1/auth/me")
+				.header(HttpHeaders.AUTHORIZATION, bearer(token)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.mustChangePassword", is(true)));
+
+		mockMvc.perform(post("/api/v1/me/change-password")
+				.header(HttpHeaders.AUTHORIZATION, bearer(token))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(Map.of(
+						"currentPassword", PASSWORD,
+						"newPassword", "changed-password"))))
+				.andExpect(status().isNoContent());
+
+		String changedToken = tokenFor(USER_EMAIL, "changed-password");
+		mockMvc.perform(get("/api/v1/servers")
+				.header(HttpHeaders.AUTHORIZATION, bearer(changedToken)))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void bootstrapStyleCreatedUserDoesNotRequirePasswordChange() {
+		assertThat(admin.isMustChangePassword()).isFalse();
 	}
 
 	@Test

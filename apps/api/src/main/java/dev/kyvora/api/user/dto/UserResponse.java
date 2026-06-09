@@ -11,6 +11,7 @@ public record UserResponse(
 		String displayName,
 		UserRole role,
 		boolean enabled,
+		boolean mustChangePassword,
 		Instant lastLoginAt,
 		Instant createdAt,
 		Instant updatedAt) {

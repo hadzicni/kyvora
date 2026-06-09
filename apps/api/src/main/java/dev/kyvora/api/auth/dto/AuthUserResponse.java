@@ -8,5 +8,6 @@ public record AuthUserResponse(
 		UUID id,
 		String email,
 		String displayName,
-		UserRole role) {
+		UserRole role,
+		boolean mustChangePassword) {
 }

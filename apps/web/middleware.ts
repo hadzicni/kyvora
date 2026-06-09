@@ -1,17 +1,35 @@
 import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
 import { authSecret } from "@/auth";
 
-export default withAuth({
-  pages: {
-    signIn: "/login",
+export default withAuth(
+  function middleware(request) {
+    const pathname = request.nextUrl.pathname;
+    const mustChangePassword =
+      request.nextauth.token?.user?.mustChangePassword === true;
+
+    if (mustChangePassword && pathname !== "/change-password") {
+      return NextResponse.redirect(new URL("/change-password", request.url));
+    }
+
+    if (!mustChangePassword && pathname === "/change-password") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    return NextResponse.next();
   },
-  callbacks: {
-    authorized: ({ token }) =>
-      Boolean(token?.accessToken && token?.refreshToken && !token.error),
-  },
-  secret: authSecret,
-});
+  {
+    pages: {
+      signIn: "/login",
+    },
+    callbacks: {
+      authorized: ({ token }) =>
+        Boolean(token?.accessToken && token?.refreshToken && !token.error),
+    },
+    secret: authSecret,
+  }
+);
 
 export const config = {
   matcher: [
@@ -23,5 +41,6 @@ export const config = {
     "/settings/:path*",
     "/help/:path*",
     "/profile/:path*",
+    "/change-password",
   ],
 };

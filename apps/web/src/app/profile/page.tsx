@@ -11,7 +11,7 @@ import {
   UserCircle,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { signOut, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -115,7 +115,7 @@ function ProfileLoadingState() {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const statusQuery = useQuery({
     queryKey: statusKeys.status,
     queryFn: getStatus,
@@ -167,6 +167,15 @@ export default function ProfilePage() {
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
       });
+      if (user.email) {
+        await signIn("credentials", {
+          email: user.email,
+          password: values.newPassword,
+          redirect: false,
+          callbackUrl: "/profile",
+        });
+        await update();
+      }
       passwordForm.reset();
       toast.success("Password changed");
     } catch (error) {

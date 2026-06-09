@@ -10,6 +10,7 @@ import {
   ShieldAlert,
   UserCheck,
   UserX,
+  Check,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
@@ -68,6 +69,7 @@ const userFormSchema = z.object({
   email: z.email(),
   role: z.enum(["ADMIN", "USER"]),
   temporaryPassword: z.string().min(8),
+  mustChangePassword: z.boolean(),
 });
 
 const editUserSchema = userFormSchema.pick({
@@ -140,6 +142,7 @@ export default function UsersPage() {
       email: "",
       role: "USER",
       temporaryPassword: "",
+      mustChangePassword: true,
     },
   });
   const editForm = useForm<EditUserValues>({
@@ -353,6 +356,11 @@ export default function UsersPage() {
                             <Badge variant={user.enabled ? "default" : "secondary"}>
                               {user.enabled ? "Enabled" : "Disabled"}
                             </Badge>
+                            {user.mustChangePassword ? (
+                              <Badge className="ml-2 border-amber-500/30 text-amber-300" variant="outline">
+                                Password change required
+                              </Badge>
+                            ) : null}
                           </TableCell>
                           <TableCell>{formatTimestamp(user.lastLoginAt)}</TableCell>
                           <TableCell>{formatTimestamp(user.createdAt)}</TableCell>
@@ -433,6 +441,17 @@ export default function UsersPage() {
                 {...createForm.register("temporaryPassword")}
               />
             </div>
+            <label className="flex items-center gap-3 rounded-md border bg-muted/30 p-3 text-sm">
+              <input
+                className="size-4 accent-primary"
+                type="checkbox"
+                {...createForm.register("mustChangePassword")}
+              />
+              <span className="flex min-w-0 flex-1 items-center gap-2">
+                <Check className="size-4 text-emerald-400" />
+                Require password change on next login
+              </span>
+            </label>
             <DialogFooter>
               <Button disabled={loading} type="submit">
                 Create
@@ -511,6 +530,9 @@ export default function UsersPage() {
             className="space-y-4"
             onSubmit={resetForm.handleSubmit(onResetPassword)}
           >
+            <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
+              User will be required to change this password on next login.
+            </div>
             <div className="space-y-2">
               <Label htmlFor="newTemporaryPassword">New temporary password</Label>
               <Input

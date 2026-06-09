@@ -84,6 +84,7 @@ class AuthControllerIT {
 				.andExpect(jsonPath("$.user.email", is(EMAIL)))
 				.andExpect(jsonPath("$.user.displayName", is("Admin User")))
 				.andExpect(jsonPath("$.user.role", is("ADMIN")))
+				.andExpect(jsonPath("$.user.mustChangePassword", is(false)))
 				.andExpect(jsonPath("$.user.passwordHash").doesNotExist());
 	}
 
@@ -145,6 +146,7 @@ class AuthControllerIT {
 				.andExpect(jsonPath("$.email", is(EMAIL)))
 				.andExpect(jsonPath("$.displayName", is("Admin User")))
 				.andExpect(jsonPath("$.role", is("ADMIN")))
+				.andExpect(jsonPath("$.mustChangePassword", is(false)))
 				.andExpect(jsonPath("$.passwordHash").doesNotExist());
 	}
 

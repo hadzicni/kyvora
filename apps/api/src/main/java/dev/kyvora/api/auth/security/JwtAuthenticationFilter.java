@@ -48,12 +48,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		try {
 			JwtClaims claims = jwtService.validate(header.substring(7));
 			var user = userService.findEnabledById(claims.userId());
-			AuthenticatedUser principal = new AuthenticatedUser(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole());
+			AuthenticatedUser principal = new AuthenticatedUser(
+					user.getId(),
+					user.getEmail(),
+					user.getDisplayName(),
+					user.getRole(),
+					user.isMustChangePassword());
 			UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
 					principal,
 					null,
 					List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
 			SecurityContextHolder.getContext().setAuthentication(authentication);
+			if (user.isMustChangePassword() && !isPasswordChangeAllowed(request)) {
+				writePasswordChangeRequired(response, request);
+				return;
+			}
 			filterChain.doFilter(request, response);
 		}
 		catch (InvalidTokenException exception) {
@@ -68,5 +77,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 					request.getRequestURI(),
 					List.of()));
 		}
+	}
+
+	private boolean isPasswordChangeAllowed(HttpServletRequest request) {
+		String path = request.getRequestURI();
+		String method = request.getMethod();
+		return ("GET".equals(method) && "/api/v1/auth/me".equals(path))
+				|| ("POST".equals(method) && "/api/v1/me/change-password".equals(path))
+				|| ("POST".equals(method) && "/api/v1/auth/logout".equals(path))
+				|| ("POST".equals(method) && "/api/v1/auth/refresh".equals(path));
+	}
+
+	private void writePasswordChangeRequired(HttpServletResponse response, HttpServletRequest request) throws IOException {
+		SecurityContextHolder.clearContext();
+		response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+		objectMapper.writeValue(response.getOutputStream(), new ApiErrorResponse(
+				Instant.now(),
+				HttpStatus.FORBIDDEN.value(),
+				HttpStatus.FORBIDDEN.getReasonPhrase(),
+				"Password change required before accessing this resource.",
+				request.getRequestURI(),
+				List.of()));
 	}
 }

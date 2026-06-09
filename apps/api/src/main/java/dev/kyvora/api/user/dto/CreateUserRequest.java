@@ -10,5 +10,6 @@ public record CreateUserRequest(
 		@NotBlank @Email String email,
 		@NotBlank @Size(max = 120) String displayName,
 		@NotNull UserRole role,
-		@NotBlank @Size(min = 8) String temporaryPassword) {
+		@NotBlank @Size(min = 8) String temporaryPassword,
+		Boolean mustChangePassword) {
 }

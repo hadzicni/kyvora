@@ -9,6 +9,11 @@ import dev.kyvora.api.auth.entity.User;
 public class UserMapper {
 
 	public AuthUserResponse toResponse(User user) {
-		return new AuthUserResponse(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole());
+		return new AuthUserResponse(
+				user.getId(),
+				user.getEmail(),
+				user.getDisplayName(),
+				user.getRole(),
+				user.isMustChangePassword());
 	}
 }

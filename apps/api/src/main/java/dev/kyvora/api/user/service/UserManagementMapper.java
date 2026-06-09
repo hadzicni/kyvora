@@ -15,6 +15,7 @@ class UserManagementMapper {
 				user.getDisplayName(),
 				user.getRole(),
 				user.isEnabled(),
+				user.isMustChangePassword(),
 				user.getLastLoginAt(),
 				user.getCreatedAt(),
 				user.getUpdatedAt());

@@ -6,6 +6,7 @@ export type UserAccount = {
   displayName: string;
   role: UserRole;
   enabled: boolean;
+  mustChangePassword: boolean;
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -16,6 +17,7 @@ export type CreateUserInput = {
   displayName: string;
   role: UserRole;
   temporaryPassword: string;
+  mustChangePassword: boolean;
 };
 
 export type UpdateUserInput = {

@@ -16,6 +16,7 @@ type BackendUser = {
   email: string;
   displayName: string;
   role: string;
+  mustChangePassword: boolean;
 };
 
 type BackendAuthResponse = {

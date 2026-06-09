@@ -78,6 +78,7 @@ class DefaultUserManagementService implements UserManagementService {
 				request.displayName().trim(),
 				request.role(),
 				true));
+		saved.setMustChangePassword(request.mustChangePassword() == null || request.mustChangePassword());
 		auditLogService.recordUserEvent(AuditEventType.USER_CREATED, saved.getId(), currentUserActor(), "User created", metadata(saved));
 		return mapper.toResponse(saved);
 	}
@@ -126,6 +127,7 @@ class DefaultUserManagementService implements UserManagementService {
 	public void resetPassword(UUID id, ResetPasswordRequest request) {
 		User user = findUser(id);
 		user.setPasswordHash(passwordEncoder.encode(request.newTemporaryPassword()));
+		user.setMustChangePassword(true);
 		refreshTokenRepository.deleteByUser(user);
 		auditLogService.recordUserEvent(AuditEventType.USER_PASSWORD_RESET, user.getId(), currentUserActor(), "User password reset", metadata(user));
 	}
@@ -141,6 +143,7 @@ class DefaultUserManagementService implements UserManagementService {
 		}
 
 		user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+		user.setMustChangePassword(false);
 		refreshTokenRepository.deleteByUser(user);
 		auditLogService.recordUserEvent(AuditEventType.USER_PASSWORD_CHANGED, user.getId(), principal.email(), "User password changed", metadata(user));
 	}
@@ -175,6 +178,7 @@ class DefaultUserManagementService implements UserManagementService {
 		metadata.put("email", user.getEmail());
 		metadata.put("role", user.getRole().name());
 		metadata.put("enabled", user.isEnabled());
+		metadata.put("mustChangePassword", user.isMustChangePassword());
 		metadata.putAll(extra);
 		return metadata;
 	}

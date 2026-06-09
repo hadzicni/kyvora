@@ -38,6 +38,9 @@ public class User {
 	@Column(nullable = false)
 	private boolean enabled = true;
 
+	@Column(name = "must_change_password", nullable = false)
+	private boolean mustChangePassword = false;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
@@ -98,6 +101,10 @@ public class User {
 		return enabled;
 	}
 
+	public boolean isMustChangePassword() {
+		return mustChangePassword;
+	}
+
 	public Instant getCreatedAt() {
 		return createdAt;
 	}
@@ -124,6 +131,10 @@ public class User {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public void setMustChangePassword(boolean mustChangePassword) {
+		this.mustChangePassword = mustChangePassword;
 	}
 
 	public void markLoginSuccessful() {

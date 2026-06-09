@@ -8,6 +8,7 @@ declare module "next-auth" {
       email: string;
       displayName: string;
       role: string;
+      mustChangePassword: boolean;
     };
     error?: string;
   }
@@ -17,6 +18,7 @@ declare module "next-auth" {
     email: string;
     displayName: string;
     role: string;
+    mustChangePassword: boolean;
     accessToken: string;
     refreshToken: string;
     accessTokenExpiresAt: number;
@@ -33,6 +35,7 @@ declare module "next-auth/jwt" {
       email: string;
       displayName: string;
       role: string;
+      mustChangePassword: boolean;
     };
     error?: string;
   }
