@@ -29,6 +29,12 @@ public record AgentResponse(
 		Instant registeredAt,
 		@Schema(description = "Time when the agent was last updated.", example = "2026-06-08T10:00:00Z")
 		Instant updatedAt,
+		@Schema(description = "Time when the current token hash was created.", example = "2026-06-08T09:00:00Z")
+		Instant tokenCreatedAt,
+		@Schema(description = "Time when the current token was last used for heartbeat authentication.", example = "2026-06-08T10:00:00Z")
+		Instant tokenLastUsedAt,
+		@Schema(description = "Time when the token was revoked, when applicable.", example = "2026-06-08T11:00:00Z")
+		Instant tokenRevokedAt,
 		@Schema(description = "Latest host inventory facts reported by this agent.")
 		AgentHostFactsResponse hostFacts) {
 }

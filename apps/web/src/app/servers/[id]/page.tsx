@@ -493,6 +493,9 @@ function AgentSection({
                 {agent && canDecommission ? (
                   <DecommissionAgentDialog agent={agent} />
                 ) : null}
+                <Button asChild type="button" variant="outline">
+                  <Link href={`/agents/${agent.id}`}>View agent</Link>
+                </Button>
               </div>
             </div>
 

@@ -38,6 +38,9 @@ public class AgentMapper {
 				entity.getLastSeenAt(),
 				entity.getRegisteredAt(),
 				entity.getUpdatedAt(),
+				entity.getTokenCreatedAt(),
+				entity.getTokenLastUsedAt(),
+				entity.getTokenRevokedAt(),
 				toHostFactsResponse(entity.getHostFacts()));
 	}
 

@@ -34,6 +34,9 @@ export type Agent = {
   lastSeenAt: string | null;
   registeredAt: string;
   updatedAt: string;
+  tokenCreatedAt: string | null;
+  tokenLastUsedAt: string | null;
+  tokenRevokedAt: string | null;
   hostFacts: AgentHostFacts | null;
 };
 

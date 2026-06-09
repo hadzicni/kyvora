@@ -403,6 +403,27 @@ function ServerLink({
   );
 }
 
+function AggregateLink({
+  auditLog,
+  fallback,
+}: {
+  auditLog: AuditLog;
+  fallback: string;
+}) {
+  if (auditLog.aggregateType === "AGENT") {
+    return (
+      <Link
+        className="underline-offset-4 hover:text-foreground hover:underline"
+        href={`/agents/${encodeURIComponent(auditLog.aggregateId)}`}
+      >
+        {fallback}
+      </Link>
+    );
+  }
+
+  return <ServerLink auditLog={auditLog} fallback={fallback} />;
+}
+
 function ActivityTable({
   auditLogs,
   onInspect,
@@ -437,7 +458,12 @@ function ActivityTable({
               {auditLog.aggregateType}
             </TableCell>
             <TableCell className="max-w-[14rem] truncate font-mono text-xs text-muted-foreground">
-              <ServerLink auditLog={auditLog} fallback={auditLog.aggregateId} />
+              <AggregateLink
+                auditLog={auditLog}
+                fallback={
+                  metadataString(auditLog, "agentName") ?? auditLog.aggregateId
+                }
+              />
             </TableCell>
             <TableCell>{auditLog.actor}</TableCell>
             <TableCell className="min-w-[18rem] max-w-md whitespace-normal">
@@ -579,6 +605,7 @@ function ActivityDetailSheet({
                 value={auditLog.aggregateType}
               />
               <DetailRow label="aggregateId" value={auditLog.aggregateId} />
+              <AgentDetailLink auditLog={auditLog} />
               <ServerDetailLink auditLog={auditLog} />
               <DetailRow label="actor" value={auditLog.actor} />
               <DetailRow
@@ -606,6 +633,24 @@ function ActivityDetailSheet({
         ) : null}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function AgentDetailLink({ auditLog }: { auditLog: AuditLog }) {
+  if (auditLog.aggregateType !== "AGENT") {
+    return null;
+  }
+
+  return (
+    <div className="grid gap-1 sm:grid-cols-[8rem_1fr] sm:items-start">
+      <div className="text-xs font-medium text-muted-foreground">agent</div>
+      <Link
+        className="min-w-0 break-words font-mono text-xs underline-offset-4 hover:text-foreground hover:underline"
+        href={`/agents/${encodeURIComponent(auditLog.aggregateId)}`}
+      >
+        {metadataString(auditLog, "agentName") ?? auditLog.aggregateId}
+      </Link>
+    </div>
   );
 }
 
