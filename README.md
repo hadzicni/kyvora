@@ -54,6 +54,7 @@ It currently provides:
 - a Next.js web dashboard with Auth.js login sessions
 - server inventory management with CRUD, search, filters, pagination, and detail pages
 - agent registration and heartbeat tracking
+- latest host facts reported by enrolled agents
 - persistent audit logging for infrastructure changes
 - dashboard summary metrics
 - OpenAPI/Swagger documentation
@@ -86,6 +87,7 @@ Kyvora is built as a monorepo with a modular backend, a modern web UI, and a lig
 - Server Inventory CRUD
 - Server search, filtering, pagination, and detail pages
 - Agent registration and heartbeat tracking
+- Latest host facts snapshot from enrolled agents
 - Initial Go agent for local registration and heartbeats
 - Dashboard summary metrics
 - Persistent audit logs with recent activity
@@ -239,6 +241,14 @@ Create or register a server from the web dashboard, then enroll an agent for
 that server to receive `KYVORA_AGENT_ID` and `KYVORA_AGENT_TOKEN`. Agent tokens
 are shown only once. Do not commit tokens or store them in `NEXT_PUBLIC_*`
 variables.
+
+The agent reports a latest host inventory snapshot with each heartbeat when
+facts are available. This includes basic operating system, architecture, CPU,
+memory, disk, uptime, IP address, and agent version information. These facts
+are latest snapshots, not metrics history. The agent does not collect secrets,
+environment variables, process lists, usernames, or file contents. Collection
+is best-effort on Linux and macOS, and unsupported platforms degrade
+gracefully.
 
 ## Usage
 

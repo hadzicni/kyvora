@@ -1,6 +1,7 @@
 package dev.kyvora.api.agent.service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -10,10 +11,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import dev.kyvora.api.agent.dto.AgentHeartbeatRequest;
+import dev.kyvora.api.agent.dto.AgentHostFactsRequest;
 import dev.kyvora.api.agent.dto.AgentEnrollmentResponse;
 import dev.kyvora.api.agent.dto.AgentRegisterRequest;
 import dev.kyvora.api.agent.dto.AgentResponse;
 import dev.kyvora.api.agent.entity.Agent;
+import dev.kyvora.api.agent.entity.AgentHostFacts;
 import dev.kyvora.api.agent.entity.AgentStatus;
 import dev.kyvora.api.agent.event.AgentChangedEvent;
 import dev.kyvora.api.agent.event.AgentEventType;
@@ -23,6 +26,7 @@ import dev.kyvora.api.agent.exception.AgentTokenAuthenticationException;
 import dev.kyvora.api.agent.exception.AgentTokenForbiddenException;
 import dev.kyvora.api.agent.exception.DuplicateAgentException;
 import dev.kyvora.api.agent.mapper.AgentMapper;
+import dev.kyvora.api.agent.repository.AgentHostFactsRepository;
 import dev.kyvora.api.agent.repository.AgentRepository;
 import dev.kyvora.api.auditlog.service.AuditLogService;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;
@@ -42,6 +46,7 @@ public class DefaultAgentService implements AgentService {
 	private final AgentMapper mapper;
 	private final AuditLogService auditLogService;
 	private final AgentTokenService agentTokenService;
+	private final AgentHostFactsRepository hostFactsRepository;
 	private final ServerInventoryRepository serverInventoryRepository;
 	private final SettingsService settingsService;
 	private final long fallbackOfflineThresholdSeconds;
@@ -51,6 +56,7 @@ public class DefaultAgentService implements AgentService {
 			AgentMapper mapper,
 			AuditLogService auditLogService,
 			AgentTokenService agentTokenService,
+			AgentHostFactsRepository hostFactsRepository,
 			ServerInventoryRepository serverInventoryRepository,
 			SettingsService settingsService,
 			@Value("${kyvora.agent.offline-threshold-seconds:90}") long offlineThresholdSeconds) {
@@ -58,6 +64,7 @@ public class DefaultAgentService implements AgentService {
 		this.mapper = mapper;
 		this.auditLogService = auditLogService;
 		this.agentTokenService = agentTokenService;
+		this.hostFactsRepository = hostFactsRepository;
 		this.serverInventoryRepository = serverInventoryRepository;
 		this.settingsService = settingsService;
 		this.fallbackOfflineThresholdSeconds = offlineThresholdSeconds;
@@ -145,6 +152,7 @@ public class DefaultAgentService implements AgentService {
 		agent.setLastSeenAt(heartbeatAt);
 		agent.setTokenLastUsedAt(heartbeatAt);
 		updateLinkedServer(agent, heartbeatAt);
+		upsertHostFacts(agent, request.hostFacts());
 		Agent saved = repository.save(agent);
 		recordHeartbeatLifecycleEvents(saved, previousStatus, previousLastSeenAt, previousServerStatus);
 		return mapper.toResponse(saved);
@@ -221,6 +229,56 @@ public class DefaultAgentService implements AgentService {
 		}
 		server.setStatus(ServerStatus.valueOf(agent.getStatus().name()));
 		server.setLastSeenAt(heartbeatAt);
+	}
+
+	private void upsertHostFacts(Agent agent, AgentHostFactsRequest request) {
+		if (request == null) {
+			return;
+		}
+		AgentHostFacts facts = hostFactsRepository.findById(agent.getId())
+				.orElseGet(() -> new AgentHostFacts(agent));
+		facts.setHostname(trimToNull(request.hostname()));
+		facts.setOperatingSystem(trimToNull(request.operatingSystem()));
+		facts.setPlatform(trimToNull(request.platform()));
+		facts.setKernelVersion(trimToNull(request.kernelVersion()));
+		facts.setArchitecture(trimToNull(request.architecture()));
+		facts.setCpuCount(request.cpuCount());
+		facts.setMemoryTotalBytes(request.memoryTotalBytes());
+		facts.setDiskTotalBytes(request.diskTotalBytes());
+		facts.setDiskFreeBytes(request.diskFreeBytes());
+		facts.setUptimeSeconds(request.uptimeSeconds());
+		facts.setIpAddresses(request.ipAddresses() == null ? List.of() : request.ipAddresses().stream()
+				.map(this::trimToNull)
+				.filter(value -> value != null)
+				.distinct()
+				.toList());
+		facts.setAgentVersion(trimToNull(request.agentVersion()));
+		facts.setCollectedAt(request.collectedAt() == null ? Instant.now() : request.collectedAt());
+		hostFactsRepository.save(facts);
+		agent.setHostFacts(facts);
+		updateLinkedServerOperatingSystem(agent.getServer(), facts);
+	}
+
+	private void updateLinkedServerOperatingSystem(ServerInventory server, AgentHostFacts facts) {
+		if (server == null || facts.getOperatingSystem() == null || !isUnknownLike(server.getOperatingSystem())) {
+			return;
+		}
+		server.setOperatingSystem(facts.getOperatingSystem());
+	}
+
+	private boolean isUnknownLike(String value) {
+		if (value == null || value.isBlank()) {
+			return true;
+		}
+		String normalized = value.trim().toLowerCase(java.util.Locale.ROOT);
+		return normalized.equals("unknown") || normalized.equals("n/a") || normalized.equals("na");
+	}
+
+	private String trimToNull(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		return value.trim();
 	}
 
 	private Agent getRequiredEntity(UUID id) {

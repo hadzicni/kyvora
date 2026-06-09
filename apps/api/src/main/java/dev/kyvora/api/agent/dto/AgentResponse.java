@@ -28,5 +28,7 @@ public record AgentResponse(
 		@Schema(description = "Time when the agent was registered.", example = "2026-06-08T09:00:00Z")
 		Instant registeredAt,
 		@Schema(description = "Time when the agent was last updated.", example = "2026-06-08T10:00:00Z")
-		Instant updatedAt) {
+		Instant updatedAt,
+		@Schema(description = "Latest host inventory facts reported by this agent.")
+		AgentHostFactsResponse hostFacts) {
 }

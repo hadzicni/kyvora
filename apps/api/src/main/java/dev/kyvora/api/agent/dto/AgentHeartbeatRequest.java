@@ -2,6 +2,7 @@ package dev.kyvora.api.agent.dto;
 
 import dev.kyvora.api.agent.entity.AgentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -17,5 +18,9 @@ public record AgentHeartbeatRequest(
 
 		@Schema(description = "Hostname reported by the agent.", example = "node01.example.com", maxLength = 253)
 		@Size(max = 253)
-		String hostname) {
+		String hostname,
+
+		@Schema(description = "Latest host inventory facts collected by the agent.")
+		@Valid
+		AgentHostFactsRequest hostFacts) {
 }

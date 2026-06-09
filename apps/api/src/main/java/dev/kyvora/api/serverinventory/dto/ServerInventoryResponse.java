@@ -3,6 +3,7 @@ package dev.kyvora.api.serverinventory.dto;
 import java.time.Instant;
 import java.util.List;
 
+import dev.kyvora.api.agent.dto.AgentHostFactsResponse;
 import dev.kyvora.api.serverinventory.entity.ServerStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -29,5 +30,7 @@ public record ServerInventoryResponse(
 		@Schema(description = "Time when the inventory entry was created.", example = "2026-06-07T00:00:00Z")
 		Instant createdAt,
 		@Schema(description = "Time when the inventory entry was last updated.", example = "2026-06-07T01:00:00Z")
-		Instant updatedAt) {
+		Instant updatedAt,
+		@Schema(description = "Latest host facts reported by the linked agent, when available.")
+		AgentHostFactsResponse hostFacts) {
 }

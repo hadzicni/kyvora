@@ -1,5 +1,22 @@
 export type ServerStatus = "ONLINE" | "OFFLINE" | "UNKNOWN";
 
+export type ServerHostFacts = {
+  hostname: string | null;
+  operatingSystem: string | null;
+  platform: string | null;
+  kernelVersion: string | null;
+  architecture: string | null;
+  cpuCount: number | null;
+  memoryTotalBytes: number | null;
+  diskTotalBytes: number | null;
+  diskFreeBytes: number | null;
+  uptimeSeconds: number | null;
+  ipAddresses: string[];
+  agentVersion: string | null;
+  collectedAt: string | null;
+  updatedAt: string | null;
+};
+
 export type ServerInventoryItem = {
   id: string;
   name: string;
@@ -12,6 +29,7 @@ export type ServerInventoryItem = {
   lastSeenAt: string | null;
   createdAt: string;
   updatedAt: string;
+  hostFacts: ServerHostFacts | null;
 };
 
 export type ServerInventoryPage = {

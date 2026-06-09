@@ -40,7 +40,8 @@ func Run(ctx context.Context, cfg Config, logger *slog.Logger) error {
 }
 
 func sendHeartbeat(ctx context.Context, client *Client, agentID, version, hostname string, logger *slog.Logger) error {
-	agent, err := client.Heartbeat(ctx, agentID, version, hostname)
+	hostFacts := CollectHostFacts(version, hostname)
+	agent, err := client.Heartbeat(ctx, agentID, version, hostname, &hostFacts)
 	if err != nil {
 		var authError *AgentTokenAuthError
 		if errors.As(err, &authError) {
@@ -48,6 +49,6 @@ func sendHeartbeat(ctx context.Context, client *Client, agentID, version, hostna
 		}
 		return err
 	}
-	logger.Info("heartbeat sent", "agent_id", agent.ID, "status", agent.Status, "version", agent.Version)
+	logger.Info("heartbeat sent", "agent_id", agent.ID, "status", agent.Status, "version", agent.Version, "host_facts", true)
 	return nil
 }

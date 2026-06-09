@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestHeartbeatSendsAgentTokenAndOnlineStatus(t *testing.T) {
@@ -40,12 +41,64 @@ func TestHeartbeatSendsAgentTokenAndOnlineStatus(t *testing.T) {
 		return jsonResponse(http.StatusOK, Agent{ID: "agent-id", Status: "ONLINE", Version: "0.1.0"}), nil
 	})}
 
-	agent, err := client.Heartbeat(context.Background(), "agent-id", "0.1.0", "node01.example.test")
+	agent, err := client.Heartbeat(context.Background(), "agent-id", "0.1.0", "node01.example.test", nil)
 	if err != nil {
 		t.Fatalf("Heartbeat returned error: %v", err)
 	}
 	if agent.Status != "ONLINE" {
 		t.Fatalf("agent.Status = %q, want ONLINE", agent.Status)
+	}
+}
+
+func TestHeartbeatPayloadIncludesHostFactsWhenAvailable(t *testing.T) {
+	client, err := NewClient(Config{
+		APIURL:     "http://kyvora.example.test",
+		AgentToken: "agent-token",
+	})
+	if err != nil {
+		t.Fatalf("NewClient returned error: %v", err)
+	}
+
+	cpuCount := 8
+	memoryTotal := uint64(16 * 1024 * 1024 * 1024)
+	collectedAt := time.Date(2026, 6, 9, 10, 0, 0, 0, time.UTC)
+	facts := &HostFacts{
+		Hostname:         "node01.example.test",
+		OperatingSystem:  "linux",
+		Platform:         "linux",
+		KernelVersion:    "6.8.0",
+		Architecture:     "amd64",
+		CPUCount:         &cpuCount,
+		MemoryTotalBytes: &memoryTotal,
+		IPAddresses:      []string{"10.0.0.10"},
+		AgentVersion:     "0.1.0",
+		CollectedAt:      collectedAt,
+	}
+
+	client.httpClient = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		var body heartbeatRequest
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if body.HostFacts == nil {
+			t.Fatal("HostFacts = nil, want facts")
+		}
+		if body.HostFacts.Hostname != facts.Hostname ||
+			body.HostFacts.OperatingSystem != "linux" ||
+			body.HostFacts.Architecture != "amd64" ||
+			body.HostFacts.CPUCount == nil ||
+			*body.HostFacts.CPUCount != cpuCount ||
+			body.HostFacts.MemoryTotalBytes == nil ||
+			*body.HostFacts.MemoryTotalBytes != memoryTotal ||
+			!body.HostFacts.CollectedAt.Equal(collectedAt) {
+			t.Fatalf("unexpected host facts: %#v", body.HostFacts)
+		}
+
+		return jsonResponse(http.StatusOK, Agent{ID: "agent-id", Status: "ONLINE", Version: "0.1.0"}), nil
+	})}
+
+	if _, err := client.Heartbeat(context.Background(), "agent-id", "0.1.0", "node01.example.test", facts); err != nil {
+		t.Fatalf("Heartbeat returned error: %v", err)
 	}
 }
 
@@ -64,7 +117,7 @@ func TestHeartbeatMapsUnauthorizedToAgentTokenAuthError(t *testing.T) {
 		}), nil
 	})}
 
-	_, err = client.Heartbeat(context.Background(), "agent-id", "0.1.0", "node01.example.test")
+	_, err = client.Heartbeat(context.Background(), "agent-id", "0.1.0", "node01.example.test", nil)
 	if err == nil {
 		t.Fatal("Heartbeat returned nil error")
 	}
@@ -93,7 +146,7 @@ func TestHeartbeatMapsForbiddenToAgentTokenAuthError(t *testing.T) {
 		}), nil
 	})}
 
-	_, err = client.Heartbeat(context.Background(), "agent-id", "0.1.0", "node01.example.test")
+	_, err = client.Heartbeat(context.Background(), "agent-id", "0.1.0", "node01.example.test", nil)
 	if err == nil {
 		t.Fatal("Heartbeat returned nil error")
 	}

@@ -6,6 +6,7 @@ import {
   CalendarClock,
   Cpu,
   Fingerprint,
+  HardDrive,
   Network,
   RefreshCw,
   Server,
@@ -43,6 +44,7 @@ import { ServerStatusBadge } from "@/features/servers/server-status-badge";
 import { useServer } from "@/features/servers/use-servers";
 import type { Agent, AgentEnrollment } from "@/lib/api/agents";
 import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
+import { formatBytes, formatUptime } from "@/features/servers/format";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -223,6 +225,120 @@ function formatRelativeLastSeen(value: string | null | undefined) {
 
   const elapsedDays = Math.round(elapsedHours / 24);
   return `${elapsedDays} d ago`;
+}
+
+function HostFactsSection({ server }: { server: ServerInventoryItem }) {
+  const facts = server.hostFacts;
+
+  if (!facts) {
+    return (
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            <HardDrive className="size-4" />
+            Host Facts
+          </CardTitle>
+          <CardDescription>
+            Latest inventory snapshot reported by the linked agent.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="rounded-lg border bg-muted/20 p-4 text-sm leading-6 text-muted-foreground">
+            Host facts will appear after the agent sends its first heartbeat.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <DetailSection
+      title="Host Facts"
+      description="Latest inventory snapshot reported by the linked agent."
+      icon={<HardDrive className="size-4 text-muted-foreground" />}
+    >
+      <Field
+        label="Operating system"
+        value={facts.operatingSystem ?? "Unknown"}
+        muted={!facts.operatingSystem}
+      />
+      <Field
+        label="Platform"
+        value={
+          <div className="grid gap-1">
+            <span>{facts.platform ?? "Unknown"}</span>
+            {facts.kernelVersion ? (
+              <span className="font-mono text-xs text-muted-foreground">
+                kernel {facts.kernelVersion}
+              </span>
+            ) : null}
+          </div>
+        }
+        muted={!facts.platform}
+      />
+      <Field
+        label="Architecture"
+        value={facts.architecture ?? "Unknown"}
+        muted={!facts.architecture}
+      />
+      <Field
+        label="CPU"
+        value={
+          facts.cpuCount ? `${facts.cpuCount} logical CPUs` : "Unknown"
+        }
+        muted={!facts.cpuCount}
+      />
+      <Field
+        label="Memory total"
+        value={formatBytes(facts.memoryTotalBytes)}
+        muted={facts.memoryTotalBytes === null}
+      />
+      <Field
+        label="Disk"
+        value={
+          <div className="grid gap-1">
+            <span>{formatBytes(facts.diskTotalBytes)} total</span>
+            <span className="text-xs text-muted-foreground">
+              {formatBytes(facts.diskFreeBytes)} free
+            </span>
+          </div>
+        }
+        muted={facts.diskTotalBytes === null}
+      />
+      <Field
+        label="Uptime"
+        value={formatUptime(facts.uptimeSeconds)}
+        muted={facts.uptimeSeconds === null}
+      />
+      <Field
+        label="IP addresses"
+        value={
+          facts.ipAddresses.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {facts.ipAddresses.map((address) => (
+                <Badge key={address} variant="secondary">
+                  {address}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            "Unknown"
+          )
+        }
+        muted={facts.ipAddresses.length === 0}
+      />
+      <Field
+        label="Agent version"
+        value={facts.agentVersion ?? "Unknown"}
+        muted={!facts.agentVersion}
+      />
+      <Field
+        label="Collected at"
+        value={formatDetailDateTime(facts.collectedAt)}
+        muted={!facts.collectedAt}
+      />
+    </DetailSection>
+  );
 }
 
 function AgentSection({
@@ -559,6 +675,8 @@ function ServerDetails({
           isLoading={linkedAgentLoading}
           server={server}
         />
+
+        <HostFactsSection server={server} />
 
         <DetailSection
           title="Tags"

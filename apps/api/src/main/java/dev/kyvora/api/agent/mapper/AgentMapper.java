@@ -5,8 +5,10 @@ import java.util.Locale;
 import org.springframework.stereotype.Component;
 
 import dev.kyvora.api.agent.dto.AgentRegisterRequest;
+import dev.kyvora.api.agent.dto.AgentHostFactsResponse;
 import dev.kyvora.api.agent.dto.AgentResponse;
 import dev.kyvora.api.agent.entity.Agent;
+import dev.kyvora.api.agent.entity.AgentHostFacts;
 import dev.kyvora.api.agent.entity.AgentStatus;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;
 
@@ -35,7 +37,29 @@ public class AgentMapper {
 				entity.getStatus(),
 				entity.getLastSeenAt(),
 				entity.getRegisteredAt(),
-				entity.getUpdatedAt());
+				entity.getUpdatedAt(),
+				toHostFactsResponse(entity.getHostFacts()));
+	}
+
+	public AgentHostFactsResponse toHostFactsResponse(AgentHostFacts facts) {
+		if (facts == null) {
+			return null;
+		}
+		return new AgentHostFactsResponse(
+				facts.getHostname(),
+				facts.getOperatingSystem(),
+				facts.getPlatform(),
+				facts.getKernelVersion(),
+				facts.getArchitecture(),
+				facts.getCpuCount(),
+				facts.getMemoryTotalBytes(),
+				facts.getDiskTotalBytes(),
+				facts.getDiskFreeBytes(),
+				facts.getUptimeSeconds(),
+				facts.getIpAddresses(),
+				facts.getAgentVersion(),
+				facts.getCollectedAt(),
+				facts.getUpdatedAt());
 	}
 
 	public String normalizeHostname(String hostname) {

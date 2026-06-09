@@ -38,6 +38,25 @@ Successful heartbeats update the assigned agent status and the linked server
 status and last-seen timestamp. Server status is managed by agent heartbeats
 and offline detection, not manual editing.
 
+Heartbeats also include a latest host facts snapshot when available:
+
+- hostname
+- operating system / platform
+- kernel version
+- architecture
+- CPU count
+- total memory
+- total and free root disk space
+- uptime
+- IP addresses
+- agent version
+- collection timestamp
+
+Host facts are latest inventory snapshots, not metrics history. The agent does
+not collect secrets, environment variables, process lists, usernames, or file
+contents. Collection is best-effort on Linux and macOS; unsupported facts are
+omitted instead of failing the heartbeat. Other platforms degrade gracefully.
+
 Agents must send heartbeats regularly. If the API does not receive a heartbeat
 within `KYVORA_AGENT_OFFLINE_THRESHOLD_SECONDS` seconds, Kyvora marks the agent
 and its linked server offline during the scheduled offline check. `OFFLINE`

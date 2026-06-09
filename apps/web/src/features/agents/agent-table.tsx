@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateTime } from "@/features/servers/format";
+import { formatBytes, formatDateTime } from "@/features/servers/format";
 import type { Agent } from "@/lib/api/agents";
 
 import { AgentStatusBadge } from "./agent-status-badge";
@@ -46,6 +46,7 @@ export function AgentTable({ agents }: { agents: Agent[] }) {
           <TableHead>Name</TableHead>
           <TableHead>Server</TableHead>
           <TableHead>Hostname</TableHead>
+          <TableHead>Host facts</TableHead>
           <TableHead>Version</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Last seen</TableHead>
@@ -79,6 +80,29 @@ export function AgentTable({ agents }: { agents: Agent[] }) {
               )}
             </TableCell>
             <TableCell className="font-mono text-xs">{agent.hostname}</TableCell>
+            <TableCell>
+              {agent.hostFacts ? (
+                <div className="grid gap-1 text-xs">
+                  <div className="max-w-44 truncate font-medium">
+                    {agent.hostFacts.operatingSystem ?? "Unknown OS"}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {agent.hostFacts.architecture ?? "unknown arch"}
+                    {agent.hostFacts.cpuCount
+                      ? ` / ${agent.hostFacts.cpuCount} CPU`
+                      : ""}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {formatBytes(agent.hostFacts.memoryTotalBytes)}
+                    {agent.hostFacts.diskTotalBytes
+                      ? ` RAM / ${formatBytes(agent.hostFacts.diskTotalBytes)} disk`
+                      : " RAM"}
+                  </div>
+                </div>
+              ) : (
+                <span className="text-xs text-muted-foreground">Pending</span>
+              )}
+            </TableCell>
             <TableCell className="font-mono text-xs">{agent.version}</TableCell>
             <TableCell>
               <AgentStatusBadge status={agent.status} />

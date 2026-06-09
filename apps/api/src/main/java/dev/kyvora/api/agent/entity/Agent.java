@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -13,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -64,6 +66,9 @@ public class Agent {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "server_id")
 	private ServerInventory server;
+
+	@OneToOne(mappedBy = "agent", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+	private AgentHostFacts hostFacts;
 
 	protected Agent() {
 	}
@@ -180,5 +185,13 @@ public class Agent {
 
 	public void setServer(ServerInventory server) {
 		this.server = server;
+	}
+
+	public AgentHostFacts getHostFacts() {
+		return hostFacts;
+	}
+
+	public void setHostFacts(AgentHostFacts hostFacts) {
+		this.hostFacts = hostFacts;
 	}
 }

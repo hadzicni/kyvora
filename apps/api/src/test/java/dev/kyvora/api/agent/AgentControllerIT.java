@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.kyvora.api.agent.entity.Agent;
+import dev.kyvora.api.agent.repository.AgentHostFactsRepository;
 import dev.kyvora.api.agent.repository.AgentRepository;
 import dev.kyvora.api.auditlog.entity.AuditEventType;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
@@ -51,6 +53,9 @@ class AgentControllerIT {
 	private AgentRepository agentRepository;
 
 	@Autowired
+	private AgentHostFactsRepository hostFactsRepository;
+
+	@Autowired
 	private AuditLogRepository auditLogRepository;
 
 	@Autowired
@@ -67,6 +72,7 @@ class AgentControllerIT {
 				.apply(springSecurity())
 				.build();
 		auditLogRepository.deleteAll();
+		hostFactsRepository.deleteAll();
 		agentRepository.deleteAll();
 		serverInventoryRepository.deleteAll();
 	}
@@ -295,6 +301,130 @@ class AgentControllerIT {
 		org.assertj.core.api.Assertions.assertThat(auditLogRepository.findAll().stream()
 				.filter(log -> log.getEventType() == AuditEventType.SERVER_MARKED_ONLINE_BY_AGENT)
 				.count()).isEqualTo(1);
+	}
+
+	@Test
+	void heartbeatWithHostFactsStoresFactsAndReturnsSummary() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		server.setOperatingSystem("unknown");
+		serverInventoryRepository.save(server);
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayloadWithFacts(
+						"ONLINE",
+						"0.1.1",
+						"Ubuntu 24.04",
+						"amd64",
+						4,
+						17_179_869_184L))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.hostFacts.operatingSystem", is("Ubuntu 24.04")))
+				.andExpect(jsonPath("$.hostFacts.architecture", is("amd64")))
+				.andExpect(jsonPath("$.hostFacts.cpuCount", is(4)))
+				.andExpect(jsonPath("$.hostFacts.memoryTotalBytes", is(17_179_869_184L)));
+
+		var facts = hostFactsRepository.findById(UUID.fromString(id)).orElseThrow();
+		org.assertj.core.api.Assertions.assertThat(facts.getHostname()).isEqualTo("node01.example.com");
+		org.assertj.core.api.Assertions.assertThat(facts.getPlatform()).isEqualTo("linux");
+		org.assertj.core.api.Assertions.assertThat(facts.getKernelVersion()).isEqualTo("6.8.0");
+		org.assertj.core.api.Assertions.assertThat(facts.getDiskTotalBytes()).isEqualTo(107_374_182_400L);
+		org.assertj.core.api.Assertions.assertThat(facts.getDiskFreeBytes()).isEqualTo(53_687_091_200L);
+		org.assertj.core.api.Assertions.assertThat(facts.getUptimeSeconds()).isEqualTo(3600L);
+		org.assertj.core.api.Assertions.assertThat(facts.getIpAddresses()).containsExactly("10.0.0.11", "fd00::11");
+		org.assertj.core.api.Assertions.assertThat(facts.getAgentVersion()).isEqualTo("0.1.1");
+		org.assertj.core.api.Assertions.assertThat(facts.getCollectedAt()).isNotNull();
+		org.assertj.core.api.Assertions.assertThat(serverInventoryRepository.findById(server.getId()).orElseThrow().getOperatingSystem())
+				.isEqualTo("Ubuntu 24.04");
+	}
+
+	@Test
+	void secondHeartbeatUpdatesHostFacts() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayloadWithFacts(
+						"ONLINE",
+						"0.1.0",
+						"Ubuntu 22.04",
+						"amd64",
+						2,
+						8_589_934_592L))))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayloadWithFacts(
+						"ONLINE",
+						"0.1.1",
+						"Ubuntu 24.04",
+						"arm64",
+						8,
+						34_359_738_368L))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.hostFacts.operatingSystem", is("Ubuntu 24.04")))
+				.andExpect(jsonPath("$.hostFacts.architecture", is("arm64")))
+				.andExpect(jsonPath("$.hostFacts.cpuCount", is(8)));
+
+		var facts = hostFactsRepository.findById(UUID.fromString(id)).orElseThrow();
+		org.assertj.core.api.Assertions.assertThat(facts.getOperatingSystem()).isEqualTo("Ubuntu 24.04");
+		org.assertj.core.api.Assertions.assertThat(facts.getArchitecture()).isEqualTo("arm64");
+		org.assertj.core.api.Assertions.assertThat(hostFactsRepository.count()).isEqualTo(1);
+	}
+
+	@Test
+	void heartbeatWithoutHostFactsStillWorks() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status", is("ONLINE")))
+				.andExpect(jsonPath("$.hostFacts").doesNotExist());
+
+		org.assertj.core.api.Assertions.assertThat(hostFactsRepository.findById(UUID.fromString(id))).isEmpty();
+	}
+
+	@Test
+	void serverDetailExposesLinkedAgentHostFacts() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayloadWithFacts(
+						"ONLINE",
+						"0.1.0",
+						"Ubuntu 24.04",
+						"amd64",
+						4,
+						17_179_869_184L))))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/v1/servers/{id}", server.getId())
+				.with(user("alice")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.hostFacts.operatingSystem", is("Ubuntu 24.04")))
+				.andExpect(jsonPath("$.hostFacts.architecture", is("amd64")))
+				.andExpect(jsonPath("$.hostFacts.cpuCount", is(4)));
 	}
 
 	@Test
@@ -543,6 +673,33 @@ class AgentControllerIT {
 		Map<String, Object> payload = new LinkedHashMap<>();
 		payload.put("status", status);
 		payload.put("version", version);
+		return payload;
+	}
+
+	private Map<String, Object> heartbeatPayloadWithFacts(
+			String status,
+			String version,
+			String operatingSystem,
+			String architecture,
+			int cpuCount,
+			long memoryTotalBytes) {
+		Map<String, Object> payload = heartbeatPayload(status, version);
+		payload.put("hostname", "node01.example.com");
+		Map<String, Object> facts = new LinkedHashMap<>();
+		facts.put("hostname", "node01.example.com");
+		facts.put("operatingSystem", operatingSystem);
+		facts.put("platform", "linux");
+		facts.put("kernelVersion", "6.8.0");
+		facts.put("architecture", architecture);
+		facts.put("cpuCount", cpuCount);
+		facts.put("memoryTotalBytes", memoryTotalBytes);
+		facts.put("diskTotalBytes", 107_374_182_400L);
+		facts.put("diskFreeBytes", 53_687_091_200L);
+		facts.put("uptimeSeconds", 3600L);
+		facts.put("ipAddresses", List.of("10.0.0.11", "fd00::11"));
+		facts.put("agentVersion", version);
+		facts.put("collectedAt", "2026-06-09T10:00:00Z");
+		payload.put("hostFacts", facts);
 		return payload;
 	}
 }

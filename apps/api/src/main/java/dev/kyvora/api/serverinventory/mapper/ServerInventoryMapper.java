@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import dev.kyvora.api.agent.dto.AgentHostFactsResponse;
+import dev.kyvora.api.agent.entity.AgentHostFacts;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryCreateRequest;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryResponse;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryUpdateRequest;
@@ -39,6 +41,10 @@ public class ServerInventoryMapper {
 	}
 
 	public ServerInventoryResponse toResponse(ServerInventory entity) {
+		return toResponse(entity, null);
+	}
+
+	public ServerInventoryResponse toResponse(ServerInventory entity, AgentHostFacts facts) {
 		return new ServerInventoryResponse(
 				entity.getId().toString(),
 				entity.getName(),
@@ -50,7 +56,29 @@ public class ServerInventoryMapper {
 				entity.getStatus(),
 				entity.getLastSeenAt(),
 				entity.getCreatedAt(),
-				entity.getUpdatedAt());
+				entity.getUpdatedAt(),
+				toHostFactsResponse(facts));
+	}
+
+	private AgentHostFactsResponse toHostFactsResponse(AgentHostFacts facts) {
+		if (facts == null) {
+			return null;
+		}
+		return new AgentHostFactsResponse(
+				facts.getHostname(),
+				facts.getOperatingSystem(),
+				facts.getPlatform(),
+				facts.getKernelVersion(),
+				facts.getArchitecture(),
+				facts.getCpuCount(),
+				facts.getMemoryTotalBytes(),
+				facts.getDiskTotalBytes(),
+				facts.getDiskFreeBytes(),
+				facts.getUptimeSeconds(),
+				facts.getIpAddresses(),
+				facts.getAgentVersion(),
+				facts.getCollectedAt(),
+				facts.getUpdatedAt());
 	}
 
 	public List<ServerInventoryResponse> toResponses(List<ServerInventory> entities) {

@@ -1,5 +1,22 @@
 export type AgentStatus = "PENDING" | "ONLINE" | "OFFLINE" | "UNKNOWN";
 
+export type AgentHostFacts = {
+  hostname: string | null;
+  operatingSystem: string | null;
+  platform: string | null;
+  kernelVersion: string | null;
+  architecture: string | null;
+  cpuCount: number | null;
+  memoryTotalBytes: number | null;
+  diskTotalBytes: number | null;
+  diskFreeBytes: number | null;
+  uptimeSeconds: number | null;
+  ipAddresses: string[];
+  agentVersion: string | null;
+  collectedAt: string | null;
+  updatedAt: string | null;
+};
+
 export type Agent = {
   id: string;
   name: string;
@@ -12,6 +29,7 @@ export type Agent = {
   lastSeenAt: string | null;
   registeredAt: string;
   updatedAt: string;
+  hostFacts: AgentHostFacts | null;
 };
 
 export type AgentPage = {

@@ -32,9 +32,10 @@ type Agent struct {
 }
 
 type heartbeatRequest struct {
-	Status   string `json:"status"`
-	Version  string `json:"version"`
-	Hostname string `json:"hostname,omitempty"`
+	Status    string     `json:"status"`
+	Version   string     `json:"version"`
+	Hostname  string     `json:"hostname,omitempty"`
+	HostFacts *HostFacts `json:"hostFacts,omitempty"`
 }
 
 type apiErrorResponse struct {
@@ -89,12 +90,13 @@ func NewClient(cfg Config) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Heartbeat(ctx context.Context, agentID, version, hostname string) (Agent, error) {
+func (c *Client) Heartbeat(ctx context.Context, agentID, version, hostname string, hostFacts *HostFacts) (Agent, error) {
 	var updated Agent
 	err := c.doJSON(ctx, http.MethodPost, "/api/v1/agents/"+url.PathEscape(agentID)+"/heartbeat", heartbeatRequest{
-		Status:   "ONLINE",
-		Version:  version,
-		Hostname: hostname,
+		Status:    "ONLINE",
+		Version:   version,
+		Hostname:  hostname,
+		HostFacts: hostFacts,
 	}, &updated)
 	return updated, err
 }

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import dev.kyvora.api.agent.repository.AgentRepository;
 import dev.kyvora.api.auditlog.service.AuditLogService;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryCreateRequest;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryFilter;
@@ -27,14 +28,17 @@ import dev.kyvora.api.serverinventory.specification.ServerInventorySpecification
 public class DefaultServerInventoryService implements ServerInventoryService {
 
 	private final ServerInventoryRepository repository;
+	private final AgentRepository agentRepository;
 	private final ServerInventoryMapper mapper;
 	private final AuditLogService auditLogService;
 
 	public DefaultServerInventoryService(
 			ServerInventoryRepository repository,
+			AgentRepository agentRepository,
 			ServerInventoryMapper mapper,
 			AuditLogService auditLogService) {
 		this.repository = repository;
+		this.agentRepository = agentRepository;
 		this.mapper = mapper;
 		this.auditLogService = auditLogService;
 	}
@@ -48,7 +52,10 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 	@Override
 	@Transactional(readOnly = true)
 	public ServerInventoryResponse findById(UUID id) {
-		return mapper.toResponse(getRequiredEntity(id));
+		ServerInventory server = getRequiredEntity(id);
+		return mapper.toResponse(
+				server,
+				agentRepository.findByServerId(id).map(agent -> agent.getHostFacts()).orElse(null));
 	}
 
 	@Override
