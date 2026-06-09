@@ -4,6 +4,7 @@ import { Bot, RefreshCw } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { AppShell } from "@/components/app/app-shell";
+import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -32,15 +33,19 @@ export default function AgentsPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Enroll agents, copy one-time tokens, and monitor heartbeat status.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {mayManageAgents ? <RegisterAgentDialog /> : null}
+        <PageHeader
+          badge={
+            agentsQuery.data ? (
+              <span className="text-sm text-muted-foreground">
+                {formatNumber(totalElements)} registered
+              </span>
+            ) : null
+          }
+          subtitle="Enroll agents, rotate setup tokens, and monitor heartbeat status."
+          title="Agents"
+          actions={
+            <>
+              {mayManageAgents ? <RegisterAgentDialog /> : null}
             <Button
               disabled={agentsQuery.isFetching}
               onClick={() => void agentsQuery.refetch()}
@@ -54,8 +59,9 @@ export default function AgentsPage() {
               />
               Refresh
             </Button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <Card>
           <CardHeader className="border-b">

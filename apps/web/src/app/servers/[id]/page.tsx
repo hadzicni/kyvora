@@ -77,7 +77,7 @@ function Field({
   muted?: boolean;
 }) {
   return (
-    <div className="rounded-lg border bg-muted/20 p-3">
+    <div className="rounded-md border bg-muted/20 p-3">
       <dt className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
         {label}
       </dt>
@@ -91,6 +91,19 @@ function Field({
         {value}
       </dd>
     </div>
+  );
+}
+
+function TimestampValue({ value }: { value: string | null | undefined }) {
+  return (
+    <span className="grid gap-1">
+      <span>{formatDetailDateTime(value)}</span>
+      {value ? (
+        <span className="text-xs text-muted-foreground">
+          {formatRelativeLastSeen(value)}
+        </span>
+      ) : null}
+    </span>
   );
 }
 
@@ -514,16 +527,7 @@ function AgentSection({
               <Field label="Version" value={agent.version} mono />
               <Field
                 label="Last heartbeat"
-                value={
-                  <span>
-                    {formatDetailDateTime(agent.lastSeenAt)}
-                    {agent.lastSeenAt ? (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {formatRelativeLastSeen(agent.lastSeenAt)}
-                      </span>
-                    ) : null}
-                  </span>
-                }
+                value={<TimestampValue value={agent.lastSeenAt} />}
                 muted={!agent.lastSeenAt}
               />
               <Field
@@ -726,7 +730,7 @@ function ServerDetails({
           >
             <Field
               label="Last seen"
-              value={formatDetailDateTime(server.lastSeenAt)}
+              value={<TimestampValue value={server.lastSeenAt} />}
               muted={!server.lastSeenAt}
             />
             <Field

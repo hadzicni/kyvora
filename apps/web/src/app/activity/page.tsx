@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
+import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -111,13 +112,10 @@ export default function ActivityPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Activity</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Inspect audit events recorded by /api/v1/audit-logs.
-            </p>
-          </div>
+        <PageHeader
+          subtitle="Inspect lifecycle, token, and infrastructure audit events."
+          title="Activity"
+          actions={
           <Button
             disabled={auditLogsQuery.isFetching}
             onClick={() => void auditLogsQuery.refetch()}
@@ -131,7 +129,8 @@ export default function ActivityPage() {
             />
             Refresh
           </Button>
-        </div>
+          }
+        />
 
         <Card>
           <CardHeader className="border-b">
@@ -146,7 +145,7 @@ export default function ActivityPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
-            <div className="grid gap-3 xl:grid-cols-[minmax(16rem,1fr)_12rem_16rem_auto] xl:items-end">
+            <div className="grid gap-3 rounded-md border bg-muted/10 p-3 xl:grid-cols-[minmax(16rem,1fr)_12rem_16rem_auto] xl:items-end">
               <div className="grid gap-2">
                 <Label htmlFor="activity-search">Search</Label>
                 <div className="relative">
@@ -436,8 +435,7 @@ function ActivityTable({
       <TableHeader>
         <TableRow>
           <TableHead>Event</TableHead>
-          <TableHead>Aggregate</TableHead>
-          <TableHead>Aggregate ID</TableHead>
+          <TableHead>Target</TableHead>
           <TableHead>Actor</TableHead>
           <TableHead>Message</TableHead>
           <TableHead>Created</TableHead>
@@ -454,18 +452,23 @@ function ActivityTable({
                 {formatAuditEventType(auditLog.eventType)}
               </Badge>
             </TableCell>
-            <TableCell className="font-mono text-xs">
-              {auditLog.aggregateType}
+            <TableCell>
+              <div className="grid gap-0.5">
+                <span className="font-mono text-xs text-muted-foreground">
+                  {auditLog.aggregateType}
+                </span>
+                <span className="max-w-[14rem] truncate font-mono text-xs">
+                  <AggregateLink
+                    auditLog={auditLog}
+                    fallback={
+                      metadataString(auditLog, "agentName") ??
+                      auditLog.aggregateId
+                    }
+                  />
+                </span>
+              </div>
             </TableCell>
-            <TableCell className="max-w-[14rem] truncate font-mono text-xs text-muted-foreground">
-              <AggregateLink
-                auditLog={auditLog}
-                fallback={
-                  metadataString(auditLog, "agentName") ?? auditLog.aggregateId
-                }
-              />
-            </TableCell>
-            <TableCell>{auditLog.actor}</TableCell>
+            <TableCell className="font-mono text-xs">{auditLog.actor}</TableCell>
             <TableCell className="min-w-[18rem] max-w-md whitespace-normal">
               <span className="line-clamp-2">
                 {formatActivityMessage(auditLog)}
@@ -498,8 +501,7 @@ function ActivityTableSkeleton() {
         <TableRow>
           {[
             "Event",
-            "Aggregate",
-            "Aggregate ID",
+            "Target",
             "Actor",
             "Message",
             "Created",
@@ -512,7 +514,7 @@ function ActivityTableSkeleton() {
       <TableBody>
         {Array.from({ length: 8 }).map((_, rowIndex) => (
           <TableRow key={rowIndex}>
-            {Array.from({ length: 7 }).map((__, cellIndex) => (
+            {Array.from({ length: 6 }).map((__, cellIndex) => (
               <TableCell key={cellIndex}>
                 <Skeleton className="h-5 w-full max-w-40" />
               </TableCell>

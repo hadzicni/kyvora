@@ -19,6 +19,7 @@ import { z } from "zod";
 
 import { AppShell } from "@/components/app/app-shell";
 import { NotAuthorized } from "@/components/app/not-authorized";
+import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -165,9 +166,17 @@ export default function UsersPage() {
     control: createForm.control,
     name: "role",
   });
+  const createTemporaryPassword = useWatch({
+    control: createForm.control,
+    name: "temporaryPassword",
+  });
   const editRole = useWatch({
     control: editForm.control,
     name: "role",
+  });
+  const resetTemporaryPassword = useWatch({
+    control: resetForm.control,
+    name: "newTemporaryPassword",
   });
 
   useEffect(() => {
@@ -270,13 +279,17 @@ export default function UsersPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Manage local Kyvora accounts and access roles.
-            </p>
-          </div>
+        <PageHeader
+          badge={
+            usersQuery.data ? (
+              <span className="text-sm text-muted-foreground">
+                {users.length} accounts
+              </span>
+            ) : null
+          }
+          subtitle="Manage local Kyvora accounts and access roles."
+          title="Users"
+          actions={
           <Button
             onClick={() => {
               createForm.reset({
@@ -292,16 +305,17 @@ export default function UsersPage() {
             <Plus className="size-4" />
             Create user
           </Button>
-        </div>
+          }
+        />
 
         <Card>
-          <CardHeader>
+          <CardHeader className="border-b">
             <CardTitle>Accounts</CardTitle>
             <CardDescription>
               Password hashes and temporary passwords are never returned.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             {usersQuery.isLoading ? <UserTableSkeleton /> : null}
 
             {usersQuery.isError ? (
@@ -454,7 +468,7 @@ export default function UsersPage() {
               disabled={loading}
               id="temporaryPassword"
               label="Temporary password"
-              value={createForm.watch("temporaryPassword")}
+              value={createTemporaryPassword}
               register={createForm.register("temporaryPassword")}
               onChange={(value) =>
                 createForm.setValue("temporaryPassword", value, {
@@ -559,7 +573,7 @@ export default function UsersPage() {
               disabled={loading}
               id="newTemporaryPassword"
               label="New temporary password"
-              value={resetForm.watch("newTemporaryPassword")}
+              value={resetTemporaryPassword}
               register={resetForm.register("newTemporaryPassword")}
               onChange={(value) =>
                 resetForm.setValue("newTemporaryPassword", value, {

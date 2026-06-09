@@ -21,6 +21,7 @@ import { z } from "zod";
 
 import { AppShell } from "@/components/app/app-shell";
 import { NotAuthorized } from "@/components/app/not-authorized";
+import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -304,22 +305,22 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-              <Settings className="size-5" />
-              Settings
-            </h1>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Configure database-backed operational settings for this Kyvora
-              instance. Secrets and agent tokens remain outside settings.
-            </p>
-          </div>
-          <Badge className="w-fit" variant="outline">
-            <MonitorCog className="size-3" />
-            System
-          </Badge>
-        </div>
+        <PageHeader
+          badge={
+            <Badge className="w-fit" variant="outline">
+              <MonitorCog className="size-3" />
+              System
+            </Badge>
+          }
+          eyebrow={
+            <>
+              <Settings className="size-4" />
+              Administration
+            </>
+          }
+          subtitle="Configure database-backed operational settings for this Kyvora instance. Secrets and agent tokens remain outside settings."
+          title="Settings"
+        />
 
         {settingsQuery.isLoading ? <SettingsSkeleton /> : null}
 

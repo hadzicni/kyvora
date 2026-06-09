@@ -19,6 +19,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 import { AppShell } from "@/components/app/app-shell";
+import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -96,22 +97,22 @@ export default function HelpPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-              <CircleHelp className="size-5" />
-              Help
-            </h1>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Operational reference for running Kyvora, enrolled agents, server
-              state, activity records, and release metadata.
-            </p>
-          </div>
-          <Badge className="w-fit" variant="outline">
-            <LifeBuoy className="size-3" />
-            Operator guide
-          </Badge>
-        </div>
+        <PageHeader
+          badge={
+            <Badge className="w-fit" variant="outline">
+              <LifeBuoy className="size-3" />
+              Operator guide
+            </Badge>
+          }
+          eyebrow={
+            <>
+              <CircleHelp className="size-4" />
+              Reference
+            </>
+          }
+          subtitle="Operational reference for running Kyvora, enrolled agents, server state, activity records, and release metadata."
+          title="Help"
+        />
 
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <div className="space-y-4">

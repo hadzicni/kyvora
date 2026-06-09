@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { AppShell } from "@/components/app/app-shell";
+import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -190,18 +191,16 @@ export default function ProfilePage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Account identity and session security details.
-            </p>
-          </div>
-          <Badge className="w-fit" variant="outline">
-            <BadgeCheck className="size-3" />
-            {user.role || "Authenticated"}
-          </Badge>
-        </div>
+        <PageHeader
+          badge={
+            <Badge className="w-fit" variant="outline">
+              <BadgeCheck className="size-3" />
+              {user.role || "Authenticated"}
+            </Badge>
+          }
+          subtitle="Account identity and session security details."
+          title="Profile"
+        />
 
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <Card>

@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 
 import { AppShell } from "@/components/app/app-shell";
+import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -81,17 +82,19 @@ export default function ServerInventoryPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Server inventory
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Browse servers reported by /api/v1/servers.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {mayManageServers ? <CreateServerDialog /> : null}
+        <PageHeader
+          badge={
+            serversQuery.data ? (
+              <span className="text-sm text-muted-foreground">
+                {formatNumber(totalElements)} records
+              </span>
+            ) : null
+          }
+          subtitle="Browse, filter, and maintain the servers tracked by Kyvora inventory."
+          title="Server inventory"
+          actions={
+            <>
+              {mayManageServers ? <CreateServerDialog /> : null}
             <Button
               disabled={serversQuery.isFetching}
               onClick={() => void serversQuery.refetch()}
@@ -105,8 +108,9 @@ export default function ServerInventoryPage() {
               />
               Refresh
             </Button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <Card>
           <CardHeader className="border-b">
@@ -127,7 +131,7 @@ export default function ServerInventoryPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
-            <div className="grid gap-3 lg:grid-cols-[minmax(16rem,1fr)_12rem_minmax(12rem,18rem)_auto] lg:items-end">
+            <div className="grid gap-3 rounded-md border bg-muted/10 p-3 lg:grid-cols-[minmax(16rem,1fr)_12rem_minmax(12rem,18rem)_auto] lg:items-end">
               <div className="grid gap-2">
                 <Label htmlFor="server-search">Search</Label>
                 <div className="relative">

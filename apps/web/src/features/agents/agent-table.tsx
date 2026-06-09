@@ -38,17 +38,23 @@ function formatRelativeLastSeen(value: string | null) {
   return `${Math.round(elapsedHours / 24)} d ago`;
 }
 
-export function AgentTable({ agents }: { agents: Agent[] }) {
+export function AgentTable({
+  agents,
+  compact = false,
+}: {
+  agents: Agent[];
+  compact?: boolean;
+}) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Server</TableHead>
-          <TableHead>Hostname</TableHead>
+          {!compact ? <TableHead>Hostname</TableHead> : null}
           <TableHead>Status</TableHead>
           <TableHead>Last seen</TableHead>
-          <TableHead>Version</TableHead>
+          {!compact ? <TableHead>Version</TableHead> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -63,7 +69,7 @@ export function AgentTable({ agents }: { agents: Agent[] }) {
                   {agent.name}
                 </span>
                 <span className="max-w-52 truncate text-xs text-muted-foreground">
-                  {agent.id}
+                  {compact ? agent.hostname : agent.id}
                 </span>
               </Link>
             </TableCell>
@@ -84,15 +90,23 @@ export function AgentTable({ agents }: { agents: Agent[] }) {
                 <span className="text-muted-foreground">Unassigned</span>
               )}
             </TableCell>
-            <TableCell className="font-mono text-xs">{agent.hostname}</TableCell>
+            {!compact ? (
+              <TableCell className="font-mono text-xs">
+                {agent.hostname}
+              </TableCell>
+            ) : null}
             <TableCell>
               <AgentStatusBadge status={agent.status} />
             </TableCell>
             <TableCell className="text-muted-foreground">
-              <div>{formatRelativeLastSeen(agent.lastSeenAt)}</div>
+              <div className="font-medium text-foreground">
+                {formatRelativeLastSeen(agent.lastSeenAt)}
+              </div>
               <div className="text-xs">{formatDateTime(agent.lastSeenAt)}</div>
             </TableCell>
-            <TableCell className="font-mono text-xs">{agent.version}</TableCell>
+            {!compact ? (
+              <TableCell className="font-mono text-xs">{agent.version}</TableCell>
+            ) : null}
           </TableRow>
         ))}
       </TableBody>

@@ -16,6 +16,29 @@ import { EditServerDialog } from "./edit-server-dialog";
 import { formatDateTime } from "./format";
 import { ServerStatusBadge } from "./server-status-badge";
 
+function formatRelativeLastSeen(value: string | null) {
+  if (!value) {
+    return "Never";
+  }
+
+  const elapsedMs = Date.now() - new Date(value).getTime();
+  const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60_000));
+
+  if (elapsedMinutes < 1) {
+    return "Just now";
+  }
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} min ago`;
+  }
+
+  const elapsedHours = Math.round(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours} hr ago`;
+  }
+
+  return `${Math.round(elapsedHours / 24)} d ago`;
+}
+
 export function ServerTable({
   canDelete = true,
   canEdit = true,
@@ -63,25 +86,38 @@ export function ServerTable({
             role="link"
             tabIndex={0}
           >
-            <TableCell>
+            <TableCell className="min-w-56">
               <div className="font-medium">{server.name}</div>
               <div className="max-w-52 truncate text-xs text-muted-foreground">
                 {server.description || "No description"}
               </div>
             </TableCell>
-            <TableCell className="font-mono text-xs">{server.hostname}</TableCell>
+            <TableCell>
+              <div className="max-w-48 truncate font-mono text-xs">
+                {server.hostname}
+              </div>
+            </TableCell>
             <TableCell className="font-mono text-xs">{server.ipAddress}</TableCell>
             <TableCell>
               <div className="grid gap-1">
                 <ServerStatusBadge status={server.status} />
                 {server.status === "OFFLINE" ? (
-                  <span className="text-xs text-amber-300/80">
+                  <span className="text-xs text-red-300/90">
                     No recent heartbeat
+                  </span>
+                ) : null}
+                {server.status === "UNKNOWN" ? (
+                  <span className="text-xs text-amber-300/90">
+                    Awaiting signal
                   </span>
                 ) : null}
               </div>
             </TableCell>
-            <TableCell>{server.operatingSystem || "Unknown"}</TableCell>
+            <TableCell className="max-w-48 truncate">
+              {server.operatingSystem || (
+                <span className="text-muted-foreground">Unknown</span>
+              )}
+            </TableCell>
             <TableCell>
               <div className="flex max-w-56 flex-wrap gap-1">
                 {server.tags.length > 0 ? (
@@ -99,8 +135,10 @@ export function ServerTable({
               </div>
             </TableCell>
             <TableCell className="text-muted-foreground">
-              <div>{formatDateTime(server.lastSeenAt)}</div>
-              <div className="text-xs">Agent-managed status</div>
+              <div className="font-medium text-foreground">
+                {formatRelativeLastSeen(server.lastSeenAt)}
+              </div>
+              <div className="text-xs">{formatDateTime(server.lastSeenAt)}</div>
             </TableCell>
             {showActions ? (
               <TableCell

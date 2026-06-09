@@ -1,7 +1,8 @@
 "use client";
 
-import { CirclePlus, Pencil, Radio, Trash2, WifiOff } from "lucide-react";
+import { CirclePlus, History, Pencil, Radio, Trash2, WifiOff } from "lucide-react";
 
+import { SectionState } from "@/components/app/section-state";
 import {
   Card,
   CardContent,
@@ -10,7 +11,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ServerEmptyState } from "@/features/servers/server-empty-state";
 import { ServerErrorState } from "@/features/servers/server-error-state";
 import type { AuditEventType } from "@/lib/api/audit-logs";
 
@@ -46,9 +46,12 @@ export function RecentActivityWidget() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Recent activity</CardTitle>
-        <CardDescription>Latest inventory changes.</CardDescription>
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2">
+          <History className="size-4" />
+          Recent activity
+        </CardTitle>
+        <CardDescription>Latest inventory and agent lifecycle events.</CardDescription>
       </CardHeader>
       <CardContent>
         {auditLogsQuery.isLoading ? (
@@ -71,7 +74,11 @@ export function RecentActivityWidget() {
         ) : null}
 
         {auditLogsQuery.isSuccess && auditLogs.length === 0 ? (
-          <ServerEmptyState />
+          <SectionState
+            description="Audit events will appear here after server or agent lifecycle changes are recorded."
+            icon={<History className="size-5" />}
+            title="No activity yet"
+          />
         ) : null}
 
         {auditLogsQuery.isSuccess && auditLogs.length > 0 ? (
@@ -96,8 +103,7 @@ export function RecentActivityWidget() {
                         {formatTimestamp(auditLog.createdAt)}
                       </span>
                     </div>
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                      {formatAuditEventType(auditLog.eventType)} -{" "}
+                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground">
                       {auditLog.message}
                     </p>
                   </div>

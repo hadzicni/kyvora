@@ -69,7 +69,7 @@ function Field({
   muted?: boolean;
 }) {
   return (
-    <div className="rounded-lg border bg-muted/20 p-3">
+    <div className="rounded-md border bg-muted/20 p-3">
       <dt className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
         {label}
       </dt>
@@ -83,6 +83,42 @@ function Field({
         {value}
       </dd>
     </div>
+  );
+}
+
+function formatRelativeLastSeen(value: string | null | undefined) {
+  if (!value) {
+    return "Never";
+  }
+
+  const elapsedMs = Date.now() - new Date(value).getTime();
+  const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60_000));
+
+  if (elapsedMinutes < 1) {
+    return "Just now";
+  }
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} min ago`;
+  }
+
+  const elapsedHours = Math.round(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours} hr ago`;
+  }
+
+  return `${Math.round(elapsedHours / 24)} d ago`;
+}
+
+function TimestampValue({ value }: { value: string | null | undefined }) {
+  return (
+    <span className="grid gap-1">
+      <span>{formatDateTime(value)}</span>
+      {value ? (
+        <span className="text-xs text-muted-foreground">
+          {formatRelativeLastSeen(value)}
+        </span>
+      ) : null}
+    </span>
   );
 }
 
@@ -156,9 +192,25 @@ function HostFactsSection({ agent }: { agent: Agent }) {
       description="Latest inventory snapshot from the agent."
       icon={<Cpu className="size-4 text-muted-foreground" />}
     >
-      <Field label="OS" value={facts.operatingSystem ?? "Unknown"} muted={!facts.operatingSystem} />
-      <Field label="Platform" value={facts.platform ?? "Unknown"} muted={!facts.platform} />
-      <Field label="Kernel version" value={facts.kernelVersion ?? "Unknown"} muted={!facts.kernelVersion} mono />
+      <Field
+        label="Operating system"
+        value={facts.operatingSystem ?? "Unknown"}
+        muted={!facts.operatingSystem}
+      />
+      <Field
+        label="Platform"
+        value={
+          <div className="grid gap-1">
+            <span>{facts.platform ?? "Unknown"}</span>
+            {facts.kernelVersion ? (
+              <span className="font-mono text-xs text-muted-foreground">
+                kernel {facts.kernelVersion}
+              </span>
+            ) : null}
+          </div>
+        }
+        muted={!facts.platform}
+      />
       <Field label="Architecture" value={facts.architecture ?? "Unknown"} muted={!facts.architecture} mono />
       <Field label="CPU count" value={facts.cpuCount ?? "Unknown"} muted={facts.cpuCount === null} />
       <Field label="Memory total" value={formatBytes(facts.memoryTotalBytes)} muted={facts.memoryTotalBytes === null} />
@@ -170,9 +222,23 @@ function HostFactsSection({ agent }: { agent: Agent }) {
       <Field label="Uptime" value={formatUptime(facts.uptimeSeconds)} muted={facts.uptimeSeconds === null} />
       <Field
         label="IP addresses"
-        value={facts.ipAddresses.length > 0 ? facts.ipAddresses.join(", ") : "Unknown"}
+        value={
+          facts.ipAddresses.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {facts.ipAddresses.map((address) => (
+                <span
+                  className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+                  key={address}
+                >
+                  {address}
+                </span>
+              ))}
+            </div>
+          ) : (
+            "Unknown"
+          )
+        }
         muted={facts.ipAddresses.length === 0}
-        mono
       />
       <Field label="Agent version" value={facts.agentVersion ?? "Unknown"} muted={!facts.agentVersion} mono />
       <Field label="Collected at" value={formatDateTime(facts.collectedAt)} muted={!facts.collectedAt} />
@@ -386,7 +452,7 @@ function AgentDetail({ agent, canManage }: { agent: Agent; canManage: boolean })
             <Field label="Version" value={agent.version} mono />
             <Field label="Status" value={<AgentStatusBadge status={agent.status} />} />
             <Field label="Registered" value={formatDateTime(agent.registeredAt)} />
-            <Field label="Last seen" value={formatDateTime(agent.lastSeenAt)} muted={!agent.lastSeenAt} />
+            <Field label="Last seen" value={<TimestampValue value={agent.lastSeenAt} />} muted={!agent.lastSeenAt} />
             <Field label="Updated" value={formatDateTime(agent.updatedAt)} />
           </DetailSection>
 
@@ -431,7 +497,7 @@ function AgentDetail({ agent, canManage }: { agent: Agent; canManage: boolean })
             icon={<Network className="size-4 text-muted-foreground" />}
           >
             <Field label="State" value={operationalCopy(agent)} />
-            <Field label="Last heartbeat" value={formatDateTime(agent.lastSeenAt)} muted={!agent.lastSeenAt} />
+            <Field label="Last heartbeat" value={<TimestampValue value={agent.lastSeenAt} />} muted={!agent.lastSeenAt} />
             <Field label="Host facts" value={agent.hostFacts ? "Available" : "Not reported yet"} muted={!agent.hostFacts} />
           </DetailSection>
 
