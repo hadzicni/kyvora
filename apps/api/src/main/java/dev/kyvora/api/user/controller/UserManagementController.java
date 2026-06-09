@@ -29,7 +29,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/users")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@permissions.canManageUsers(authentication)")
 @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH_SCHEME)
 @Tag(name = "Users", description = "Admin-managed user accounts.")
 public class UserManagementController {

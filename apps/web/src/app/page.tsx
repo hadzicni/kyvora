@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity, AlertCircle, Server, WifiOff } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 import { AppShell } from "@/components/app/app-shell";
 import {
@@ -13,7 +14,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { RecentActivityWidget } from "@/features/audit-logs/recent-activity-widget";
 import { useDashboardSummary } from "@/features/dashboard/use-dashboard-summary";
-import { useSettings } from "@/features/settings/use-settings";
 import { getInstanceSettings } from "@/lib/api/settings";
 import { formatNumber } from "@/features/servers/format";
 import { ServerEmptyState } from "@/features/servers/server-empty-state";
@@ -21,6 +21,7 @@ import { ServerErrorState } from "@/features/servers/server-error-state";
 import { ServerStatusBadge } from "@/features/servers/server-status-badge";
 import { ServerTable } from "@/features/servers/server-table";
 import { useServers } from "@/features/servers/use-servers";
+import { canDeleteServers, canManageServers } from "@/lib/permissions";
 import type { ServerStatus } from "@/lib/api/servers";
 
 function StatCard({
@@ -65,10 +66,10 @@ function StatCard({
 }
 
 export default function DashboardOverviewPage() {
+  const { data: session } = useSession();
   const summaryQuery = useDashboardSummary();
   const serversQuery = useServers({ size: 20 });
-  const settingsQuery = useSettings();
-  const instance = getInstanceSettings(settingsQuery.data);
+  const instance = getInstanceSettings(undefined);
   const servers = serversQuery.data?.content ?? [];
   const summary = summaryQuery.data;
   const summaryIsEmpty = (summary?.totalServers ?? null) === 0;
@@ -151,7 +152,11 @@ export default function DashboardOverviewPage() {
                 <ServerEmptyState />
               ) : null}
               {serversQuery.isSuccess && servers.length > 0 ? (
-                <ServerTable servers={servers.slice(0, 5)} />
+                <ServerTable
+                  canDelete={canDeleteServers(session?.user.role)}
+                  canEdit={canManageServers(session?.user.role)}
+                  servers={servers.slice(0, 5)}
+                />
               ) : null}
             </CardContent>
           </Card>

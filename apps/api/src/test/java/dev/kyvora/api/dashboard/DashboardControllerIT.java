@@ -2,6 +2,8 @@ package dev.kyvora.api.dashboard;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -43,7 +45,10 @@ class DashboardControllerIT {
 	@BeforeEach
 	void setUp() {
 		objectMapper = new ObjectMapper().findAndRegisterModules();
-		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+				.defaultRequest(get("/").with(user("viewer").roles("VIEWER")))
+				.apply(springSecurity())
+				.build();
 		repository.deleteAll();
 	}
 
@@ -76,6 +81,7 @@ class DashboardControllerIT {
 
 	private void createServer(String name, String hostname, String ipAddress, String status) throws Exception {
 		mockMvc.perform(post("/api/v1/servers")
+				.with(user("operator").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(createPayload(name, hostname, ipAddress, status))))
 				.andExpect(status().isCreated());

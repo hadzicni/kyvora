@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useCallback, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -45,6 +46,11 @@ import { ServerStatusBadge } from "@/features/servers/server-status-badge";
 import { useServer } from "@/features/servers/use-servers";
 import type { Agent, AgentEnrollment } from "@/lib/api/agents";
 import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
+import {
+  canDeleteServers,
+  canManageAgents,
+  canManageServers,
+} from "@/lib/permissions";
 import { formatBytes, formatUptime } from "@/features/servers/format";
 import { cn } from "@/lib/utils";
 import {
@@ -344,10 +350,12 @@ function HostFactsSection({ server }: { server: ServerInventoryItem }) {
 
 function AgentSection({
   agent,
+  canManage,
   isLoading,
   server,
 }: {
   agent?: Agent;
+  canManage: boolean;
   isLoading: boolean;
   server: ServerInventoryItem;
 }) {
@@ -464,20 +472,22 @@ function AgentSection({
                 ) : null}
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                  type="button"
-                  variant={pending ? "default" : "outline"}
-                  disabled={rotateAgentToken.isPending}
-                  onClick={() => void rotateToken()}
-                >
-                  {rotateAgentToken.isPending ? (
-                    <RefreshCw className="size-4 animate-spin" />
-                  ) : (
-                    <Terminal className="size-4" />
-                  )}
-                  {pending ? "Generate setup token" : "Rotate token"}
-                </Button>
-                {pending ? (
+                {canManage && agent.status !== "DECOMMISSIONED" ? (
+                  <Button
+                    type="button"
+                    variant={pending ? "default" : "outline"}
+                    disabled={rotateAgentToken.isPending}
+                    onClick={() => void rotateToken()}
+                  >
+                    {rotateAgentToken.isPending ? (
+                      <RefreshCw className="size-4 animate-spin" />
+                    ) : (
+                      <Terminal className="size-4" />
+                    )}
+                    {pending ? "Generate setup token" : "Rotate token"}
+                  </Button>
+                ) : null}
+                {canManage && pending ? (
                   <Button
                     type="button"
                     variant="outline"
@@ -490,7 +500,7 @@ function AgentSection({
                     Cancel enrollment
                   </Button>
                 ) : null}
-                {agent && canDecommission ? (
+                {canManage && agent && canDecommission ? (
                   <DecommissionAgentDialog agent={agent} />
                 ) : null}
                 <Button asChild type="button" variant="outline">
@@ -530,10 +540,12 @@ function AgentSection({
               Install a Kyvora Agent on this server to report live status and
               heartbeats.
             </p>
-            <RegisterAgentDialog
-              initialServer={server}
-              triggerLabel="Enroll Agent"
-            />
+            {canManage ? (
+              <RegisterAgentDialog
+                initialServer={server}
+                triggerLabel="Enroll Agent"
+              />
+            ) : null}
           </div>
         ) : null}
       </CardContent>
@@ -584,10 +596,16 @@ function AgentSection({
 }
 
 function ServerDetails({
+  canDelete,
+  canManageAgents,
+  canManageServers,
   linkedAgent,
   linkedAgentLoading,
   server,
 }: {
+  canDelete: boolean;
+  canManageAgents: boolean;
+  canManageServers: boolean;
   linkedAgent?: Agent;
   linkedAgentLoading: boolean;
   server: ServerInventoryItem;
@@ -615,8 +633,12 @@ function ServerDetails({
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <EditServerDialog server={server} triggerLabel="Edit" />
-              <DeleteServerDialog server={server} triggerLabel="Delete" />
+              {canManageServers ? (
+                <EditServerDialog server={server} triggerLabel="Edit" />
+              ) : null}
+              {canDelete ? (
+                <DeleteServerDialog server={server} triggerLabel="Delete" />
+              ) : null}
               <Button asChild variant="outline">
                 <Link href="/servers">
                   <ArrowLeft className="size-4" />
@@ -681,6 +703,7 @@ function ServerDetails({
 
         <AgentSection
           agent={linkedAgent}
+          canManage={canManageAgents}
           isLoading={linkedAgentLoading}
           server={server}
         />
@@ -723,6 +746,7 @@ function ServerDetails({
 }
 
 export default function ServerDetailPage() {
+  const { data: session } = useSession();
   const params = useParams<{ id?: string | string[] }>();
   const id = getParamId(params.id);
   const serverQuery = useServer(id);
@@ -777,6 +801,9 @@ export default function ServerDetailPage() {
         ) : null}
         {serverQuery.isSuccess ? (
           <ServerDetails
+            canDelete={canDeleteServers(session?.user.role)}
+            canManageAgents={canManageAgents(session?.user.role)}
+            canManageServers={canManageServers(session?.user.role)}
             linkedAgent={linkedAgent}
             linkedAgentLoading={agentsQuery.isLoading}
             server={serverQuery.data}

@@ -36,6 +36,7 @@ public class SettingsController {
 	}
 
 	@GetMapping
+	@PreAuthorize("@permissions.canManageSettings(authentication)")
 	@Operation(
 			summary = "Get system settings",
 			responses = {
@@ -47,7 +48,7 @@ public class SettingsController {
 	}
 
 	@PutMapping
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("@permissions.canManageSettings(authentication)")
 	@Operation(
 			summary = "Update system settings",
 			description = "Updates supported operational settings. Secrets and agent tokens are not accepted here.",

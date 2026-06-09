@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSettings } from "@/features/settings/use-settings";
 import { getInstanceSettings } from "@/lib/api/settings";
 import { getStatus, statusKeys } from "@/lib/api/status";
 
@@ -91,8 +90,7 @@ export default function HelpPage() {
     queryKey: statusKeys.status,
     queryFn: getStatus,
   });
-  const settingsQuery = useSettings();
-  const instance = getInstanceSettings(settingsQuery.data);
+  const instance = getInstanceSettings(undefined);
   const status = statusQuery.data;
 
   return (
@@ -130,7 +128,7 @@ export default function HelpPage() {
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 <InfoRow
                   label="Product"
-                  value={settingsQuery.isLoading ? "Loading..." : instance.name}
+                  value={instance.name}
                 />
                 <InfoRow
                   label="Version"
@@ -249,8 +247,8 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                     lifecycle transitions instead.
                   </GuidanceItem>
                   <GuidanceItem icon={Settings}>
-                    Operational settings such as instance metadata and agent
-                    monitoring windows can be changed from Settings.
+                    ADMIN can change operational settings such as instance
+                    metadata and agent monitoring windows from Settings.
                   </GuidanceItem>
                 </CardContent>
               </Card>
@@ -267,15 +265,20 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <GuidanceItem icon={ShieldCheck}>
-                    Admins can create, update, enable, disable, and reset local
-                    user accounts from Users.
-                  </GuidanceItem>
-                  <GuidanceItem icon={BadgeCheck}>
-                    Users can change their own password from Profile.
+                    ADMIN has full administration, including users, settings,
+                    servers, agents, and activity.
                   </GuidanceItem>
                   <GuidanceItem icon={Terminal}>
-                    The bootstrap admin is for local and development
-                    initialization.
+                    OPERATOR can manage servers and agents, and can view
+                    dashboard, activity, help, and profile.
+                  </GuidanceItem>
+                  <GuidanceItem icon={BadgeCheck}>
+                    VIEWER has read-only access to dashboard, servers, agents,
+                    activity, help, and profile.
+                  </GuidanceItem>
+                  <GuidanceItem icon={BadgeCheck}>
+                    All roles can change their own password from Profile when
+                    supported.
                   </GuidanceItem>
                 </CardContent>
               </Card>

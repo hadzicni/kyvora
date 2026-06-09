@@ -53,6 +53,7 @@ import { useAgents } from "@/features/agents/use-agents";
 import { useSettings } from "@/features/settings/use-settings";
 import { useServers } from "@/features/servers/use-servers";
 import { getInstanceSettings } from "@/lib/api/settings";
+import { canManageSettings, canManageUsers } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -81,12 +82,13 @@ const navItems = [
     href: "/users",
     label: "Users",
     icon: Users,
-    adminOnly: true,
+    requiredPermission: canManageUsers,
   },
   {
     href: "/settings",
     label: "Settings",
     icon: Settings,
+    requiredPermission: canManageSettings,
   },
   {
     href: "/help",
@@ -130,11 +132,12 @@ function SidebarContent({
 }) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const settingsQuery = useSettings();
+  const mayManageSettings = canManageSettings(session?.user.role);
+  const settingsQuery = useSettings(mayManageSettings);
   const instance = getInstanceSettings(settingsQuery.data);
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
   const visibleNavItems = navItems.filter(
-    (item) => !item.adminOnly || session?.user.role === "ADMIN"
+    (item) => !item.requiredPermission || item.requiredPermission(session?.user.role)
   );
 
   return (
@@ -240,7 +243,7 @@ function CommandPalette() {
   const agents = agentsQuery.data?.content ?? [];
   const { data: session } = useSession();
   const visibleNavItems = navItems.filter(
-    (item) => !item.adminOnly || session?.user.role === "ADMIN"
+    (item) => !item.requiredPermission || item.requiredPermission(session?.user.role)
   );
 
   useEffect(() => {
@@ -378,7 +381,8 @@ function CommandPalette() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
-  const settingsQuery = useSettings();
+  const mayManageSettings = canManageSettings(session?.user.role);
+  const settingsQuery = useSettings(mayManageSettings);
   const instance = getInstanceSettings(settingsQuery.data);
   const initials = getInitials(session?.user.displayName, session?.user.email);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

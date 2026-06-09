@@ -3,6 +3,8 @@ package dev.kyvora.api.serverinventory;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -47,13 +49,17 @@ class ServerInventoryControllerIT {
 	@BeforeEach
 	void setUp() {
 		objectMapper = new ObjectMapper().findAndRegisterModules();
-		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+				.defaultRequest(get("/").with(user("viewer").roles("VIEWER")))
+				.apply(springSecurity())
+				.build();
 		repository.deleteAll();
 	}
 
 	@Test
 	void createReturnsCreatedServer() throws Exception {
 		mockMvc.perform(post("/api/v1/servers")
+				.with(user("operator").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(createPayload(
 						"Web 01",
@@ -127,6 +133,7 @@ class ServerInventoryControllerIT {
 	@Test
 	void validationRejectsBadPayload() throws Exception {
 		mockMvc.perform(post("/api/v1/servers")
+				.with(user("operator").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(createPayload(
 						"x",
@@ -147,6 +154,7 @@ class ServerInventoryControllerIT {
 		createServer("Duplicate", "dup.example.com", "10.0.0.20", List.of("prod"), "ONLINE");
 
 		mockMvc.perform(post("/api/v1/servers")
+				.with(user("operator").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(createPayload(
 						"Duplicate 2",
@@ -164,6 +172,7 @@ class ServerInventoryControllerIT {
 	@Test
 	void updateAndDeleteWork() throws Exception {
 		String createdJson = mockMvc.perform(post("/api/v1/servers")
+				.with(user("operator").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(createPayload(
 						"Old Name",
@@ -183,6 +192,7 @@ class ServerInventoryControllerIT {
 		String id = created.get("id").asText();
 
 		mockMvc.perform(put("/api/v1/servers/{id}", id)
+				.with(user("operator").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(createPayload(
 						"New Name",
@@ -202,7 +212,8 @@ class ServerInventoryControllerIT {
 				.andExpect(jsonPath("$.status", is("UNKNOWN")))
 				.andExpect(jsonPath("$.tags", hasSize(2)));
 
-		mockMvc.perform(delete("/api/v1/servers/{id}", id))
+		mockMvc.perform(delete("/api/v1/servers/{id}", id)
+				.with(user("admin").roles("ADMIN")))
 				.andExpect(status().isNoContent());
 
 		mockMvc.perform(get("/api/v1/servers/{id}", id))
@@ -216,8 +227,91 @@ class ServerInventoryControllerIT {
 				.andExpect(jsonPath("$.message", is("Server inventory item not found: 00000000-0000-0000-0000-000000000001")));
 	}
 
+	@Test
+	void viewerCanListAndViewServersButCannotCreateOrUpdate() throws Exception {
+		createServer("Viewable", "viewable.example.com", "10.0.0.40", List.of("prod"), "ONLINE");
+		String id = repository.findAll().get(0).getId().toString();
+
+		mockMvc.perform(get("/api/v1/servers"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/v1/servers/{id}", id))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/v1/servers")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(createPayload(
+						"Viewer Create",
+						"viewer-create.example.com",
+						"10.0.0.41",
+						"Blocked",
+						"Linux",
+						List.of("prod"),
+						"ONLINE",
+						null))))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
+
+		mockMvc.perform(put("/api/v1/servers/{id}", id)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(createPayload(
+						"Viewer Update",
+						"viewer-update.example.com",
+						"10.0.0.42",
+						"Blocked",
+						"Linux",
+						List.of("prod"),
+						"ONLINE",
+						null))))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
+	}
+
+	@Test
+	void operatorCanCreateAndUpdateButCannotDeleteServers() throws Exception {
+		String createdJson = mockMvc.perform(post("/api/v1/servers")
+				.with(user("operator").roles("OPERATOR"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(createPayload(
+						"Operator Create",
+						"operator-create.example.com",
+						"10.0.0.50",
+						"Created",
+						"Linux",
+						List.of("prod"),
+						"ONLINE",
+						null))))
+				.andExpect(status().isCreated())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		String id = objectMapper.readTree(createdJson).get("id").asText();
+
+		mockMvc.perform(put("/api/v1/servers/{id}", id)
+				.with(user("operator").roles("OPERATOR"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(createPayload(
+						"Operator Update",
+						"operator-update.example.com",
+						"10.0.0.51",
+						"Updated",
+						"Ubuntu",
+						List.of("ops"),
+						"ONLINE",
+						null))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.name", is("Operator Update")));
+
+		mockMvc.perform(delete("/api/v1/servers/{id}", id)
+				.with(user("operator").roles("OPERATOR")))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
+	}
+
 	private void createServer(String name, String hostname, String ipAddress, List<String> tags, String status) throws Exception {
 		mockMvc.perform(post("/api/v1/servers")
+				.with(user("operator").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(createPayload(
 						name,

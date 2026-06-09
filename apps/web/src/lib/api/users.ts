@@ -1,4 +1,6 @@
-export type UserRole = "ADMIN" | "USER";
+import type { UserRole } from "@/lib/permissions";
+
+export type { UserRole };
 
 export type UserAccount = {
   id: string;

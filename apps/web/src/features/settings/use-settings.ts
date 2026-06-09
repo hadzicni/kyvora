@@ -10,10 +10,11 @@ import {
   type UpdateSettingsPayload,
 } from "@/lib/api/settings";
 
-export function useSettings() {
+export function useSettings(enabled = true) {
   return useQuery({
     queryKey: settingsKeys.all,
     queryFn: getSettings,
+    enabled,
   });
 }
 

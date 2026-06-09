@@ -40,7 +40,8 @@ import dev.kyvora.api.auth.service.UserService;
 class UserManagementControllerIT {
 
 	private static final String ADMIN_EMAIL = "admin@example.com";
-	private static final String USER_EMAIL = "user@example.com";
+	private static final String VIEWER_EMAIL = "viewer@example.com";
+	private static final String OPERATOR_EMAIL = "operator@example.com";
 	private static final String PASSWORD = "correct-password";
 
 	@Autowired
@@ -64,7 +65,8 @@ class UserManagementControllerIT {
 	private MockMvc mockMvc;
 
 	private User admin;
-	private User user;
+	private User viewer;
+	private User operator;
 
 	@BeforeEach
 	void setUp() {
@@ -75,7 +77,8 @@ class UserManagementControllerIT {
 		refreshTokenRepository.deleteAll();
 		userRepository.deleteAll();
 		admin = userService.create(ADMIN_EMAIL, PASSWORD, "Admin User", UserRole.ADMIN);
-		user = userService.create(USER_EMAIL, PASSWORD, "Regular User", UserRole.USER);
+		viewer = userService.create(VIEWER_EMAIL, PASSWORD, "Viewer User", UserRole.VIEWER);
+		operator = userService.create(OPERATOR_EMAIL, PASSWORD, "Operator User", UserRole.OPERATOR);
 		auditLogRepository.deleteAll();
 		refreshTokenRepository.deleteAll();
 	}
@@ -91,10 +94,19 @@ class UserManagementControllerIT {
 	}
 
 	@Test
-	void userCannotListUsers() throws Exception {
+	void operatorCannotListUsers() throws Exception {
 		mockMvc.perform(get("/api/v1/users")
-				.header(HttpHeaders.AUTHORIZATION, bearer(userToken())))
-				.andExpect(status().isForbidden());
+				.header(HttpHeaders.AUTHORIZATION, bearer(operatorToken())))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
+	}
+
+	@Test
+	void viewerCannotListUsers() throws Exception {
+		mockMvc.perform(get("/api/v1/users")
+				.header(HttpHeaders.AUTHORIZATION, bearer(viewerToken())))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
 	}
 
 	@Test
@@ -102,30 +114,30 @@ class UserManagementControllerIT {
 		mockMvc.perform(post("/api/v1/users")
 				.header(HttpHeaders.AUTHORIZATION, bearer(adminToken()))
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(createPayload("new@example.com", "New User", "USER", "temporary-password"))))
+				.content(objectMapper.writeValueAsString(createPayload("new@example.com", "New User", "VIEWER", "temporary-password"))))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.email", is("new@example.com")))
-				.andExpect(jsonPath("$.role", is("USER")))
+				.andExpect(jsonPath("$.role", is("VIEWER")))
 				.andExpect(jsonPath("$.mustChangePassword", is(true)))
 				.andExpect(jsonPath("$.passwordHash").doesNotExist());
 
 		mockMvc.perform(post("/api/v1/users")
 				.header(HttpHeaders.AUTHORIZATION, bearer(adminToken()))
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(createPayload("new@example.com", "New User", "USER", "temporary-password"))))
+				.content(objectMapper.writeValueAsString(createPayload("new@example.com", "New User", "VIEWER", "temporary-password"))))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message", is("Email is already in use")));
 
 		assertThat(auditLogRepository.findAll())
 				.anyMatch(log -> log.getEventType() == AuditEventType.USER_CREATED
-						&& "USER".equals(log.getMetadata().get("role"))
+						&& "VIEWER".equals(log.getMetadata().get("role"))
 						&& Boolean.TRUE.equals(log.getMetadata().get("mustChangePassword"))
 						&& !log.getMetadata().containsKey("password"));
 	}
 
 	@Test
 	void adminCanCreateUserWithoutRequiredPasswordChangeWhenExplicitlyDisabled() throws Exception {
-		Map<String, Object> payload = createPayload("ready@example.com", "Ready User", "USER", "temporary-password");
+		Map<String, Object> payload = createPayload("ready@example.com", "Ready User", "OPERATOR", "temporary-password");
 		payload.put("mustChangePassword", false);
 
 		mockMvc.perform(post("/api/v1/users")
@@ -138,39 +150,39 @@ class UserManagementControllerIT {
 
 	@Test
 	void disabledUserCannotLoginAndAdminCanEnableDisabledUser() throws Exception {
-		user.setEnabled(false);
-		userRepository.save(user);
+		viewer.setEnabled(false);
+		userRepository.save(viewer);
 
 		mockMvc.perform(post("/api/v1/auth/login")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(loginPayload(USER_EMAIL, PASSWORD))))
+				.content(objectMapper.writeValueAsString(loginPayload(VIEWER_EMAIL, PASSWORD))))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.message", is("Invalid email or password")));
 
-		mockMvc.perform(post("/api/v1/users/{id}/enable", user.getId())
+		mockMvc.perform(post("/api/v1/users/{id}/enable", viewer.getId())
 				.header(HttpHeaders.AUTHORIZATION, bearer(adminToken())))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.enabled", is(true)));
 
 		mockMvc.perform(post("/api/v1/auth/login")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(loginPayload(USER_EMAIL, PASSWORD))))
+				.content(objectMapper.writeValueAsString(loginPayload(VIEWER_EMAIL, PASSWORD))))
 				.andExpect(status().isOk());
 	}
 
 	@Test
 	void adminCanResetPassword() throws Exception {
-		mockMvc.perform(post("/api/v1/users/{id}/reset-password", user.getId())
+		mockMvc.perform(post("/api/v1/users/{id}/reset-password", viewer.getId())
 				.header(HttpHeaders.AUTHORIZATION, bearer(adminToken()))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(Map.of("newTemporaryPassword", "new-temporary-password"))))
 				.andExpect(status().isNoContent());
 
-		assertThat(userRepository.findById(user.getId()).orElseThrow().isMustChangePassword()).isTrue();
+		assertThat(userRepository.findById(viewer.getId()).orElseThrow().isMustChangePassword()).isTrue();
 
 		mockMvc.perform(post("/api/v1/auth/login")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(loginPayload(USER_EMAIL, "new-temporary-password"))))
+				.content(objectMapper.writeValueAsString(loginPayload(VIEWER_EMAIL, "new-temporary-password"))))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.user.mustChangePassword", is(true)));
 
@@ -180,9 +192,9 @@ class UserManagementControllerIT {
 	}
 
 	@Test
-	void userCanChangeOwnPasswordAndWrongCurrentPasswordIsRejected() throws Exception {
+	void viewerCanChangeOwnPasswordAndWrongCurrentPasswordIsRejected() throws Exception {
 		mockMvc.perform(post("/api/v1/me/change-password")
-				.header(HttpHeaders.AUTHORIZATION, bearer(userToken()))
+				.header(HttpHeaders.AUTHORIZATION, bearer(viewerToken()))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(Map.of(
 						"currentPassword", "wrong-password",
@@ -190,18 +202,18 @@ class UserManagementControllerIT {
 				.andExpect(status().isUnauthorized());
 
 		mockMvc.perform(post("/api/v1/me/change-password")
-				.header(HttpHeaders.AUTHORIZATION, bearer(userToken()))
+				.header(HttpHeaders.AUTHORIZATION, bearer(viewerToken()))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(Map.of(
 						"currentPassword", PASSWORD,
 						"newPassword", "new-password"))))
 				.andExpect(status().isNoContent());
 
-		assertThat(userRepository.findById(user.getId()).orElseThrow().isMustChangePassword()).isFalse();
+		assertThat(userRepository.findById(viewer.getId()).orElseThrow().isMustChangePassword()).isFalse();
 
 		mockMvc.perform(post("/api/v1/auth/login")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(loginPayload(USER_EMAIL, "new-password"))))
+				.content(objectMapper.writeValueAsString(loginPayload(VIEWER_EMAIL, "new-password"))))
 				.andExpect(status().isOk());
 
 		assertThat(auditLogRepository.findAll())
@@ -210,10 +222,10 @@ class UserManagementControllerIT {
 
 	@Test
 	void mustChangePasswordUserCanOnlyChangePasswordUntilCompleted() throws Exception {
-		user.setMustChangePassword(true);
-		userRepository.save(user);
+		viewer.setMustChangePassword(true);
+		userRepository.save(viewer);
 
-		String token = userToken();
+		String token = viewerToken();
 
 		mockMvc.perform(get("/api/v1/servers")
 				.header(HttpHeaders.AUTHORIZATION, bearer(token)))
@@ -233,7 +245,7 @@ class UserManagementControllerIT {
 						"newPassword", "changed-password"))))
 				.andExpect(status().isNoContent());
 
-		String changedToken = tokenFor(USER_EMAIL, "changed-password");
+		String changedToken = tokenFor(VIEWER_EMAIL, "changed-password");
 		mockMvc.perform(get("/api/v1/servers")
 				.header(HttpHeaders.AUTHORIZATION, bearer(changedToken)))
 				.andExpect(status().isOk());
@@ -254,12 +266,12 @@ class UserManagementControllerIT {
 
 	@Test
 	void adminCanUpdateUserAndAuditEventIsWritten() throws Exception {
-		mockMvc.perform(put("/api/v1/users/{id}", user.getId())
+		mockMvc.perform(put("/api/v1/users/{id}", viewer.getId())
 				.header(HttpHeaders.AUTHORIZATION, bearer(adminToken()))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(Map.of(
 						"displayName", "Updated User",
-						"role", "USER"))))
+						"role", "OPERATOR"))))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.displayName", is("Updated User")))
 				.andExpect(jsonPath("$.passwordHash").doesNotExist());
@@ -272,8 +284,12 @@ class UserManagementControllerIT {
 		return tokenFor(ADMIN_EMAIL, PASSWORD);
 	}
 
-	private String userToken() throws Exception {
-		return tokenFor(USER_EMAIL, PASSWORD);
+	private String viewerToken() throws Exception {
+		return tokenFor(VIEWER_EMAIL, PASSWORD);
+	}
+
+	private String operatorToken() throws Exception {
+		return tokenFor(OPERATOR_EMAIL, PASSWORD);
 	}
 
 	private String tokenFor(String email, String password) throws Exception {

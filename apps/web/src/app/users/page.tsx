@@ -8,7 +8,6 @@ import {
   Pencil,
   Plus,
   RefreshCw,
-  ShieldAlert,
   UserCheck,
   UserX,
 } from "lucide-react";
@@ -19,6 +18,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { AppShell } from "@/components/app/app-shell";
+import { NotAuthorized } from "@/components/app/not-authorized";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,11 +65,12 @@ import {
   useUsers,
 } from "@/features/users/use-users";
 import { UsersApiError, type UserAccount, type UserRole } from "@/lib/api/users";
+import { canManageUsers } from "@/lib/permissions";
 
 const userFormSchema = z.object({
   displayName: z.string().trim().min(1).max(120),
   email: z.email(),
-  role: z.enum(["ADMIN", "USER"]),
+  role: z.enum(["ADMIN", "OPERATOR", "VIEWER"]),
   temporaryPassword: z.string().min(8),
   mustChangePassword: z.boolean(),
 });
@@ -118,8 +119,8 @@ function UserTableSkeleton() {
 
 export default function UsersPage() {
   const { data: session, status } = useSession();
-  const isAdmin = session?.user.role === "ADMIN";
-  const usersQuery = useUsers(status === "authenticated" && isAdmin);
+  const mayManageUsers = canManageUsers(session?.user.role);
+  const usersQuery = useUsers(status === "authenticated" && mayManageUsers);
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
   const disableMutation = useDisableUser();
@@ -142,7 +143,7 @@ export default function UsersPage() {
     defaultValues: {
       displayName: "",
       email: "",
-      role: "USER",
+      role: "VIEWER",
       temporaryPassword: "",
       mustChangePassword: true,
     },
@@ -151,7 +152,7 @@ export default function UsersPage() {
     resolver: zodResolver(editUserSchema),
     defaultValues: {
       displayName: "",
-      role: "USER",
+      role: "VIEWER",
     },
   });
   const resetForm = useForm<ResetPasswordValues>({
@@ -193,7 +194,7 @@ export default function UsersPage() {
       createForm.reset({
         displayName: "",
         email: "",
-        role: "USER",
+        role: "VIEWER",
         temporaryPassword: generateTemporaryPassword(),
         mustChangePassword: true,
       });
@@ -258,20 +259,10 @@ export default function UsersPage() {
     }
   }
 
-  if (status !== "loading" && !isAdmin) {
+  if (status !== "loading" && !mayManageUsers) {
     return (
       <AppShell>
-        <Card className="border-destructive/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldAlert className="size-4 text-destructive" />
-              Not authorized
-            </CardTitle>
-            <CardDescription>
-              User management requires an ADMIN account.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <NotAuthorized description="User management requires an ADMIN account." />
       </AppShell>
     );
   }
@@ -291,7 +282,7 @@ export default function UsersPage() {
               createForm.reset({
                 displayName: "",
                 email: "",
-                role: "USER",
+                role: "VIEWER",
                 temporaryPassword: generateTemporaryPassword(),
                 mustChangePassword: true,
               });
@@ -636,8 +627,9 @@ function RoleField({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="USER">USER</SelectItem>
           <SelectItem value="ADMIN">ADMIN</SelectItem>
+          <SelectItem value="OPERATOR">OPERATOR</SelectItem>
+          <SelectItem value="VIEWER">VIEWER</SelectItem>
         </SelectContent>
       </Select>
     </div>

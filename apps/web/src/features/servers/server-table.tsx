@@ -16,8 +16,17 @@ import { EditServerDialog } from "./edit-server-dialog";
 import { formatDateTime } from "./format";
 import { ServerStatusBadge } from "./server-status-badge";
 
-export function ServerTable({ servers }: { servers: ServerInventoryItem[] }) {
+export function ServerTable({
+  canDelete = true,
+  canEdit = true,
+  servers,
+}: {
+  canDelete?: boolean;
+  canEdit?: boolean;
+  servers: ServerInventoryItem[];
+}) {
   const router = useRouter();
+  const showActions = canDelete || canEdit;
 
   function openServer(serverId: string) {
     router.push(`/servers/${encodeURIComponent(serverId)}`);
@@ -34,7 +43,9 @@ export function ServerTable({ servers }: { servers: ServerInventoryItem[] }) {
           <TableHead>OS</TableHead>
           <TableHead>Tags</TableHead>
           <TableHead>Last seen</TableHead>
-          <TableHead className="w-20 text-right">Actions</TableHead>
+          {showActions ? (
+            <TableHead className="w-20 text-right">Actions</TableHead>
+          ) : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -91,15 +102,17 @@ export function ServerTable({ servers }: { servers: ServerInventoryItem[] }) {
               <div>{formatDateTime(server.lastSeenAt)}</div>
               <div className="text-xs">Agent-managed status</div>
             </TableCell>
-            <TableCell
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => event.stopPropagation()}
-            >
-              <div className="flex justify-end gap-1">
-                <EditServerDialog server={server} />
-                <DeleteServerDialog server={server} />
-              </div>
-            </TableCell>
+            {showActions ? (
+              <TableCell
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+              >
+                <div className="flex justify-end gap-1">
+                  {canEdit ? <EditServerDialog server={server} /> : null}
+                  {canDelete ? <DeleteServerDialog server={server} /> : null}
+                </div>
+              </TableCell>
+            ) : null}
           </TableRow>
         ))}
       </TableBody>

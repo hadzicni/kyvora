@@ -82,7 +82,7 @@ class AgentControllerIT {
 		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
 
 		String createdJson = mockMvc.perform(post("/api/v1/agents")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(
 						server.getId(),
@@ -118,7 +118,7 @@ class AgentControllerIT {
 		org.assertj.core.api.Assertions.assertThat(stored.getServer().getId()).isEqualTo(server.getId());
 
 		mockMvc.perform(get("/api/v1/audit-logs")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.param("aggregateType", "AGENT")
 				.param("aggregateId", id))
 				.andExpect(status().isOk())
@@ -144,7 +144,7 @@ class AgentControllerIT {
 		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
 
 		mockMvc.perform(post("/api/v1/agents")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(
 						server.getId(),
@@ -159,7 +159,7 @@ class AgentControllerIT {
 		UUID missingServerId = UUID.fromString("00000000-0000-0000-0000-000000000010");
 
 		mockMvc.perform(post("/api/v1/agents")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(
 						missingServerId,
@@ -175,7 +175,7 @@ class AgentControllerIT {
 		registerAgent(server.getId(), "Agent 01", "0.1.0");
 
 		mockMvc.perform(post("/api/v1/agents")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(
 						server.getId(),
@@ -217,7 +217,7 @@ class AgentControllerIT {
 				.andExpect(status().isOk());
 
 		mockMvc.perform(get("/api/v1/audit-logs")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.param("aggregateType", "AGENT")
 				.param("aggregateId", id)
 				.param("eventType", "AGENT_CONNECTED"))
@@ -233,7 +233,7 @@ class AgentControllerIT {
 				.andExpect(jsonPath("$.content[0].metadata.occurredAt", matchesPattern(ISO_8601_INSTANT_PATTERN)));
 
 		mockMvc.perform(get("/api/v1/audit-logs")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.param("aggregateType", "AGENT")
 				.param("aggregateId", id)
 				.param("eventType", "AGENT_HEARTBEAT_RECEIVED"))
@@ -253,7 +253,7 @@ class AgentControllerIT {
 		String agentToken = created.get("agentToken").asText();
 
 		mockMvc.perform(delete("/api/v1/agents/{id}", id)
-				.with(user("alice")))
+				.with(user("alice").roles("OPERATOR")))
 				.andExpect(status().isNoContent());
 
 		org.assertj.core.api.Assertions.assertThat(agentRepository.findById(UUID.fromString(id))).isEmpty();
@@ -420,7 +420,7 @@ class AgentControllerIT {
 				.andExpect(status().isOk());
 
 		mockMvc.perform(get("/api/v1/servers/{id}", server.getId())
-				.with(user("alice")))
+				.with(user("alice").roles("OPERATOR")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.hostFacts.operatingSystem", is("Ubuntu 24.04")))
 				.andExpect(jsonPath("$.hostFacts.architecture", is("amd64")))
@@ -434,11 +434,11 @@ class AgentControllerIT {
 		String id = created.get("agent").get("id").asText();
 
 		mockMvc.perform(delete("/api/v1/agents/{id}", id)
-				.with(user("alice")))
+				.with(user("alice").roles("OPERATOR")))
 				.andExpect(status().isNoContent());
 
 		mockMvc.perform(post("/api/v1/agents")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(server.getId(), "Agent 02", "0.1.0"))))
 				.andExpect(status().isCreated())
@@ -460,7 +460,7 @@ class AgentControllerIT {
 				.andExpect(status().isOk());
 
 		mockMvc.perform(delete("/api/v1/agents/{id}", id)
-				.with(user("alice")))
+				.with(user("alice").roles("OPERATOR")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message", is("Connected agents cannot be deleted through enrollment cancellation.")));
 	}
@@ -480,7 +480,7 @@ class AgentControllerIT {
 		auditLogRepository.deleteAll();
 
 		mockMvc.perform(post("/api/v1/agents/{id}/decommission", id)
-				.with(user("alice")))
+				.with(user("alice").roles("OPERATOR")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id", is(id)))
 				.andExpect(jsonPath("$.status", is("DECOMMISSIONED")))
@@ -505,12 +505,12 @@ class AgentControllerIT {
 				.andExpect(jsonPath("$.message", is("Agent token has been revoked")));
 
 		mockMvc.perform(get("/api/v1/servers/{id}", server.getId())
-				.with(user("alice")))
+				.with(user("alice").roles("OPERATOR")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status", is("UNKNOWN")));
 
 		mockMvc.perform(post("/api/v1/agents")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(server.getId(), "Agent 02", "0.1.0"))))
 				.andExpect(status().isCreated())
@@ -546,7 +546,7 @@ class AgentControllerIT {
 		agentRepository.save(agent);
 
 		mockMvc.perform(post("/api/v1/agents/{id}/decommission", id)
-				.with(user("alice")))
+				.with(user("alice").roles("OPERATOR")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status", is("DECOMMISSIONED")))
 				.andExpect(jsonPath("$.serverId", nullValue()));
@@ -572,7 +572,7 @@ class AgentControllerIT {
 		String oldToken = created.get("agentToken").asText();
 
 		String rotatedJson = mockMvc.perform(post("/api/v1/agents/{id}/rotate-token", id)
-				.with(user("alice")))
+				.with(user("alice").roles("OPERATOR")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.agent.id", is(id)))
 				.andExpect(jsonPath("$.agent.serverId", is(server.getId().toString())))
@@ -672,7 +672,7 @@ class AgentControllerIT {
 		registerAgent(node02.getId(), "Agent 02", "0.1.0");
 
 		mockMvc.perform(get("/api/v1/agents")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.param("page", "0")
 				.param("size", "1")
 				.param("sort", "hostname,asc"))
@@ -698,7 +698,7 @@ class AgentControllerIT {
 		String id = objectMapper.readTree(createdJson).get("agent").get("id").asText();
 
 		mockMvc.perform(get("/api/v1/agents/{id}", id)
-				.with(user("alice")))
+				.with(user("alice").roles("OPERATOR")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id", is(id)))
 				.andExpect(jsonPath("$.serverId", is(server.getId().toString())))
@@ -708,7 +708,7 @@ class AgentControllerIT {
 	@Test
 	void notFoundReturnsApiError() throws Exception {
 		mockMvc.perform(get("/api/v1/agents/{id}", "00000000-0000-0000-0000-000000000001")
-				.with(user("alice")))
+				.with(user("alice").roles("OPERATOR")))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.message", is("Agent not found: 00000000-0000-0000-0000-000000000001")));
 
@@ -740,9 +740,47 @@ class AgentControllerIT {
 				.andExpect(status().isUnauthorized());
 	}
 
+	@Test
+	void viewerCanListAndViewAgentsButCannotManageAgents() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+
+		mockMvc.perform(get("/api/v1/agents")
+				.with(user("viewer").roles("VIEWER")))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/v1/agents/{id}", id)
+				.with(user("viewer").roles("VIEWER")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id", is(id)));
+
+		mockMvc.perform(post("/api/v1/agents")
+				.with(user("viewer").roles("VIEWER"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(registerPayload(server.getId(), "Blocked Agent", "0.1.0"))))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
+
+		mockMvc.perform(delete("/api/v1/agents/{id}", id)
+				.with(user("viewer").roles("VIEWER")))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
+
+		mockMvc.perform(post("/api/v1/agents/{id}/rotate-token", id)
+				.with(user("viewer").roles("VIEWER")))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
+
+		mockMvc.perform(post("/api/v1/agents/{id}/decommission", id)
+				.with(user("viewer").roles("VIEWER")))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
+	}
+
 	private String registerAgent(UUID serverId, String name, String version) throws Exception {
 		return mockMvc.perform(post("/api/v1/agents")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(registerPayload(serverId, name, version))))
 				.andExpect(status().isCreated())

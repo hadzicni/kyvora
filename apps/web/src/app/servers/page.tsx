@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 
 import { AppShell } from "@/components/app/app-shell";
 import { Button } from "@/components/ui/button";
@@ -36,12 +37,16 @@ import { ServerTable } from "@/features/servers/server-table";
 import { ServerTableSkeleton } from "@/features/servers/server-table-skeleton";
 import { useServers } from "@/features/servers/use-servers";
 import type { ServerStatus } from "@/lib/api/servers";
+import { canDeleteServers, canManageServers } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 const serverStatuses = ["ONLINE", "OFFLINE", "UNKNOWN"] as const;
 const pageSizeOptions = [10, 20, 50] as const;
 
 export default function ServerInventoryPage() {
+  const { data: session } = useSession();
+  const mayManageServers = canManageServers(session?.user.role);
+  const mayDeleteServers = canDeleteServers(session?.user.role);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<ServerStatus | "ALL">("ALL");
   const [tags, setTags] = useState("");
@@ -86,7 +91,7 @@ export default function ServerInventoryPage() {
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <CreateServerDialog />
+            {mayManageServers ? <CreateServerDialog /> : null}
             <Button
               disabled={serversQuery.isFetching}
               onClick={() => void serversQuery.refetch()}
@@ -209,7 +214,11 @@ export default function ServerInventoryPage() {
               <ServerEmptyState />
             ) : null}
             {serversQuery.isSuccess && servers.length > 0 ? (
-              <ServerTable servers={servers} />
+              <ServerTable
+                canDelete={mayDeleteServers}
+                canEdit={mayManageServers}
+                servers={servers}
+              />
             ) : null}
             {serversQuery.isSuccess ? (
               <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">

@@ -65,7 +65,7 @@ class AuditLogControllerIT {
 	@Test
 	void serverInventoryChangesPersistAuditLogs() throws Exception {
 		String createdJson = mockMvc.perform(post("/api/v1/servers")
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(payload(
 						"Web 01",
@@ -81,7 +81,7 @@ class AuditLogControllerIT {
 		String id = created.get("id").asText();
 
 		mockMvc.perform(put("/api/v1/servers/{id}", id)
-				.with(user("alice"))
+				.with(user("alice").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(payload(
 						"Web 01 Renamed",
@@ -91,11 +91,11 @@ class AuditLogControllerIT {
 				.andExpect(status().isOk());
 
 		mockMvc.perform(delete("/api/v1/servers/{id}", id)
-				.with(user("alice")))
+				.with(user("admin").roles("ADMIN")))
 				.andExpect(status().isNoContent());
 
 		mockMvc.perform(get("/api/v1/audit-logs")
-				.with(user("alice"))
+				.with(user("alice").roles("VIEWER"))
 				.param("aggregateType", "SERVER")
 				.param("aggregateId", id)
 				.param("sort", "createdAt,asc"))
@@ -123,7 +123,7 @@ class AuditLogControllerIT {
 	@Test
 	void auditLogsSupportEventTypeFilter() throws Exception {
 		String createdJson = mockMvc.perform(post("/api/v1/servers")
-				.with(user("bob"))
+				.with(user("bob").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(payload(
 						"DB 01",
@@ -138,7 +138,7 @@ class AuditLogControllerIT {
 		String id = objectMapper.readTree(createdJson).get("id").asText();
 
 		mockMvc.perform(get("/api/v1/audit-logs")
-				.with(user("bob"))
+				.with(user("bob").roles("OPERATOR"))
 				.param("eventType", "SERVER_CREATED")
 				.param("aggregateId", id))
 				.andExpect(status().isOk())

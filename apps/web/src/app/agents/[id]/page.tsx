@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useCallback, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -49,6 +50,7 @@ import {
   formatUptime,
 } from "@/features/servers/format";
 import { AgentApiError, type Agent, type AgentEnrollment } from "@/lib/api/agents";
+import { canManageAgents } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 function getParamId(id: string | string[] | undefined) {
@@ -180,10 +182,12 @@ function HostFactsSection({ agent }: { agent: Agent }) {
 
 function AgentActions({
   agent,
+  canManage,
   onCancelEnrollment,
   onRotateToken,
 }: {
   agent: Agent;
+  canManage: boolean;
   onCancelEnrollment: () => void;
   onRotateToken: () => void;
 }) {
@@ -192,28 +196,30 @@ function AgentActions({
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row">
-      {agent.status !== "DECOMMISSIONED" ? (
+      {canManage && agent.status !== "DECOMMISSIONED" ? (
         <Button type="button" variant={pending ? "default" : "outline"} onClick={onRotateToken}>
           <Terminal className="size-4" />
           {pending ? "Generate setup token" : "Rotate token"}
         </Button>
       ) : null}
-      {pending ? (
+      {canManage && pending ? (
         <Button type="button" variant="outline" onClick={onCancelEnrollment}>
           Cancel enrollment
         </Button>
       ) : null}
-      {connected ? <DecommissionAgentDialog agent={agent} /> : null}
+      {canManage && connected ? <DecommissionAgentDialog agent={agent} /> : null}
     </div>
   );
 }
 
 function TokenLifecycleSection({
   agent,
+  canManage,
   onCancelEnrollment,
   onRotateToken,
 }: {
   agent: Agent;
+  canManage: boolean;
   onCancelEnrollment: () => void;
   onRotateToken: () => void;
 }) {
@@ -251,6 +257,7 @@ function TokenLifecycleSection({
         </dl>
         <AgentActions
           agent={agent}
+          canManage={canManage}
           onCancelEnrollment={onCancelEnrollment}
           onRotateToken={onRotateToken}
         />
@@ -259,7 +266,7 @@ function TokenLifecycleSection({
   );
 }
 
-function AgentDetail({ agent }: { agent: Agent }) {
+function AgentDetail({ agent, canManage }: { agent: Agent; canManage: boolean }) {
   const router = useRouter();
   const [enrollment, setEnrollment] = useState<AgentEnrollment | null>(null);
   const [agentConnected, setAgentConnected] = useState(false);
@@ -354,6 +361,7 @@ function AgentDetail({ agent }: { agent: Agent }) {
               </div>
               <AgentActions
                 agent={agent}
+                canManage={canManage}
                 onCancelEnrollment={() => void cancelEnrollment()}
                 onRotateToken={() => void rotateToken()}
               />
@@ -412,6 +420,7 @@ function AgentDetail({ agent }: { agent: Agent }) {
 
           <TokenLifecycleSection
             agent={agent}
+            canManage={canManage}
             onCancelEnrollment={() => void cancelEnrollment()}
             onRotateToken={() => void rotateToken()}
           />
@@ -531,6 +540,7 @@ function NotFoundState() {
 }
 
 export default function AgentDetailPage() {
+  const { data: session } = useSession();
   const params = useParams<{ id?: string | string[] }>();
   const id = getParamId(params.id);
   const agentQuery = useAgent(id);
@@ -579,7 +589,12 @@ export default function AgentDetailPage() {
             onRetry={() => void agentQuery.refetch()}
           />
         ) : null}
-        {agentQuery.isSuccess ? <AgentDetail agent={agentQuery.data} /> : null}
+        {agentQuery.isSuccess ? (
+          <AgentDetail
+            agent={agentQuery.data}
+            canManage={canManageAgents(session?.user.role)}
+          />
+        ) : null}
       </div>
     </AppShell>
   );

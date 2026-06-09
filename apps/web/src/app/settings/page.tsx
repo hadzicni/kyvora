@@ -13,12 +13,14 @@ import {
   Save,
   Settings,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { AppShell } from "@/components/app/app-shell";
+import { NotAuthorized } from "@/components/app/not-authorized";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSettings, useUpdateSettings } from "@/features/settings/use-settings";
 import { getStatus, statusKeys } from "@/lib/api/status";
 import { SettingsApiError, type SettingsResponse } from "@/lib/api/settings";
+import { canManageSettings } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 
@@ -218,11 +221,14 @@ function InfoRow({
 }
 
 export default function SettingsPage() {
-  const settingsQuery = useSettings();
+  const { data: session, status: sessionStatus } = useSession();
+  const mayManageSettings = canManageSettings(session?.user.role);
+  const settingsQuery = useSettings(mayManageSettings);
   const updateSettingsMutation = useUpdateSettings();
   const statusQuery = useQuery({
     queryKey: statusKeys.status,
     queryFn: getStatus,
+    enabled: mayManageSettings,
   });
 
   const form = useForm<SettingsFormValues, unknown, SettingsFormPayload>({
@@ -286,6 +292,14 @@ export default function SettingsPage() {
 
   const saving = isSubmitting || updateSettingsMutation.isPending;
   const status = statusQuery.data;
+
+  if (sessionStatus !== "loading" && !mayManageSettings) {
+    return (
+      <AppShell>
+        <NotAuthorized description="Settings management requires an ADMIN account." />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>

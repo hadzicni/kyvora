@@ -15,6 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -33,12 +34,15 @@ public class SecurityConfig {
 	SecurityFilterChain securityFilterChain(
 			HttpSecurity http,
 			JwtAuthenticationFilter jwtAuthenticationFilter,
-			AuthenticationEntryPoint authenticationEntryPoint) throws Exception {
+			AuthenticationEntryPoint authenticationEntryPoint,
+			AccessDeniedHandler accessDeniedHandler) throws Exception {
 		return http
 				.cors(Customizer.withDefaults())
 				.csrf(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
+				.exceptionHandling(exceptions -> exceptions
+						.authenticationEntryPoint(authenticationEntryPoint)
+						.accessDeniedHandler(accessDeniedHandler))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/actuator/health").permitAll()
 						.requestMatchers("/actuator/info").permitAll()
@@ -68,6 +72,21 @@ public class SecurityConfig {
 					HttpStatus.UNAUTHORIZED.value(),
 					HttpStatus.UNAUTHORIZED.getReasonPhrase(),
 					"Authentication is required",
+					request.getRequestURI(),
+					List.of()));
+		};
+	}
+
+	@Bean
+	AccessDeniedHandler accessDeniedHandler(ObjectMapper objectMapper) {
+		return (request, response, exception) -> {
+			response.setStatus(HttpStatus.FORBIDDEN.value());
+			response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+			objectMapper.writeValue(response.getOutputStream(), new ApiErrorResponse(
+					java.time.Instant.now(),
+					HttpStatus.FORBIDDEN.value(),
+					HttpStatus.FORBIDDEN.getReasonPhrase(),
+					"You do not have permission to perform this action.",
 					request.getRequestURI(),
 					List.of()));
 		};

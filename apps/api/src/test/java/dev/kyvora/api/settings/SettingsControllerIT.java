@@ -54,6 +54,7 @@ class SettingsControllerIT {
 				.apply(springSecurity())
 				.build();
 		auditLogRepository.deleteAll();
+		systemSettingRepository.deleteAll();
 	}
 
 	@Test
@@ -63,8 +64,8 @@ class SettingsControllerIT {
 	}
 
 	@Test
-	void authenticatedGetReturnsDefaults() throws Exception {
-		mockMvc.perform(get("/api/v1/settings").with(user("alice")))
+	void adminGetReturnsDefaults() throws Exception {
+		mockMvc.perform(get("/api/v1/settings").with(user("admin").roles("ADMIN")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.settings", hasSize(5)))
 				.andExpect(jsonPath("$.settings[?(@.key == 'instance.name')].value", containsInAnyOrder("Kyvora")))
@@ -72,6 +73,13 @@ class SettingsControllerIT {
 				.andExpect(jsonPath("$.settings[?(@.key == 'agents.offline_threshold_seconds')].value", containsInAnyOrder(90)))
 				.andExpect(jsonPath("$.settings[?(@.key == 'agents.offline_check_interval_seconds')].value", containsInAnyOrder(30)))
 				.andExpect(jsonPath("$.settings[?(@.key == 'ui.show_dev_hints')].value", containsInAnyOrder(true)));
+	}
+
+	@Test
+	void nonAdminGetReturnsForbidden() throws Exception {
+		mockMvc.perform(get("/api/v1/settings").with(user("operator").roles("OPERATOR")))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
 	}
 
 	@Test
@@ -151,7 +159,8 @@ class SettingsControllerIT {
 				.with(user("operator").roles("OPERATOR"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(updatePayload(Map.of("instance.name", "Kyvora Lab")))))
-				.andExpect(status().isForbidden());
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("You do not have permission to perform this action.")));
 	}
 
 	private Map<String, Object> updatePayload(Map<String, Object> settings) {

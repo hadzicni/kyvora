@@ -1,6 +1,7 @@
 "use client";
 
 import { Bot, RefreshCw } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 import { AppShell } from "@/components/app/app-shell";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,12 @@ import { AgentTableSkeleton } from "@/features/agents/agent-table-skeleton";
 import { RegisterAgentDialog } from "@/features/agents/register-agent-dialog";
 import { useAgents } from "@/features/agents/use-agents";
 import { formatNumber } from "@/features/servers/format";
+import { canManageAgents } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 export default function AgentsPage() {
+  const { data: session } = useSession();
+  const mayManageAgents = canManageAgents(session?.user.role);
   const agentsQuery = useAgents({ size: 50 });
   const agents = agentsQuery.data?.content ?? [];
   const totalElements = agentsQuery.data?.totalElements ?? agents.length;
@@ -36,7 +40,7 @@ export default function AgentsPage() {
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <RegisterAgentDialog />
+            {mayManageAgents ? <RegisterAgentDialog /> : null}
             <Button
               disabled={agentsQuery.isFetching}
               onClick={() => void agentsQuery.refetch()}

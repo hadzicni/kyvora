@@ -154,8 +154,8 @@ class DefaultUserManagementService implements UserManagementService {
 	}
 
 	private void requireAssignableRole(UserRole role) {
-		if (role != UserRole.ADMIN && role != UserRole.USER) {
-			throw new UserManagementException("Role must be ADMIN or USER");
+		if (role != UserRole.ADMIN && role != UserRole.OPERATOR && role != UserRole.VIEWER) {
+			throw new UserManagementException("Role must be ADMIN, OPERATOR, or VIEWER");
 		}
 	}
 
