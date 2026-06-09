@@ -39,6 +39,12 @@ class SecurityConfigIT {
 	}
 
 	@Test
+	void statusEndpointIsPublic() throws Exception {
+		mockMvc.perform(get("/api/v1/status"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	void serverInventoryEndpointsRequireAuthentication() throws Exception {
 		mockMvc.perform(get("/api/v1/servers"))
 				.andExpect(status().isUnauthorized());

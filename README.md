@@ -250,6 +250,9 @@ environment variables, process lists, usernames, or file contents. Collection
 is best-effort on Linux and macOS, and unsupported platforms degrade
 gracefully.
 
+The agent reads the Kyvora product version from the API status endpoint at
+startup, matching the web UI's release metadata source.
+
 ## Usage
 
 Describe the main use cases or commands here.

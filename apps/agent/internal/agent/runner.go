@@ -13,8 +13,19 @@ func Run(ctx context.Context, cfg Config, logger *slog.Logger) error {
 		return err
 	}
 
-	logger.Info("starting enrolled agent", "api_url", cfg.APIURL, "agent_id", cfg.AgentID, "hostname", cfg.Hostname, "version", cfg.Version)
-	if err := sendHeartbeat(ctx, client, cfg.AgentID, cfg.Version, cfg.Hostname, logger); err != nil {
+	version := cfg.Version
+	if version == "" {
+		status, err := client.Status(ctx)
+		if err != nil {
+			logger.Warn("unable to read API version", "error", err)
+			version = "unknown"
+		} else {
+			version = status.Version
+		}
+	}
+
+	logger.Info("starting enrolled agent", "api_url", cfg.APIURL, "agent_id", cfg.AgentID, "hostname", cfg.Hostname, "version", version)
+	if err := sendHeartbeat(ctx, client, cfg.AgentID, version, cfg.Hostname, logger); err != nil {
 		return err
 	}
 
@@ -27,7 +38,7 @@ func Run(ctx context.Context, cfg Config, logger *slog.Logger) error {
 			logger.Info("shutdown requested")
 			return nil
 		case <-ticker.C:
-			if err := sendHeartbeat(ctx, client, cfg.AgentID, cfg.Version, cfg.Hostname, logger); err != nil {
+			if err := sendHeartbeat(ctx, client, cfg.AgentID, version, cfg.Hostname, logger); err != nil {
 				var authError *AgentTokenAuthError
 				if errors.As(err, &authError) {
 					logger.Error("agent token is invalid or revoked", "agent_id", cfg.AgentID, "status", authError.StatusCode, "error", err)

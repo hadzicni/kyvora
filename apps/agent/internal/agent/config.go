@@ -10,7 +10,6 @@ import (
 const (
 	defaultAPIURL            = "http://localhost:8080"
 	defaultAgentName         = "local-agent"
-	defaultAgentVersion      = "0.1.0"
 	defaultHeartbeatInterval = 30 * time.Second
 )
 
@@ -40,7 +39,7 @@ func loadConfig(getenv func(string) string, hostname func() (string, error)) (Co
 		AgentToken:        getenv("KYVORA_AGENT_TOKEN"),
 		Name:              envOrDefault(getenv, "KYVORA_AGENT_NAME", defaultAgentName),
 		Hostname:          envOrDefault(getenv, "KYVORA_AGENT_HOSTNAME", osHostname),
-		Version:           envOrDefault(getenv, "KYVORA_AGENT_VERSION", defaultAgentVersion),
+		Version:           getenv("KYVORA_AGENT_VERSION"),
 		HeartbeatInterval: defaultHeartbeatInterval,
 	}
 

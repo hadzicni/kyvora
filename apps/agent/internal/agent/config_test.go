@@ -32,8 +32,8 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if cfg.Hostname != "test-host" {
 		t.Fatalf("Hostname = %q, want test-host", cfg.Hostname)
 	}
-	if cfg.Version != defaultAgentVersion {
-		t.Fatalf("Version = %q, want %q", cfg.Version, defaultAgentVersion)
+	if cfg.Version != "" {
+		t.Fatalf("Version = %q, want empty API-derived default", cfg.Version)
 	}
 	if cfg.HeartbeatInterval != defaultHeartbeatInterval {
 		t.Fatalf("HeartbeatInterval = %s, want %s", cfg.HeartbeatInterval, defaultHeartbeatInterval)

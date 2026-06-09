@@ -102,6 +102,40 @@ func TestHeartbeatPayloadIncludesHostFactsWhenAvailable(t *testing.T) {
 	}
 }
 
+func TestStatusReadsAPIVersionWithoutAgentToken(t *testing.T) {
+	client, err := NewClient(Config{
+		APIURL:     "http://kyvora.example.test",
+		AgentToken: "agent-token",
+	})
+	if err != nil {
+		t.Fatalf("NewClient returned error: %v", err)
+	}
+	client.httpClient = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("method = %q, want GET", r.Method)
+		}
+		if r.URL.Path != "/api/v1/status" {
+			t.Fatalf("path = %q", r.URL.Path)
+		}
+		if token := r.Header.Get(agentTokenHeader); token != "" {
+			t.Fatalf("%s = %q, want empty", agentTokenHeader, token)
+		}
+		return jsonResponse(http.StatusOK, StatusResponse{
+			Service:     "kyvora-api",
+			Version:     "0.2.0",
+			GeneratedAt: time.Date(2026, 6, 9, 10, 0, 0, 0, time.UTC),
+		}), nil
+	})}
+
+	status, err := client.Status(context.Background())
+	if err != nil {
+		t.Fatalf("Status returned error: %v", err)
+	}
+	if status.Version != "0.2.0" {
+		t.Fatalf("Version = %q, want 0.2.0", status.Version)
+	}
+}
+
 func TestHeartbeatMapsUnauthorizedToAgentTokenAuthError(t *testing.T) {
 	client, err := NewClient(Config{
 		APIURL:     "http://kyvora.example.test",

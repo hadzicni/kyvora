@@ -70,12 +70,14 @@ KYVORA_AGENT_ID=<agent-id>
 KYVORA_AGENT_TOKEN=<agent-token>
 KYVORA_AGENT_NAME=local-agent
 KYVORA_AGENT_HOSTNAME=<os-hostname>
-KYVORA_AGENT_VERSION=0.1.0
 KYVORA_HEARTBEAT_INTERVAL_SECONDS=30
 ```
 
 `KYVORA_AGENT_ID` and `KYVORA_AGENT_TOKEN` are required. `KYVORA_API_URL`
 defaults to `http://localhost:8080`.
+
+The agent reads the Kyvora product version from `GET /api/v1/status` at startup
+and reports that version in heartbeats and host facts.
 
 Heartbeats are sent to:
 

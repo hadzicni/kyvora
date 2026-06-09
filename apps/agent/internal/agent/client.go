@@ -38,6 +38,12 @@ type heartbeatRequest struct {
 	HostFacts *HostFacts `json:"hostFacts,omitempty"`
 }
 
+type StatusResponse struct {
+	Service     string    `json:"service"`
+	Version     string    `json:"version"`
+	GeneratedAt time.Time `json:"generatedAt"`
+}
+
 type apiErrorResponse struct {
 	Status  int      `json:"status"`
 	Error   string   `json:"error"`
@@ -101,13 +107,25 @@ func (c *Client) Heartbeat(ctx context.Context, agentID, version, hostname strin
 	return updated, err
 }
 
+func (c *Client) Status(ctx context.Context) (StatusResponse, error) {
+	var status StatusResponse
+	statusCode, responseBody, err := c.send(ctx, http.MethodGet, "/api/v1/status", nil, false)
+	if err != nil {
+		return status, err
+	}
+	if err := decodeAPIResponse(statusCode, responseBody, &status); err != nil {
+		return status, err
+	}
+	return status, nil
+}
+
 func (c *Client) doJSON(ctx context.Context, method, path string, body any, out any) error {
 	payload, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("encode request: %w", err)
 	}
 
-	statusCode, responseBody, err := c.sendJSON(ctx, method, path, payload)
+	statusCode, responseBody, err := c.send(ctx, method, path, payload, true)
 	if err != nil {
 		return err
 	}
@@ -115,17 +133,25 @@ func (c *Client) doJSON(ctx context.Context, method, path string, body any, out 
 	return decodeAPIResponse(statusCode, responseBody, out)
 }
 
-func (c *Client) sendJSON(ctx context.Context, method, path string, payload []byte) (int, []byte, error) {
+func (c *Client) send(ctx context.Context, method, path string, payload []byte, includeAgentToken bool) (int, []byte, error) {
 	requestCtx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(requestCtx, method, c.resolve(path), bytes.NewReader(payload))
+	var body io.Reader
+	if payload != nil {
+		body = bytes.NewReader(payload)
+	}
+	req, err := http.NewRequestWithContext(requestCtx, method, c.resolve(path), body)
 	if err != nil {
 		return 0, nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(agentTokenHeader, c.agentToken)
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	if includeAgentToken {
+		req.Header.Set(agentTokenHeader, c.agentToken)
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
