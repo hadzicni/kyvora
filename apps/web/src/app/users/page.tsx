@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertTriangle,
+  Check,
   KeyRound,
   Pencil,
   Plus,
@@ -10,7 +11,6 @@ import {
   ShieldAlert,
   UserCheck,
   UserX,
-  Check,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
@@ -54,6 +54,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { generateTemporaryPassword } from "@/features/users/temporary-password";
+import { TemporaryPasswordField } from "@/features/users/temporary-password-field";
 import {
   useCreateUser,
   useDisableUser,
@@ -187,8 +189,14 @@ export default function UsersPage() {
     try {
       await createMutation.mutateAsync(values);
       toast.success("User created");
-      createForm.reset();
       setCreateOpen(false);
+      createForm.reset({
+        displayName: "",
+        email: "",
+        role: "USER",
+        temporaryPassword: generateTemporaryPassword(),
+        mustChangePassword: true,
+      });
     } catch (error) {
       toast.error(errorMessage(error));
     }
@@ -241,8 +249,10 @@ export default function UsersPage() {
         input: values,
       });
       toast.success("Password reset");
-      resetForm.reset();
       setResetUser(null);
+      resetForm.reset({
+        newTemporaryPassword: generateTemporaryPassword(),
+      });
     } catch (error) {
       toast.error(errorMessage(error));
     }
@@ -276,7 +286,18 @@ export default function UsersPage() {
               Manage local Kyvora accounts and access roles.
             </p>
           </div>
-          <Button onClick={() => setCreateOpen(true)}>
+          <Button
+            onClick={() => {
+              createForm.reset({
+                displayName: "",
+                email: "",
+                role: "USER",
+                temporaryPassword: generateTemporaryPassword(),
+                mustChangePassword: true,
+              });
+              setCreateOpen(true);
+            }}
+          >
             <Plus className="size-4" />
             Create user
           </Button>
@@ -376,7 +397,12 @@ export default function UsersPage() {
                               </Button>
                               <Button
                                 aria-label={`Reset password for ${user.email}`}
-                                onClick={() => setResetUser(user)}
+                                onClick={() => {
+                                  resetForm.reset({
+                                    newTemporaryPassword: generateTemporaryPassword(),
+                                  });
+                                  setResetUser(user);
+                                }}
                                 size="icon"
                                 variant="outline"
                               >
@@ -433,14 +459,19 @@ export default function UsersPage() {
               role={createRole}
               setRole={(role) => createForm.setValue("role", role)}
             />
-            <div className="space-y-2">
-              <Label htmlFor="temporaryPassword">Temporary password</Label>
-              <Input
-                id="temporaryPassword"
-                type="password"
-                {...createForm.register("temporaryPassword")}
-              />
-            </div>
+            <TemporaryPasswordField
+              disabled={loading}
+              id="temporaryPassword"
+              label="Temporary password"
+              value={createForm.watch("temporaryPassword")}
+              register={createForm.register("temporaryPassword")}
+              onChange={(value) =>
+                createForm.setValue("temporaryPassword", value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+            />
             <label className="flex items-center gap-3 rounded-md border bg-muted/30 p-3 text-sm">
               <input
                 className="size-4 accent-primary"
@@ -533,14 +564,19 @@ export default function UsersPage() {
             <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
               User will be required to change this password on next login.
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="newTemporaryPassword">New temporary password</Label>
-              <Input
-                id="newTemporaryPassword"
-                type="password"
-                {...resetForm.register("newTemporaryPassword")}
-              />
-            </div>
+            <TemporaryPasswordField
+              disabled={loading}
+              id="newTemporaryPassword"
+              label="New temporary password"
+              value={resetForm.watch("newTemporaryPassword")}
+              register={resetForm.register("newTemporaryPassword")}
+              onChange={(value) =>
+                resetForm.setValue("newTemporaryPassword", value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+            />
             <DialogFooter>
               <Button disabled={loading} type="submit">
                 Reset
