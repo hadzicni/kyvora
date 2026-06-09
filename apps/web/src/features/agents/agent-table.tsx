@@ -14,6 +14,7 @@ import { formatBytes, formatDateTime } from "@/features/servers/format";
 import type { Agent } from "@/lib/api/agents";
 
 import { AgentStatusBadge } from "./agent-status-badge";
+import { DecommissionAgentDialog } from "./decommission-agent-dialog";
 
 function formatRelativeLastSeen(value: string | null) {
   if (!value) {
@@ -51,78 +52,95 @@ export function AgentTable({ agents }: { agents: Agent[] }) {
           <TableHead>Status</TableHead>
           <TableHead>Last seen</TableHead>
           <TableHead>Registered</TableHead>
+          <TableHead>
+            <span className="sr-only">Actions</span>
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {agents.map((agent) => (
-          <TableRow key={agent.id}>
-            <TableCell>
-              <div className="font-medium">{agent.name}</div>
-              <div className="max-w-52 truncate text-xs text-muted-foreground">
-                {agent.id}
-              </div>
-            </TableCell>
-            <TableCell>
-              {agent.serverId ? (
-                <Link
-                  className="group inline-flex min-w-0 flex-col gap-0.5 hover:text-foreground"
-                  href={`/servers/${agent.serverId}`}
-                >
-                  <span className="max-w-48 truncate font-medium underline-offset-4 group-hover:underline">
-                    {agent.serverName ?? agent.serverHostname ?? agent.serverId}
-                  </span>
-                  <span className="max-w-48 truncate font-mono text-xs text-muted-foreground">
-                    {agent.serverHostname ?? agent.serverId}
-                  </span>
-                </Link>
-              ) : (
-                <span className="text-muted-foreground">Unassigned</span>
-              )}
-            </TableCell>
-            <TableCell className="font-mono text-xs">{agent.hostname}</TableCell>
-            <TableCell>
-              {agent.hostFacts ? (
-                <div className="grid gap-1 text-xs">
-                  <div className="max-w-44 truncate font-medium">
-                    {agent.hostFacts.operatingSystem ?? "Unknown OS"}
-                  </div>
-                  <div className="text-muted-foreground">
-                    {agent.hostFacts.architecture ?? "unknown arch"}
-                    {agent.hostFacts.cpuCount
-                      ? ` / ${agent.hostFacts.cpuCount} CPU`
-                      : ""}
-                  </div>
-                  <div className="text-muted-foreground">
-                    {formatBytes(agent.hostFacts.memoryTotalBytes)}
-                    {agent.hostFacts.diskTotalBytes
-                      ? ` RAM / ${formatBytes(agent.hostFacts.diskTotalBytes)} disk`
-                      : " RAM"}
-                  </div>
+        {agents.map((agent) => {
+          const canDecommission =
+            agent.status === "ONLINE" || agent.status === "OFFLINE";
+
+          return (
+            <TableRow key={agent.id}>
+              <TableCell>
+                <div className="font-medium">{agent.name}</div>
+                <div className="max-w-52 truncate text-xs text-muted-foreground">
+                  {agent.id}
                 </div>
-              ) : (
-                <span className="text-xs text-muted-foreground">Pending</span>
-              )}
-            </TableCell>
-            <TableCell className="font-mono text-xs">{agent.version}</TableCell>
-            <TableCell>
-              <AgentStatusBadge status={agent.status} />
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              <div>{formatRelativeLastSeen(agent.lastSeenAt)}</div>
-              <div className="text-xs">
-                {formatDateTime(agent.lastSeenAt)}
-              </div>
-              {agent.status === "OFFLINE" ? (
-                <div className="mt-1 max-w-48 text-xs text-amber-300/80">
-                  Check the agent process and host.
-                </div>
-              ) : null}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {formatDateTime(agent.registeredAt)}
-            </TableCell>
-          </TableRow>
-        ))}
+              </TableCell>
+              <TableCell>
+                {agent.serverId ? (
+                  <Link
+                    className="group inline-flex min-w-0 flex-col gap-0.5 hover:text-foreground"
+                    href={`/servers/${agent.serverId}`}
+                  >
+                    <span className="max-w-48 truncate font-medium underline-offset-4 group-hover:underline">
+                      {agent.serverName ??
+                        agent.serverHostname ??
+                        agent.serverId}
+                    </span>
+                    <span className="max-w-48 truncate font-mono text-xs text-muted-foreground">
+                      {agent.serverHostname ?? agent.serverId}
+                    </span>
+                  </Link>
+                ) : (
+                  <span className="text-muted-foreground">Unassigned</span>
+                )}
+              </TableCell>
+              <TableCell className="font-mono text-xs">
+                {agent.hostname}
+              </TableCell>
+              <TableCell>
+                {agent.hostFacts ? (
+                  <div className="grid gap-1 text-xs">
+                    <div className="max-w-44 truncate font-medium">
+                      {agent.hostFacts.operatingSystem ?? "Unknown OS"}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {agent.hostFacts.architecture ?? "unknown arch"}
+                      {agent.hostFacts.cpuCount
+                        ? ` / ${agent.hostFacts.cpuCount} CPU`
+                        : ""}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {formatBytes(agent.hostFacts.memoryTotalBytes)}
+                      {agent.hostFacts.diskTotalBytes
+                        ? ` RAM / ${formatBytes(agent.hostFacts.diskTotalBytes)} disk`
+                        : " RAM"}
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Pending</span>
+                )}
+              </TableCell>
+              <TableCell className="font-mono text-xs">
+                {agent.version}
+              </TableCell>
+              <TableCell>
+                <AgentStatusBadge status={agent.status} />
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                <div>{formatRelativeLastSeen(agent.lastSeenAt)}</div>
+                <div className="text-xs">{formatDateTime(agent.lastSeenAt)}</div>
+                {agent.status === "OFFLINE" ? (
+                  <div className="mt-1 max-w-48 text-xs text-amber-300/80">
+                    Check the agent process and host.
+                  </div>
+                ) : null}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {formatDateTime(agent.registeredAt)}
+              </TableCell>
+              <TableCell className="text-right">
+                {canDecommission ? (
+                  <DecommissionAgentDialog agent={agent} />
+                ) : null}
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );

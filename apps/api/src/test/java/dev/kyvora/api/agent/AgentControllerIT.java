@@ -466,6 +466,105 @@ class AgentControllerIT {
 	}
 
 	@Test
+	void connectedOnlineAgentCanBeDecommissionedAndServerCanEnrollAgain() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+		String agentToken = created.get("agentToken").asText();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isOk());
+		auditLogRepository.deleteAll();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/decommission", id)
+				.with(user("alice")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id", is(id)))
+				.andExpect(jsonPath("$.status", is("DECOMMISSIONED")))
+				.andExpect(jsonPath("$.serverId", nullValue()))
+				.andExpect(jsonPath("$.lastSeenAt", notNullValue()));
+
+		Agent stored = agentRepository.findById(UUID.fromString(id)).orElseThrow();
+		org.assertj.core.api.Assertions.assertThat(stored.getStatus())
+				.isEqualTo(dev.kyvora.api.agent.entity.AgentStatus.DECOMMISSIONED);
+		org.assertj.core.api.Assertions.assertThat(stored.getServer()).isNull();
+		org.assertj.core.api.Assertions.assertThat(stored.getTokenHash()).isNull();
+		org.assertj.core.api.Assertions.assertThat(stored.getTokenRevokedAt()).isNotNull();
+		ServerInventory storedServer = serverInventoryRepository.findById(server.getId()).orElseThrow();
+		org.assertj.core.api.Assertions.assertThat(storedServer.getStatus()).isEqualTo(ServerStatus.UNKNOWN);
+		org.assertj.core.api.Assertions.assertThat(storedServer.getLastSeenAt()).isNotNull();
+
+		mockMvc.perform(post("/api/v1/agents/{id}/heartbeat", id)
+				.header("X-Kyvora-Agent-Token", agentToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(heartbeatPayload("ONLINE", "0.1.0"))))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message", is("Agent token has been revoked")));
+
+		mockMvc.perform(get("/api/v1/servers/{id}", server.getId())
+				.with(user("alice")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status", is("UNKNOWN")));
+
+		mockMvc.perform(post("/api/v1/agents")
+				.with(user("alice"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(registerPayload(server.getId(), "Agent 02", "0.1.0"))))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.agent.serverId", is(server.getId().toString())))
+				.andExpect(jsonPath("$.agent.name", is("Agent 02")));
+
+		org.assertj.core.api.Assertions.assertThat(auditLogRepository.findAll().stream()
+				.filter(log -> log.getEventType() == AuditEventType.AGENT_DECOMMISSIONED)
+				.findFirst())
+				.hasValueSatisfying(log -> {
+					org.assertj.core.api.Assertions.assertThat(log.getAggregateType()).isEqualTo("AGENT");
+					org.assertj.core.api.Assertions.assertThat(log.getAggregateId()).isEqualTo(UUID.fromString(id));
+					org.assertj.core.api.Assertions.assertThat(log.getActor()).isEqualTo("alice");
+					org.assertj.core.api.Assertions.assertThat(log.getMessage()).isEqualTo("Agent decommissioned: Agent 01");
+					org.assertj.core.api.Assertions.assertThat(log.getMetadata()).containsEntry("agentId", id);
+					org.assertj.core.api.Assertions.assertThat(log.getMetadata()).containsEntry("agentName", "Agent 01");
+					org.assertj.core.api.Assertions.assertThat(log.getMetadata()).containsEntry("hostname", "node01.example.com");
+					org.assertj.core.api.Assertions.assertThat(log.getMetadata()).containsEntry("previousStatus", "ONLINE");
+					org.assertj.core.api.Assertions.assertThat(log.getMetadata()).containsEntry("serverId", server.getId().toString());
+					org.assertj.core.api.Assertions.assertThat(log.getMetadata()).containsEntry("serverName", "Node 01");
+					org.assertj.core.api.Assertions.assertThat(log.getMetadata().toString()).doesNotContain(agentToken);
+				});
+	}
+
+	@Test
+	void connectedOfflineAgentCanBeDecommissioned() throws Exception {
+		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
+		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
+		String id = created.get("agent").get("id").asText();
+		Agent agent = agentRepository.findById(UUID.fromString(id)).orElseThrow();
+		agent.setStatus(dev.kyvora.api.agent.entity.AgentStatus.OFFLINE);
+		agent.setLastSeenAt(java.time.Instant.now().minusSeconds(300));
+		agentRepository.save(agent);
+
+		mockMvc.perform(post("/api/v1/agents/{id}/decommission", id)
+				.with(user("alice")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status", is("DECOMMISSIONED")))
+				.andExpect(jsonPath("$.serverId", nullValue()));
+
+		org.assertj.core.api.Assertions.assertThat(auditLogRepository.findAll().stream()
+				.filter(log -> log.getEventType() == AuditEventType.AGENT_DECOMMISSIONED)
+				.findFirst())
+				.hasValueSatisfying(log ->
+						org.assertj.core.api.Assertions.assertThat(log.getMetadata()).containsEntry("previousStatus", "OFFLINE"));
+	}
+
+	@Test
+	void decommissionRequiresUserAuthentication() throws Exception {
+		mockMvc.perform(post("/api/v1/agents/{id}/decommission", UUID.randomUUID()))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
 	void rotateTokenInvalidatesOldTokenAndKeepsServerAssignment() throws Exception {
 		ServerInventory server = createServer("Node 01", "node01.example.com", "10.0.0.11");
 		JsonNode created = objectMapper.readTree(registerAgent(server.getId(), "Agent 01", "0.1.0"));
@@ -635,6 +734,9 @@ class AgentControllerIT {
 				.andExpect(status().isUnauthorized());
 
 		mockMvc.perform(post("/api/v1/agents/{id}/rotate-token", UUID.randomUUID()))
+				.andExpect(status().isUnauthorized());
+
+		mockMvc.perform(post("/api/v1/agents/{id}/decommission", UUID.randomUUID()))
 				.andExpect(status().isUnauthorized());
 	}
 

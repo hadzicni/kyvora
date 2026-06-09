@@ -11,7 +11,8 @@ export type AuditEventType =
   | "AGENT_MARKED_ONLINE"
   | "AGENT_MARKED_OFFLINE"
   | "AGENT_TOKEN_ROTATED"
-  | "AGENT_ENROLLMENT_CANCELED";
+  | "AGENT_ENROLLMENT_CANCELED"
+  | "AGENT_DECOMMISSIONED";
 
 export type AuditLog = {
   id: string;

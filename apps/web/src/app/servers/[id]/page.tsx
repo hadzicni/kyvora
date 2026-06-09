@@ -31,6 +31,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { AgentEnrollmentToken } from "@/features/agents/agent-enrollment-token";
 import { AgentStatusBadge } from "@/features/agents/agent-status-badge";
+import { DecommissionAgentDialog } from "@/features/agents/decommission-agent-dialog";
 import { RegisterAgentDialog } from "@/features/agents/register-agent-dialog";
 import {
   useAgents,
@@ -359,6 +360,8 @@ function AgentSection({
   }, []);
   const pending = agent?.status === "PENDING" && agent.lastSeenAt === null;
   const offline = agent?.status === "OFFLINE";
+  const canDecommission =
+    agent?.status === "ONLINE" || agent?.status === "OFFLINE";
 
   async function rotateToken() {
     if (!agent) {
@@ -486,6 +489,9 @@ function AgentSection({
                     ) : null}
                     Cancel enrollment
                   </Button>
+                ) : null}
+                {agent && canDecommission ? (
+                  <DecommissionAgentDialog agent={agent} />
                 ) : null}
               </div>
             </div>

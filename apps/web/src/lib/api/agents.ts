@@ -1,4 +1,9 @@
-export type AgentStatus = "PENDING" | "ONLINE" | "OFFLINE" | "UNKNOWN";
+export type AgentStatus =
+  | "PENDING"
+  | "ONLINE"
+  | "OFFLINE"
+  | "UNKNOWN"
+  | "DECOMMISSIONED";
 
 export type AgentHostFacts = {
   hostname: string | null;
@@ -156,6 +161,15 @@ export async function cancelAgentEnrollment(id: string): Promise<void> {
 export async function rotateAgentToken(id: string): Promise<AgentEnrollment> {
   return request<AgentEnrollment>(
     `/api/agents/${encodeURIComponent(id)}/rotate-token`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+export async function decommissionAgent(id: string): Promise<Agent> {
+  return request<Agent>(
+    `/api/agents/${encodeURIComponent(id)}/decommission`,
     {
       method: "POST",
     }

@@ -135,6 +135,23 @@ public class AgentController {
 		return ResponseEntity.ok(service.rotateToken(id));
 	}
 
+	@PostMapping("/{id}/decommission")
+	@Operation(
+			summary = "Decommission a connected agent",
+			description = "Idempotently revokes the agent token, marks the agent DECOMMISSIONED, unlinks it from its server, and preserves agent history. Already decommissioned agents return the current agent representation.",
+			responses = {
+					@ApiResponse(responseCode = "200", description = "Agent decommissioned"),
+					@ApiResponse(responseCode = "401", description = "Authentication is required",
+							content = @Content),
+					@ApiResponse(responseCode = "404", description = "Agent was not found",
+							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+			})
+	public ResponseEntity<AgentResponse> decommission(
+			@Parameter(description = "Agent identifier.", example = "00000000-0000-0000-0000-000000000001")
+			@PathVariable UUID id) {
+		return ResponseEntity.ok(service.decommission(id));
+	}
+
 	@PostMapping("/{id}/heartbeat")
 	@Operation(
 			summary = "Receive an agent heartbeat",

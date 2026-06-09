@@ -22,6 +22,8 @@ public interface AgentService {
 
 	AgentEnrollmentResponse rotateToken(UUID id);
 
+	AgentResponse decommission(UUID id);
+
 	AgentResponse heartbeat(UUID id, String agentToken, AgentHeartbeatRequest request);
 
 	int markStaleOnlineAgentsOffline();

@@ -315,15 +315,23 @@ returns a new one-time plaintext token and immediately invalidates the previous
 token. Kyvora still stores only the SHA-256 token hash and never re-shows old
 plaintext tokens after the setup dialog is closed.
 
+Connected agents can be decommissioned from the server detail Agent Setup
+section or the Agents page. Decommissioning revokes the agent token, marks the
+agent `DECOMMISSIONED`, and unlinks it from the server without deleting
+heartbeat or host facts history. The server remains in inventory, moves back to
+`UNKNOWN`, and can enroll a replacement agent. A decommissioned agent cannot
+heartbeat again with its old `KYVORA_AGENT_TOKEN`.
+
 Server operational status is managed by agent heartbeats and offline detection,
 not manual editing. A server starts as `UNKNOWN`, becomes `ONLINE` when its
 linked agent reports a heartbeat, and becomes `OFFLINE` when the backend has
 not received a heartbeat recently.
 
 Activity tracks lifecycle transitions such as enrollment, first connection,
-token rotation, cancellation, and offline detection. Routine heartbeats update
-status and last-seen timestamps without creating repeated Activity rows. Token
-values, token hashes, authorization headers, and cookies are never logged.
+token rotation, cancellation, decommissioning, and offline detection. Routine
+heartbeats update status and last-seen timestamps without creating repeated
+Activity rows. Token values, token hashes, authorization headers, and cookies
+are never logged.
 
 ## Development
 

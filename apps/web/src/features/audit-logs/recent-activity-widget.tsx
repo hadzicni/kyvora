@@ -31,6 +31,7 @@ const eventIcons = {
   AGENT_MARKED_OFFLINE: WifiOff,
   AGENT_TOKEN_ROTATED: Radio,
   AGENT_ENROLLMENT_CANCELED: Trash2,
+  AGENT_DECOMMISSIONED: WifiOff,
 } satisfies Record<
   AuditEventType,
   React.ComponentType<{ className?: string }>

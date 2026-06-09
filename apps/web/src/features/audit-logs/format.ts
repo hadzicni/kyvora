@@ -14,11 +14,21 @@ export const auditEventTypes = [
   "AGENT_MARKED_OFFLINE",
   "AGENT_TOKEN_ROTATED",
   "AGENT_ENROLLMENT_CANCELED",
+  "AGENT_DECOMMISSIONED",
 ] as const satisfies AuditEventType[];
+
+const auditEventLabels: Partial<Record<AuditEventType, string>> = {
+  AGENT_DECOMMISSIONED: "Agent decommissioned",
+};
 
 export const aggregateTypes = ["SERVER", "AGENT"] as const;
 
 export function formatAuditEventType(value: AuditEventType) {
+  const mapped = auditEventLabels[value];
+  if (mapped) {
+    return mapped;
+  }
+
   const label = value.toLowerCase().replaceAll("_", " ");
   return label.charAt(0).toUpperCase() + label.slice(1);
 }

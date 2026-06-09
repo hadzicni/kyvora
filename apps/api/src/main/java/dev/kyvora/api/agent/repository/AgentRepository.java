@@ -10,11 +10,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import dev.kyvora.api.agent.entity.Agent;
+import dev.kyvora.api.agent.entity.AgentStatus;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;
 
 public interface AgentRepository extends JpaRepository<Agent, UUID> {
 
-	boolean existsByHostnameIgnoreCase(String hostname);
+	boolean existsByHostnameIgnoreCaseAndStatusNot(String hostname, AgentStatus status);
 
 	boolean existsByServer(ServerInventory server);
 

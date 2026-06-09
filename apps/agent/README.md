@@ -34,6 +34,12 @@ generates a new one-time plaintext token and invalidates the old token
 immediately. Kyvora stores only the token hash and does not re-show old tokens
 after the setup dialog is closed.
 
+Connected agents can be decommissioned from the Kyvora web UI. Decommissioning
+revokes the token and unlinks the agent from its server without deleting the
+server inventory record or the agent's historical host facts. The server can
+enroll a replacement agent later. A decommissioned agent cannot heartbeat again
+with its old `KYVORA_AGENT_TOKEN`.
+
 Successful heartbeats update the assigned agent status and the linked server
 status and last-seen timestamp. Server status is managed by agent heartbeats
 and offline detection, not manual editing.

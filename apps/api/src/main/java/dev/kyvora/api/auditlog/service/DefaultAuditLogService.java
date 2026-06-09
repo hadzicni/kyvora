@@ -141,6 +141,7 @@ public class DefaultAuditLogService implements AuditLogService {
 			case AGENT_MARKED_OFFLINE -> "Agent marked offline: " + event.hostname();
 			case AGENT_TOKEN_ROTATED -> "Agent token rotated";
 			case AGENT_ENROLLMENT_CANCELED -> "Agent enrollment canceled";
+			case AGENT_DECOMMISSIONED -> "Agent decommissioned: " + agentDisplayName(event);
 		};
 	}
 
@@ -167,11 +168,22 @@ public class DefaultAuditLogService implements AuditLogService {
 		metadata.put("hostname", event.hostname());
 		metadata.put("version", event.version());
 		metadata.put("status", event.status());
+		metadata.put("previousStatus", event.previousStatus());
 		metadata.put("lastSeenAt", timestampMetadataValue(event.lastSeenAt()));
 		metadata.put("serverId", event.serverId() == null ? null : event.serverId().toString());
 		metadata.put("serverName", event.serverName());
 		metadata.put("occurredAt", event.occurredAt().toString());
 		return metadata;
+	}
+
+	private String agentDisplayName(AgentChangedEvent event) {
+		if (event.name() != null && !event.name().isBlank()) {
+			return event.name();
+		}
+		if (event.hostname() != null && !event.hostname().isBlank()) {
+			return event.hostname();
+		}
+		return event.agentId().toString();
 	}
 
 	private String timestampMetadataValue(Instant timestamp) {

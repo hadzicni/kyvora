@@ -138,6 +138,21 @@ class AgentOfflineDetectionServiceIT {
 	}
 
 	@Test
+	void decommissionedAgentIsNotChangedEvenWhenLastSeenIsOld() {
+		ServerInventory server = createServer("Node 07", "node07.example.com");
+		Agent agent = createAgent("Agent 07", "node07.example.com", AgentStatus.DECOMMISSIONED, server, 120);
+
+		int changed = agentService.markStaleOnlineAgentsOffline();
+
+		assertThat(changed).isZero();
+		assertThat(agentRepository.findById(agent.getId()).orElseThrow().getStatus())
+				.isEqualTo(AgentStatus.DECOMMISSIONED);
+		assertThat(serverInventoryRepository.findById(server.getId()).orElseThrow().getStatus())
+				.isEqualTo(ServerStatus.ONLINE);
+		assertThat(auditLogRepository.findAll()).isEmpty();
+	}
+
+	@Test
 	void serverWithoutLinkedAgentIsNotChanged() {
 		ServerInventory server = createServer("Node 05", "node05.example.com");
 

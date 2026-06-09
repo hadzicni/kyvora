@@ -32,7 +32,7 @@ public class Agent {
 	@Column(nullable = false, length = 120)
 	private String name;
 
-	@Column(nullable = false, length = 253, unique = true)
+	@Column(nullable = false, length = 253)
 	private String hostname;
 
 	@Column(nullable = false, length = 64)

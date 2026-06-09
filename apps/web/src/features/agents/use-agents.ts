@@ -13,6 +13,7 @@ import {
   agentKeys,
   AgentApiError,
   cancelAgentEnrollment,
+  decommissionAgent,
   getAgent,
   listAgents,
   registerAgent,
@@ -88,6 +89,22 @@ export function useRotateAgentToken() {
 
   return useMutation({
     mutationFn: (id: string) => rotateAgentToken(id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: agentKeys.all }),
+        queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+        queryClient.invalidateQueries({ queryKey: serverKeys.all }),
+      ]);
+    },
+  });
+}
+
+export function useDecommissionAgent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => decommissionAgent(id),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: agentKeys.all }),

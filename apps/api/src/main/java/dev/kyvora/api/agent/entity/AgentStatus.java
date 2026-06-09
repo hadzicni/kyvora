@@ -5,5 +5,6 @@ public enum AgentStatus {
 	PENDING,
 	ONLINE,
 	OFFLINE,
-	UNKNOWN
+	UNKNOWN,
+	DECOMMISSIONED
 }

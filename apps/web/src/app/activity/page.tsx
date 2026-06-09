@@ -366,6 +366,8 @@ function formatActivityMessage(auditLog: AuditLog) {
       return "Agent token rotated";
     case "AGENT_ENROLLMENT_CANCELED":
       return "Agent enrollment canceled";
+    case "AGENT_DECOMMISSIONED":
+      return `Agent decommissioned${serverName ? ` from server ${serverName}` : ""}`;
     default:
       return auditLog.message;
   }
@@ -577,6 +579,7 @@ function ActivityDetailSheet({
                 value={auditLog.aggregateType}
               />
               <DetailRow label="aggregateId" value={auditLog.aggregateId} />
+              <ServerDetailLink auditLog={auditLog} />
               <DetailRow label="actor" value={auditLog.actor} />
               <DetailRow
                 label="createdAt"
@@ -603,6 +606,26 @@ function ActivityDetailSheet({
         ) : null}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function ServerDetailLink({ auditLog }: { auditLog: AuditLog }) {
+  const serverId = metadataString(auditLog, "serverId");
+
+  if (!serverId) {
+    return null;
+  }
+
+  return (
+    <div className="grid gap-1 sm:grid-cols-[8rem_1fr] sm:items-start">
+      <div className="text-xs font-medium text-muted-foreground">server</div>
+      <Link
+        className="min-w-0 break-words font-mono text-xs underline-offset-4 hover:text-foreground hover:underline"
+        href={`/servers/${encodeURIComponent(serverId)}`}
+      >
+        {metadataString(auditLog, "serverName") ?? serverId}
+      </Link>
+    </div>
   );
 }
 

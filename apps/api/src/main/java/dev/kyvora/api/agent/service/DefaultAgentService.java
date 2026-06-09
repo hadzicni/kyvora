@@ -93,7 +93,7 @@ public class DefaultAgentService implements AgentService {
 					"server already has an agent");
 		}
 		String hostname = mapper.normalizeHostname(server.getHostname());
-		if (repository.existsByHostnameIgnoreCase(hostname)) {
+		if (repository.existsByHostnameIgnoreCaseAndStatusNot(hostname, AgentStatus.DECOMMISSIONED)) {
 			throw new DuplicateAgentException("hostname", hostname);
 		}
 
@@ -133,9 +133,43 @@ public class DefaultAgentService implements AgentService {
 	}
 
 	@Override
+	public AgentResponse decommission(UUID id) {
+		Agent agent = getRequiredEntity(id);
+		if (agent.getStatus() == AgentStatus.DECOMMISSIONED) {
+			return mapper.toResponse(agent);
+		}
+
+		AgentStatus previousStatus = agent.getStatus();
+		ServerInventory server = agent.getServer();
+		UUID previousServerId = server == null ? null : server.getId();
+		String previousServerName = server == null ? null : server.getName();
+
+		Instant revokedAt = Instant.now();
+		agent.setTokenHash(null);
+		agent.setTokenRevokedAt(revokedAt);
+		agent.setStatus(AgentStatus.DECOMMISSIONED);
+		agent.setServer(null);
+
+		if (server != null) {
+			server.setStatus(ServerStatus.UNKNOWN);
+		}
+
+		Agent saved = repository.save(agent);
+		auditLogService.recordAgentChange(AgentChangedEvent.decommissioned(
+				saved,
+				previousStatus,
+				previousServerId,
+				previousServerName));
+		return mapper.toResponse(saved);
+	}
+
+	@Override
 	public AgentResponse heartbeat(UUID id, String agentToken, AgentHeartbeatRequest request) {
 		Agent agent = getRequiredEntity(id);
 		verifyAgentToken(agent, agentToken);
+		if (agent.getStatus() == AgentStatus.DECOMMISSIONED) {
+			throw new AgentTokenForbiddenException("Agent has been decommissioned");
+		}
 
 		AgentStatus previousStatus = agent.getStatus();
 		Instant previousLastSeenAt = agent.getLastSeenAt();
