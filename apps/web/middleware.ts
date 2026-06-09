@@ -19,6 +19,7 @@ export const config = {
     "/servers/:path*",
     "/agents/:path*",
     "/activity/:path*",
+    "/users/:path*",
     "/settings/:path*",
     "/help/:path*",
     "/profile/:path*",

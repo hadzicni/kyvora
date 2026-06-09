@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.kyvora.api.auth.service.InvalidTokenException;
 import dev.kyvora.api.auth.service.JwtService;
+import dev.kyvora.api.auth.service.UserService;
 import dev.kyvora.api.serverinventory.exception.ApiErrorResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -26,10 +27,12 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtService jwtService;
+	private final UserService userService;
 	private final ObjectMapper objectMapper;
 
-	public JwtAuthenticationFilter(JwtService jwtService, ObjectMapper objectMapper) {
+	public JwtAuthenticationFilter(JwtService jwtService, UserService userService, ObjectMapper objectMapper) {
 		this.jwtService = jwtService;
+		this.userService = userService;
 		this.objectMapper = objectMapper;
 	}
 
@@ -44,11 +47,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		try {
 			JwtClaims claims = jwtService.validate(header.substring(7));
-			AuthenticatedUser principal = new AuthenticatedUser(claims.userId(), claims.email(), claims.displayName(), claims.role());
+			var user = userService.findEnabledById(claims.userId());
+			AuthenticatedUser principal = new AuthenticatedUser(user.getId(), user.getEmail(), user.getDisplayName(), user.getRole());
 			UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
 					principal,
 					null,
-					List.of(new SimpleGrantedAuthority("ROLE_" + claims.role().name())));
+					List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
 			SecurityContextHolder.getContext().setAuthentication(authentication);
 			filterChain.doFilter(request, response);
 		}

@@ -97,6 +97,19 @@ class AuthControllerIT {
 	}
 
 	@Test
+	void disabledUserCannotLoginWithSameInvalidCredentialsMessage() throws Exception {
+		var user = userRepository.findByEmailIgnoreCase(EMAIL).orElseThrow();
+		user.setEnabled(false);
+		userRepository.save(user);
+
+		mockMvc.perform(post("/api/v1/auth/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(loginPayload(EMAIL, PASSWORD))))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message", is("Invalid email or password")));
+	}
+
+	@Test
 	void refreshSuccessRotatesRefreshToken() throws Exception {
 		JsonNode login = login();
 

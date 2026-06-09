@@ -13,6 +13,7 @@ import dev.kyvora.api.auth.dto.RefreshRequest;
 import dev.kyvora.api.auth.dto.RefreshResponse;
 import dev.kyvora.api.auth.entity.RefreshToken;
 import dev.kyvora.api.auth.entity.User;
+import dev.kyvora.api.auth.repository.UserRepository;
 
 @Service
 @Transactional
@@ -26,6 +27,7 @@ public class DefaultAuthService implements AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final UserMapper userMapper;
 	private final AuditLogService auditLogService;
+	private final UserRepository userRepository;
 
 	public DefaultAuthService(
 			UserService userService,
@@ -33,13 +35,15 @@ public class DefaultAuthService implements AuthService {
 			JwtService jwtService,
 			PasswordEncoder passwordEncoder,
 			UserMapper userMapper,
-			AuditLogService auditLogService) {
+			AuditLogService auditLogService,
+			UserRepository userRepository) {
 		this.userService = userService;
 		this.refreshTokenService = refreshTokenService;
 		this.jwtService = jwtService;
 		this.passwordEncoder = passwordEncoder;
 		this.userMapper = userMapper;
 		this.auditLogService = auditLogService;
+		this.userRepository = userRepository;
 	}
 
 	@Override
@@ -49,7 +53,19 @@ public class DefaultAuthService implements AuthService {
 			user = userService.findEnabledByEmail(request.email());
 		}
 		catch (InvalidCredentialsException exception) {
-			auditLogService.recordAuthEvent(AuditEventType.USER_LOGIN_FAILED, null, request.email(), "User login failed");
+			userRepository.findByEmailIgnoreCase(request.email())
+					.filter(foundUser -> !foundUser.isEnabled())
+					.ifPresentOrElse(
+							disabledUser -> auditLogService.recordAuthEvent(
+									AuditEventType.USER_LOGIN_BLOCKED_DISABLED,
+									disabledUser.getId(),
+									disabledUser.getEmail(),
+									"User login blocked for disabled account"),
+							() -> auditLogService.recordAuthEvent(
+									AuditEventType.USER_LOGIN_FAILED,
+									null,
+									request.email(),
+									"User login failed"));
 			throw exception;
 		}
 
@@ -58,6 +74,7 @@ public class DefaultAuthService implements AuthService {
 			throw new InvalidCredentialsException("Invalid email or password");
 		}
 
+		user.markLoginSuccessful();
 		auditLogService.recordAuthEvent(AuditEventType.USER_LOGIN_SUCCEEDED, user.getId(), user.getEmail(), "User login succeeded");
 		return loginResponse(user, refreshTokenService.create(user));
 	}

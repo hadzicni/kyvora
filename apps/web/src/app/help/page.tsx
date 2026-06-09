@@ -14,6 +14,7 @@ import {
   Settings,
   ShieldCheck,
   Terminal,
+  Users,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -250,6 +251,31 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                   <GuidanceItem icon={Settings}>
                     Operational settings such as instance metadata and agent
                     monitoring windows can be changed from Settings.
+                  </GuidanceItem>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="size-4" />
+                    User Access
+                  </CardTitle>
+                  <CardDescription>
+                    Local accounts use Kyvora credentials and role-based access.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <GuidanceItem icon={ShieldCheck}>
+                    Admins can create, update, enable, disable, and reset local
+                    user accounts from Users.
+                  </GuidanceItem>
+                  <GuidanceItem icon={BadgeCheck}>
+                    Users can change their own password from Profile.
+                  </GuidanceItem>
+                  <GuidanceItem icon={Terminal}>
+                    The bootstrap admin is for local and development
+                    initialization.
                   </GuidanceItem>
                 </CardContent>
               </Card>

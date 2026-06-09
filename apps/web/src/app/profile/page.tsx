@@ -1,5 +1,6 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -13,7 +14,9 @@ import { useQuery } from "@tanstack/react-query";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +29,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useChangePassword } from "@/features/users/use-users";
+import { UsersApiError } from "@/lib/api/users";
 import { getStatus, statusKeys } from "@/lib/api/status";
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1),
+    newPassword: z.string().min(8),
+    confirmNewPassword: z.string().min(8),
+  })
+  .refine((values) => values.newPassword === values.confirmNewPassword, {
+    message: "Passwords do not match",
+    path: ["confirmNewPassword"],
+  });
+
+type ChangePasswordValues = z.output<typeof changePasswordSchema>;
 
 async function logout() {
   toast.info("Signing out...");
@@ -101,6 +121,15 @@ export default function ProfilePage() {
     queryFn: getStatus,
     enabled: status === "authenticated",
   });
+  const changePasswordMutation = useChangePassword();
+  const passwordForm = useForm<ChangePasswordValues>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmNewPassword: "",
+    },
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -131,6 +160,23 @@ export default function ProfilePage() {
   }
 
   const { user } = session;
+
+  async function onChangePassword(values: ChangePasswordValues) {
+    try {
+      await changePasswordMutation.mutateAsync({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      });
+      passwordForm.reset();
+      toast.success("Password changed");
+    } catch (error) {
+      if (error instanceof UsersApiError && error.details.length > 0) {
+        toast.error(`${error.message}: ${error.details.join(", ")}`);
+        return;
+      }
+      toast.error(error instanceof Error ? error.message : "Password change failed");
+    }
+  }
 
   return (
     <AppShell>
@@ -221,6 +267,66 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="size-4" />
+                  Change password
+                </CardTitle>
+                <CardDescription>
+                  Update the password for this Kyvora account.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form
+                  className="space-y-4"
+                  onSubmit={passwordForm.handleSubmit(onChangePassword)}
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Current password</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      {...passwordForm.register("currentPassword")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      {...passwordForm.register("newPassword")}
+                    />
+                    {passwordForm.formState.errors.newPassword ? (
+                      <p className="text-xs text-destructive">
+                        New password must be at least 8 characters.
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmNewPassword">Confirm new password</Label>
+                    <Input
+                      id="confirmNewPassword"
+                      type="password"
+                      {...passwordForm.register("confirmNewPassword")}
+                    />
+                    {passwordForm.formState.errors.confirmNewPassword ? (
+                      <p className="text-xs text-destructive">
+                        {passwordForm.formState.errors.confirmNewPassword.message}
+                      </p>
+                    ) : null}
+                  </div>
+                  <Button
+                    className="w-full justify-center"
+                    disabled={changePasswordMutation.isPending}
+                    type="submit"
+                  >
+                    Change password
+                  </Button>
+                </form>
               </CardContent>
             </Card>
 

@@ -12,6 +12,7 @@ import {
   Search,
   Settings,
   Server,
+  Users,
   UserCircle
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -77,6 +78,12 @@ const navItems = [
     icon: Activity,
   },
   {
+    href: "/users",
+    label: "Users",
+    icon: Users,
+    adminOnly: true,
+  },
+  {
     href: "/settings",
     label: "Settings",
     icon: Settings,
@@ -122,9 +129,13 @@ function SidebarContent({
   onToggleCollapsed?: () => void;
 }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const settingsQuery = useSettings();
   const instance = getInstanceSettings(settingsQuery.data);
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
+  const visibleNavItems = navItems.filter(
+    (item) => !item.adminOnly || session?.user.role === "ADMIN"
+  );
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
@@ -172,7 +183,7 @@ function SidebarContent({
       </div>
       <Separator />
       <nav className={cn("flex flex-1 flex-col gap-1 p-3", collapsed && "px-2")}>
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive =
             item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -227,6 +238,10 @@ function CommandPalette() {
   const agentsQuery = useAgents({ size: 50 });
   const servers = serversQuery.data?.content ?? [];
   const agents = agentsQuery.data?.content ?? [];
+  const { data: session } = useSession();
+  const visibleNavItems = navItems.filter(
+    (item) => !item.adminOnly || session?.user.role === "ADMIN"
+  );
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -280,7 +295,7 @@ function CommandPalette() {
                 : "No results found."}
             </CommandEmpty>
             <CommandGroup heading="Navigation">
-              {navItems.map((item) => {
+              {visibleNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive =
                     item.href === "/"

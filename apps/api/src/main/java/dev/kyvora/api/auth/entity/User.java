@@ -44,6 +44,9 @@ public class User {
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
+	@Column(name = "last_login_at")
+	private Instant lastLoginAt;
+
 	protected User() {
 	}
 
@@ -101,5 +104,29 @@ public class User {
 
 	public Instant getUpdatedAt() {
 		return updatedAt;
+	}
+
+	public Instant getLastLoginAt() {
+		return lastLoginAt;
+	}
+
+	public void setPasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+
+	public void setDisplayName(String displayName) {
+		this.displayName = displayName;
+	}
+
+	public void setRole(UserRole role) {
+		this.role = role;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public void markLoginSuccessful() {
+		this.lastLoginAt = Instant.now();
 	}
 }

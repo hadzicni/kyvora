@@ -18,6 +18,8 @@ import dev.kyvora.api.agent.exception.AgentTokenForbiddenException;
 import dev.kyvora.api.agent.exception.DuplicateAgentException;
 import dev.kyvora.api.auth.service.InvalidCredentialsException;
 import dev.kyvora.api.auth.service.InvalidTokenException;
+import dev.kyvora.api.auth.exception.UserManagementException;
+import dev.kyvora.api.auth.exception.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import dev.kyvora.api.settings.exception.SettingsValidationException;
@@ -35,6 +37,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(AgentNotFoundException.class)
 	public ResponseEntity<ApiErrorResponse> handleAgentNotFound(
 			AgentNotFoundException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
+	}
+
+	@ExceptionHandler(UserNotFoundException.class)
+	public ResponseEntity<ApiErrorResponse> handleUserNotFound(
+			UserNotFoundException exception,
 			HttpServletRequest request) {
 		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
 	}
@@ -64,6 +73,13 @@ public class GlobalExceptionHandler {
 			SettingsValidationException exception,
 			HttpServletRequest request) {
 		return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI(), exception.getDetails());
+	}
+
+	@ExceptionHandler(UserManagementException.class)
+	public ResponseEntity<ApiErrorResponse> handleUserManagement(
+			UserManagementException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)

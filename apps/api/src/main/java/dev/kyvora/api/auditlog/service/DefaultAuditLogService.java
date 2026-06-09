@@ -32,6 +32,7 @@ public class DefaultAuditLogService implements AuditLogService {
 	private static final String SERVER_AGGREGATE_TYPE = "SERVER";
 	private static final String AGENT_AGGREGATE_TYPE = "AGENT";
 	private static final String AUTH_AGGREGATE_TYPE = "AUTH";
+	private static final String USER_AGGREGATE_TYPE = "USER";
 	private static final String SETTINGS_AGGREGATE_TYPE = "SETTINGS";
 	private static final String SYSTEM_ACTOR = "system";
 	private static final UUID EMPTY_AGGREGATE_ID = new UUID(0, 0);
@@ -83,6 +84,17 @@ public class DefaultAuditLogService implements AuditLogService {
 				actor == null || actor.isBlank() ? currentActor() : actor,
 				message,
 				Map.of()));
+	}
+
+	@Override
+	public void recordUserEvent(AuditEventType eventType, UUID userId, String actor, String message, Map<String, Object> metadata) {
+		repository.save(new AuditLog(
+				eventType,
+				USER_AGGREGATE_TYPE,
+				userId == null ? EMPTY_AGGREGATE_ID : userId,
+				actor == null || actor.isBlank() ? currentActor() : actor,
+				message,
+				metadata == null ? Map.of() : Map.copyOf(metadata)));
 	}
 
 	@Override
