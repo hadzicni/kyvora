@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   Search,
+  Settings,
   Server,
   UserCircle
 } from "lucide-react";
@@ -46,7 +47,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useAgents } from "@/features/agents/use-agents";
+import { useSettings } from "@/features/settings/use-settings";
 import { useServers } from "@/features/servers/use-servers";
+import { getInstanceSettings } from "@/lib/api/settings";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -70,6 +73,11 @@ const navItems = [
     href: "/activity",
     label: "Activity",
     icon: Activity,
+  },
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: Settings,
   },
   {
     href: "/help",
@@ -106,6 +114,8 @@ function getInitials(displayName?: string, email?: string) {
 
 function SidebarContent() {
   const pathname = usePathname();
+  const settingsQuery = useSettings();
+  const instance = getInstanceSettings(settingsQuery.data);
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
@@ -122,8 +132,12 @@ function SidebarContent() {
             />
           </span>
         <div>
-          <div className="text-sm font-semibold leading-tight">Kyvora</div>
-          <div className="text-xs text-muted-foreground">Operations</div>
+          <div className="max-w-44 truncate text-sm font-semibold leading-tight">
+            {instance.name}
+          </div>
+          <div className="max-w-44 truncate text-xs text-muted-foreground">
+            {instance.description}
+          </div>
         </div>
       </div>
       <Separator />
@@ -309,6 +323,8 @@ function CommandPalette() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
+  const settingsQuery = useSettings();
+  const instance = getInstanceSettings(settingsQuery.data);
   const initials = getInitials(session?.user.displayName, session?.user.email);
 
   return (
@@ -338,9 +354,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Sheet>
 
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium">Infrastructure dashboard</div>
-            <div className="text-xs text-muted-foreground">
-              Server inventory and operating state
+            <div className="truncate text-sm font-medium">{instance.name}</div>
+            <div className="truncate text-xs text-muted-foreground">
+              {instance.description}
             </div>
           </div>
 

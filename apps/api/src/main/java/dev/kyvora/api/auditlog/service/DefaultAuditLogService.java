@@ -2,6 +2,7 @@ package dev.kyvora.api.auditlog.service;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,6 +32,7 @@ public class DefaultAuditLogService implements AuditLogService {
 	private static final String SERVER_AGGREGATE_TYPE = "SERVER";
 	private static final String AGENT_AGGREGATE_TYPE = "AGENT";
 	private static final String AUTH_AGGREGATE_TYPE = "AUTH";
+	private static final String SETTINGS_AGGREGATE_TYPE = "SETTINGS";
 	private static final String SYSTEM_ACTOR = "system";
 	private static final UUID EMPTY_AGGREGATE_ID = new UUID(0, 0);
 
@@ -81,6 +83,17 @@ public class DefaultAuditLogService implements AuditLogService {
 				actor == null || actor.isBlank() ? currentActor() : actor,
 				message,
 				Map.of()));
+	}
+
+	@Override
+	public void recordSettingsUpdated(String actor, List<String> changedKeys) {
+		repository.save(new AuditLog(
+				AuditEventType.SETTINGS_UPDATED,
+				SETTINGS_AGGREGATE_TYPE,
+				EMPTY_AGGREGATE_ID,
+				actor == null || actor.isBlank() ? currentActor() : actor,
+				"System settings updated",
+				Map.of("changedKeys", List.copyOf(changedKeys))));
 	}
 
 	private String currentActor() {

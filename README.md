@@ -216,6 +216,17 @@ The web app uses Auth.js session cookies plus server-side proxy routes to talk
 to the backend. Browser code should keep calling local `/api/...` routes and
 must not store backend JWTs.
 
+Operational settings such as the instance name, instance description, agent
+offline threshold, agent offline check interval, and local UI hints are stored
+in the database and can be changed from the Settings page. The offline
+threshold applies dynamically; scheduler interval changes are stored but require
+an API restart before the scheduler uses the new interval.
+
+Secrets remain environment variables or secure runtime configuration. Do not
+store `KYVORA_JWT_SECRET`, database credentials, Auth.js secrets, or any agent
+token in system settings. Agent enrollment tokens are shown once, and only token
+hashes are persisted by the API.
+
 Local agent API configuration:
 
 ```env

@@ -11,6 +11,7 @@ import {
   LifeBuoy,
   RotateCw,
   Server,
+  Settings,
   ShieldCheck,
   Terminal,
 } from "lucide-react";
@@ -28,6 +29,8 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSettings } from "@/features/settings/use-settings";
+import { getInstanceSettings } from "@/lib/api/settings";
 import { getStatus, statusKeys } from "@/lib/api/status";
 
 const repositoryUrl = "https://github.com/hadzicni/kyvora";
@@ -87,6 +90,8 @@ export default function HelpPage() {
     queryKey: statusKeys.status,
     queryFn: getStatus,
   });
+  const settingsQuery = useSettings();
+  const instance = getInstanceSettings(settingsQuery.data);
   const status = statusQuery.data;
 
   return (
@@ -115,17 +120,16 @@ export default function HelpPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="size-4" />
-                  About Kyvora
+                  About {instance.name}
                 </CardTitle>
                 <CardDescription>
-                  Kyvora is an open-source homelab control plane for managing
-                  servers, agents, operational state, and audit activity.
+                  {instance.description}
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 <InfoRow
                   label="Product"
-                  value={statusQuery.isLoading ? "Loading..." : "Kyvora"}
+                  value={settingsQuery.isLoading ? "Loading..." : instance.name}
                 />
                 <InfoRow
                   label="Version"
@@ -242,6 +246,10 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                   <GuidanceItem icon={HeartPulse}>
                     Heartbeats are not logged repeatedly. Activity focuses on
                     lifecycle transitions instead.
+                  </GuidanceItem>
+                  <GuidanceItem icon={Settings}>
+                    Operational settings such as instance metadata and agent
+                    monitoring windows can be changed from Settings.
                   </GuidanceItem>
                 </CardContent>
               </Card>

@@ -13,6 +13,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { RecentActivityWidget } from "@/features/audit-logs/recent-activity-widget";
 import { useDashboardSummary } from "@/features/dashboard/use-dashboard-summary";
+import { useSettings } from "@/features/settings/use-settings";
+import { getInstanceSettings } from "@/lib/api/settings";
 import { formatNumber } from "@/features/servers/format";
 import { ServerEmptyState } from "@/features/servers/server-empty-state";
 import { ServerErrorState } from "@/features/servers/server-error-state";
@@ -65,6 +67,8 @@ function StatCard({
 export default function DashboardOverviewPage() {
   const summaryQuery = useDashboardSummary();
   const serversQuery = useServers({ size: 20 });
+  const settingsQuery = useSettings();
+  const instance = getInstanceSettings(settingsQuery.data);
   const servers = serversQuery.data?.content ?? [];
   const summary = summaryQuery.data;
   const summaryIsEmpty = (summary?.totalServers ?? null) === 0;
@@ -76,9 +80,11 @@ export default function DashboardOverviewPage() {
     <AppShell>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {instance.name}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Current inventory health across managed servers.
+            {instance.description}
           </p>
         </div>
 

@@ -1,5 +1,6 @@
 package dev.kyvora.api.auditlog.service;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -20,4 +21,6 @@ public interface AuditLogService {
 	void recordAgentChange(AgentChangedEvent event);
 
 	void recordAuthEvent(AuditEventType eventType, UUID userId, String actor, String message);
+
+	void recordSettingsUpdated(String actor, List<String> changedKeys);
 }

@@ -31,6 +31,8 @@ import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
 import dev.kyvora.api.serverinventory.event.ServerInventoryEventType;
 import dev.kyvora.api.serverinventory.exception.ServerInventoryNotFoundException;
 import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
+import dev.kyvora.api.settings.service.DefaultSettingsService;
+import dev.kyvora.api.settings.service.SettingsService;
 
 @Service
 @Transactional
@@ -41,7 +43,8 @@ public class DefaultAgentService implements AgentService {
 	private final AuditLogService auditLogService;
 	private final AgentTokenService agentTokenService;
 	private final ServerInventoryRepository serverInventoryRepository;
-	private final long offlineThresholdSeconds;
+	private final SettingsService settingsService;
+	private final long fallbackOfflineThresholdSeconds;
 
 	public DefaultAgentService(
 			AgentRepository repository,
@@ -49,13 +52,15 @@ public class DefaultAgentService implements AgentService {
 			AuditLogService auditLogService,
 			AgentTokenService agentTokenService,
 			ServerInventoryRepository serverInventoryRepository,
+			SettingsService settingsService,
 			@Value("${kyvora.agent.offline-threshold-seconds:90}") long offlineThresholdSeconds) {
 		this.repository = repository;
 		this.mapper = mapper;
 		this.auditLogService = auditLogService;
 		this.agentTokenService = agentTokenService;
 		this.serverInventoryRepository = serverInventoryRepository;
-		this.offlineThresholdSeconds = offlineThresholdSeconds;
+		this.settingsService = settingsService;
+		this.fallbackOfflineThresholdSeconds = offlineThresholdSeconds;
 	}
 
 	@Override
@@ -147,6 +152,9 @@ public class DefaultAgentService implements AgentService {
 
 	@Override
 	public int markStaleOnlineAgentsOffline() {
+		long offlineThresholdSeconds = settingsService.getLongSettingOrDefault(
+				DefaultSettingsService.AGENTS_OFFLINE_THRESHOLD_SECONDS,
+				fallbackOfflineThresholdSeconds);
 		Instant staleBefore = Instant.now().minusSeconds(offlineThresholdSeconds);
 		var staleAgents = repository.findStaleOnlineAgents(staleBefore);
 		for (Agent agent : staleAgents) {

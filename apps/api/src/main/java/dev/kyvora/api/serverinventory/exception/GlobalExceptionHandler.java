@@ -20,6 +20,7 @@ import dev.kyvora.api.auth.service.InvalidCredentialsException;
 import dev.kyvora.api.auth.service.InvalidTokenException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import dev.kyvora.api.settings.exception.SettingsValidationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -56,6 +57,13 @@ public class GlobalExceptionHandler {
 				.map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
 				.toList();
 		return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed", request.getRequestURI(), details);
+	}
+
+	@ExceptionHandler(SettingsValidationException.class)
+	public ResponseEntity<ApiErrorResponse> handleSettingsValidation(
+			SettingsValidationException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI(), exception.getDetails());
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)
