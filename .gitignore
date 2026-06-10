@@ -2,7 +2,6 @@
 node_modules
 .next
 *.tsbuildinfo
-next-env.d.ts
 out
 dist
 build
@@ -15,7 +14,6 @@ build
 .env.production
 .env.production.local
 !.env.example
-!apps/web/next-env.d.ts
 
 # Java / Gradle
 .gradle
