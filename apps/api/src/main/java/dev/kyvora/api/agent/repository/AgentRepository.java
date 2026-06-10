@@ -25,6 +25,15 @@ public interface AgentRepository extends JpaRepository<Agent, UUID> {
 			select agent
 			from Agent agent
 			left join fetch agent.server
+			left join fetch agent.hostFacts
+			where agent.server is not null
+			""")
+	List<Agent> findAllLinkedWithHostFacts();
+
+	@Query("""
+			select agent
+			from Agent agent
+			left join fetch agent.server
 			where agent.status = dev.kyvora.api.agent.entity.AgentStatus.ONLINE
 				and agent.lastSeenAt < :staleBefore
 			""")

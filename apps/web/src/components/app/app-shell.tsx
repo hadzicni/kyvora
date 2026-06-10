@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Network,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
@@ -65,6 +66,7 @@ type NavItem = {
   labelKey:
     | "overview"
     | "servers"
+    | "networkMap"
     | "agents"
     | "activity"
     | "users"
@@ -85,6 +87,11 @@ const navItems: NavItem[] = [
     href: "/servers",
     labelKey: "servers",
     icon: Server,
+  },
+  {
+    href: "/network-map",
+    labelKey: "networkMap",
+    icon: Network,
   },
   {
     href: "/agents",
