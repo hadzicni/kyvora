@@ -2,6 +2,7 @@
 node_modules
 .next
 *.tsbuildinfo
+next-env.d.ts
 out
 dist
 build
