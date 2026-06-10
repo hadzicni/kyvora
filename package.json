@@ -18,6 +18,11 @@
     "db:up": "docker compose -f infrastructure/docker-compose.yml up -d",
     "db:down": "docker compose -f infrastructure/docker-compose.yml down",
     "db:logs": "docker compose -f infrastructure/docker-compose.yml logs -f postgres",
+    "docker:config": "docker compose config",
+    "docker:up": "docker compose up --build",
+    "docker:up:detached": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
     "release:prepare": "bash scripts/prepare-release.sh",
     "release:check": "bash scripts/check-release.sh"
   },

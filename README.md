@@ -106,6 +106,26 @@ Kyvora is built as a monorepo with a modular backend, a modern web UI, and a lig
 
 ## Installation
 
+### Docker Quick Start
+
+Run Kyvora Web, API, and PostgreSQL with Docker Compose:
+
+```bash
+cp .env.docker.example .env
+```
+
+Edit `.env`, change every `change-me` value, then start:
+
+```bash
+docker compose up --build
+```
+
+Open http://localhost:3000.
+
+The Compose setup derives the internal JDBC and API URLs from simple `.env`
+values. The web container talks to the API at `http://api:8080` inside Docker.
+See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for details.
+
 ### 1. Clone the repository
 
 ```bash
@@ -132,7 +152,7 @@ docker run --name kyvora-postgres \
   -e POSTGRES_USER=kyvora \
   -e POSTGRES_PASSWORD=kyvora \
   -p 5432:5432 \
-  -d postgres:18-alpine
+  -d postgres:17-alpine
 ```
 
 ### 4. Start the project

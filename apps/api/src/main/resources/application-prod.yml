@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: ${KYVORA_DATASOURCE_URL}
+    username: ${KYVORA_DATASOURCE_USERNAME}
+    password: ${KYVORA_DATASOURCE_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+kyvora:
+  jwt:
+    secret: ${KYVORA_JWT_SECRET}
+
+  bootstrap:
+    admin:
+      email: ${KYVORA_BOOTSTRAP_ADMIN_EMAIL}
+      password: ${KYVORA_BOOTSTRAP_ADMIN_PASSWORD}
+      display-name: ${KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME}

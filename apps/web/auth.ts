@@ -1,7 +1,10 @@
 import NextAuth, { getServerSession, type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-export const apiBaseUrl = process.env.API_BASE_URL ?? "http://localhost:8080";
+export const apiBaseUrl =
+  process.env.KYVORA_API_URL ??
+  process.env.API_BASE_URL ??
+  "http://localhost:8080";
 export const authUrl =
   process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 export const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
