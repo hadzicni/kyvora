@@ -37,6 +37,20 @@ const nodeTypes = {
   subnet: SubnetFlowNode,
 };
 
+const NODE_WIDTH = 224;
+const NODE_HEIGHT = 104;
+const GATEWAY_WIDTH = 224;
+const GROUP_PADDING_X = 32;
+const GROUP_PADDING_Y = 28;
+const GROUP_HEADER_HEIGHT = 68;
+const NODE_GAP_X = 48;
+const NODE_GAP_Y = 32;
+const SERVER_COLUMNS = 3;
+const MIN_GROUP_WIDTH = 920;
+const MIN_GROUP_HEIGHT = 280;
+const SUBNET_GAP_X = 96;
+const SUBNET_GAP_Y = 96;
+
 type FlowNodeData = {
   networkNode?: NetworkMapNode;
   selected?: boolean;
@@ -137,7 +151,7 @@ function ServerFlowNode({ data }: NodeProps<FlowNodeData>) {
   return (
     <div
       className={cn(
-        "w-56 rounded-md border p-3 text-left shadow-sm transition",
+        "h-full w-full overflow-hidden rounded-md border p-3 text-left shadow-sm transition",
         nodeStatusClasses[node.status],
         data.selected && "ring-2 ring-primary/70"
       )}
@@ -175,7 +189,7 @@ function GatewayFlowNode({ data }: NodeProps<FlowNodeData>) {
   return (
     <div
       className={cn(
-        "w-56 rounded-md border border-sky-400/40 bg-sky-500/10 p-3 text-left shadow-sm transition",
+        "h-full w-full overflow-hidden rounded-md border border-sky-400/40 bg-sky-500/10 p-3 text-left shadow-sm transition",
         data.selected && "ring-2 ring-primary/70"
       )}
     >
@@ -208,8 +222,11 @@ function SubnetFlowNode({ data }: NodeProps<FlowNodeData>) {
   }
 
   return (
-    <div className="h-full rounded-lg border bg-card/75 shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-4 py-3">
+    <div className="h-full w-full overflow-hidden rounded-lg border bg-card/75 shadow-sm">
+      <div
+        className="flex items-center justify-between gap-3 border-b bg-muted/30 px-4 py-3"
+        style={{ height: GROUP_HEADER_HEIGHT }}
+      >
         <div className="min-w-0">
           <div className="truncate text-sm font-medium">{subnet.label}</div>
           <div className="truncate font-mono text-xs text-muted-foreground">
@@ -241,15 +258,55 @@ function createFlowNodes({
     }))
     .filter((entry) => entry.nodes.some((node) => node.type === "SERVER"));
   const columns = Math.min(3, Math.max(1, Math.ceil(Math.sqrt(visibleSubnets.length))));
-
-  visibleSubnets.forEach((entry, subnetIndex) => {
+  const subnetLayouts = visibleSubnets.map((entry, index) => {
     const gateways = entry.nodes.filter((node) => node.type === "GATEWAY");
     const servers = entry.nodes.filter((node) => node.type === "SERVER");
-    const rows = Math.max(gateways.length, Math.ceil(servers.length / 2), 1);
-    const width = 700;
-    const height = Math.max(300, 120 + rows * 150);
-    const x = (subnetIndex % columns) * (width + 90);
-    const y = Math.floor(subnetIndex / columns) * (height + 90);
+    const gatewayRows = Math.max(gateways.length, 1);
+    const serverRows = Math.max(Math.ceil(servers.length / SERVER_COLUMNS), 1);
+    const gatewayColumnHeight =
+      gatewayRows * NODE_HEIGHT + (gatewayRows - 1) * NODE_GAP_Y;
+    const serverGridHeight =
+      serverRows * NODE_HEIGHT + (serverRows - 1) * NODE_GAP_Y;
+    const width = Math.max(
+      MIN_GROUP_WIDTH,
+      GROUP_PADDING_X * 2 +
+        GATEWAY_WIDTH +
+        NODE_GAP_X +
+        SERVER_COLUMNS * NODE_WIDTH +
+        (SERVER_COLUMNS - 1) * NODE_GAP_X
+    );
+    const height = Math.max(
+      MIN_GROUP_HEIGHT,
+      GROUP_HEADER_HEIGHT +
+        GROUP_PADDING_Y * 2 +
+        Math.max(gatewayColumnHeight, serverGridHeight)
+    );
+
+    return {
+      entry,
+      gateways,
+      height,
+      index,
+      servers,
+      width,
+    };
+  });
+  const rowHeights = subnetLayouts.reduce<number[]>((heights, layout) => {
+    const row = Math.floor(layout.index / columns);
+    heights[row] = Math.max(heights[row] ?? 0, layout.height);
+    return heights;
+  }, []);
+
+  function getRowY(row: number) {
+    return rowHeights
+      .slice(0, row)
+      .reduce((offset, height) => offset + height + SUBNET_GAP_Y, 0);
+  }
+
+  subnetLayouts.forEach(({ entry, gateways, height, index, servers, width }) => {
+    const row = Math.floor(index / columns);
+    const x = (index % columns) * (width + SUBNET_GAP_X);
+    const y = getRowY(row);
 
     flowNodes.push({
       id: `subnet-${entry.subnet.id}`,
@@ -277,8 +334,12 @@ function createFlowNodes({
         extent: "parent",
         parentNode: `subnet-${entry.subnet.id}`,
         position: {
-          x: 36,
-          y: 92 + index * 150,
+          x: GROUP_PADDING_X,
+          y: GROUP_HEADER_HEIGHT + GROUP_PADDING_Y + index * (NODE_HEIGHT + NODE_GAP_Y),
+        },
+        style: {
+          height: NODE_HEIGHT,
+          width: GATEWAY_WIDTH,
         },
         zIndex: 1,
       });
@@ -296,8 +357,19 @@ function createFlowNodes({
         extent: "parent",
         parentNode: `subnet-${entry.subnet.id}`,
         position: {
-          x: 330 + (index % 2) * 250,
-          y: 82 + Math.floor(index / 2) * 150,
+          x:
+            GROUP_PADDING_X +
+            GATEWAY_WIDTH +
+            NODE_GAP_X +
+            (index % SERVER_COLUMNS) * (NODE_WIDTH + NODE_GAP_X),
+          y:
+            GROUP_HEADER_HEIGHT +
+            GROUP_PADDING_Y +
+            Math.floor(index / SERVER_COLUMNS) * (NODE_HEIGHT + NODE_GAP_Y),
+        },
+        style: {
+          height: NODE_HEIGHT,
+          width: NODE_WIDTH,
         },
         zIndex: 1,
       });
