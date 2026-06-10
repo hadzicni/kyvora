@@ -13,12 +13,20 @@ import {
   Server,
   ShieldQuestion,
   X,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import ReactFlow, {
+  Background,
+  Controls,
+  Handle,
+  Position,
+  type Edge,
+  type Node,
+  type NodeProps,
+} from "reactflow";
+import "reactflow/dist/style.css";
 
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
@@ -44,6 +52,7 @@ import {
 import { ServerStatusBadge } from "@/features/servers/server-status-badge";
 import { useNetworkMap } from "@/features/network-map/use-network-map";
 import type {
+  NetworkMapEdge,
   NetworkMapNode,
   NetworkMapSubnet,
 } from "@/lib/api/network-map";
@@ -58,6 +67,12 @@ const nodeStatusClasses: Record<ServerStatus, string> = {
   UNKNOWN: "border-amber-400/50 bg-amber-500/10 shadow-amber-950/20",
 };
 
+const reactFlowNodeTypes = {
+  gateway: GatewayFlowNode,
+  server: ServerFlowNode,
+  subnet: SubnetFlowNode,
+};
+
 export default function NetworkMapPage() {
   const t = useTranslations();
   const locale = useLocale();
@@ -66,7 +81,6 @@ export default function NetworkMapPage() {
   const [status, setStatus] = useState<ServerStatus | "ALL">("ALL");
   const [subnetId, setSubnetId] = useState("ALL");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(1);
   const map = networkMapQuery.data;
   const serverNodes = useMemo(
     () => map?.nodes.filter((node) => node.type === "SERVER") ?? [],
@@ -287,37 +301,16 @@ export default function NetworkMapPage() {
                       {t("networkMap.inferredGateway")}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      aria-label={t("networkMap.zoomOut")}
-                      onClick={() => setZoom((current) => Math.max(0.75, current - 0.1))}
-                      size="icon"
-                      variant="outline"
-                    >
-                      <ZoomOut className="size-4" />
-                    </Button>
-                    <span className="w-14 text-center text-xs text-muted-foreground">
-                      {Math.round(zoom * 100)}%
-                    </span>
-                    <Button
-                      aria-label={t("networkMap.zoomIn")}
-                      onClick={() => setZoom((current) => Math.min(1.35, current + 0.1))}
-                      size="icon"
-                      variant="outline"
-                    >
-                      <ZoomIn className="size-4" />
-                    </Button>
-                  </div>
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
                   <TopologyCanvas
+                    edges={map?.edges ?? []}
                     filteredNodeIds={filteredNodeIds}
                     nodes={map?.nodes ?? []}
                     onSelectNode={setSelectedNodeId}
                     selectedNodeId={selectedNode?.id ?? null}
                     subnets={map?.subnets ?? []}
-                    zoom={zoom}
                   />
                   <NodeDetails node={selectedNode} />
                 </div>
@@ -357,108 +350,86 @@ function SummaryCard({
 }
 
 function TopologyCanvas({
+  edges,
   filteredNodeIds,
   nodes,
   onSelectNode,
   selectedNodeId,
   subnets,
-  zoom,
 }: {
+  edges: NetworkMapEdge[];
   filteredNodeIds: Set<string>;
   nodes: NetworkMapNode[];
   onSelectNode: (id: string) => void;
   selectedNodeId: string | null;
   subnets: NetworkMapSubnet[];
-  zoom: number;
 }) {
-  const t = useTranslations();
+  const flowNodes = useMemo(
+    () => createFlowNodes({ filteredNodeIds, nodes, selectedNodeId, subnets }),
+    [filteredNodeIds, nodes, selectedNodeId, subnets]
+  );
+  const flowEdges = useMemo(
+    () => createFlowEdges(edges, filteredNodeIds),
+    [edges, filteredNodeIds]
+  );
 
   return (
-    <div className="min-h-[34rem] overflow-auto rounded-md border bg-[radial-gradient(circle_at_1px_1px,var(--border)_1px,transparent_0)] [background-size:24px_24px]">
-      <div
-        className="grid min-w-[44rem] gap-4 p-4 transition-transform"
-        style={{
-          transform: `scale(${zoom})`,
-          transformOrigin: "top left",
-          width: `${100 / zoom}%`,
+    <div className="h-[34rem] overflow-hidden rounded-md border bg-background">
+      <ReactFlow
+        className="network-map-flow"
+        edges={flowEdges}
+        fitView
+        fitViewOptions={{ padding: 0.18 }}
+        minZoom={0.35}
+        maxZoom={1.6}
+        nodes={flowNodes}
+        nodeTypes={reactFlowNodeTypes}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        onNodeClick={(_, node) => {
+          if (typeof node.data.networkNodeId === "string") {
+            onSelectNode(node.data.networkNodeId);
+          }
         }}
+        panOnDrag
+        proOptions={{ hideAttribution: true }}
       >
-        {subnets.map((subnet) => {
-          const subnetNodes = nodes.filter((node) => node.subnetId === subnet.id);
-          const gateway = subnetNodes.find((node) => node.type === "GATEWAY");
-          const servers = subnetNodes.filter((node) => node.type === "SERVER");
-
-          return (
-            <section
-              className="rounded-md border bg-background/92 p-4 shadow-sm"
-              key={subnet.id}
-            >
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-medium">{subnet.label}</h2>
-                  <p className="text-xs text-muted-foreground">
-                    {t("networkMap.nodeCount", { count: subnet.nodeCount })}
-                  </p>
-                </div>
-                <Badge variant="outline">{subnet.cidr}</Badge>
-              </div>
-
-              <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-center">
-                {gateway ? (
-                  <NodeButton
-                    dimmed={false}
-                    node={gateway}
-                    onSelectNode={onSelectNode}
-                    selected={selectedNodeId === gateway.id}
-                  />
-                ) : null}
-                <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-                  {servers.map((node) => (
-                    <NodeButton
-                      dimmed={!filteredNodeIds.has(node.id)}
-                      key={node.id}
-                      node={node}
-                      onSelectNode={onSelectNode}
-                      selected={selectedNodeId === node.id}
-                    />
-                  ))}
-                </div>
-              </div>
-            </section>
-          );
-        })}
-      </div>
+        <Background color="var(--border)" gap={24} />
+        <Controls showInteractive={false} />
+      </ReactFlow>
     </div>
   );
 }
 
-function NodeButton({
-  dimmed,
-  node,
-  onSelectNode,
-  selected,
-}: {
-  dimmed: boolean;
-  node: NetworkMapNode;
-  onSelectNode: (id: string) => void;
-  selected: boolean;
-}) {
+type FlowNodeData = {
+  dimmed?: boolean;
+  networkNode?: NetworkMapNode;
+  networkNodeId?: string;
+  selected?: boolean;
+  subnet?: NetworkMapSubnet;
+};
+
+function ServerFlowNode({ data }: NodeProps<FlowNodeData>) {
   const t = useTranslations();
-  const Icon = node.type === "GATEWAY" ? Cable : Server;
+  const node = data.networkNode;
+
+  if (!node) {
+    return null;
+  }
+
   return (
-    <button
+    <div
       className={cn(
-        "min-h-28 rounded-md border p-3 text-left shadow-sm transition hover:border-primary/60 hover:bg-muted/30",
+        "min-h-28 w-56 rounded-md border p-3 text-left shadow-sm transition",
         nodeStatusClasses[node.status],
-        selected && "ring-2 ring-primary/70",
-        dimmed && "opacity-35"
+        data.selected && "ring-2 ring-primary/70",
+        data.dimmed && "opacity-35"
       )}
-      onClick={() => onSelectNode(node.id)}
-      type="button"
     >
+      <Handle className="opacity-0" position={Position.Left} type="target" />
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-background/70">
-          <Icon className="size-4" />
+          <Server className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">{node.name}</div>
@@ -473,8 +444,148 @@ function NodeButton({
           <Badge variant="outline">{t("networkMap.inferred")}</Badge>
         ) : null}
       </div>
-    </button>
+    </div>
   );
+}
+
+function GatewayFlowNode({ data }: NodeProps<FlowNodeData>) {
+  const t = useTranslations();
+  const node = data.networkNode;
+
+  if (!node) {
+    return null;
+  }
+
+  return (
+    <div
+      className={cn(
+        "min-h-28 w-56 rounded-md border border-sky-400/40 bg-sky-500/10 p-3 text-left shadow-sm transition",
+        data.selected && "ring-2 ring-primary/70"
+      )}
+    >
+      <Handle className="opacity-0" position={Position.Right} type="source" />
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-background/70">
+          <Cable className="size-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium">{node.name}</div>
+          <div className="truncate font-mono text-xs text-muted-foreground">
+            {node.ipAddress ?? t("common.notProvided")}
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        <ServerStatusBadge status={node.status} />
+        <Badge variant="outline">{t("networkMap.inferred")}</Badge>
+      </div>
+    </div>
+  );
+}
+
+function SubnetFlowNode({ data }: NodeProps<FlowNodeData>) {
+  const t = useTranslations();
+  const subnet = data.subnet;
+
+  if (!subnet) {
+    return null;
+  }
+
+  return (
+    <div className="h-full rounded-md border bg-card/80 p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium">{subnet.label}</div>
+          <div className="text-xs text-muted-foreground">
+            {t("networkMap.nodeCount", { count: subnet.nodeCount })}
+          </div>
+        </div>
+        <Badge variant="outline">{subnet.cidr}</Badge>
+      </div>
+    </div>
+  );
+}
+
+function createFlowNodes({
+  filteredNodeIds,
+  nodes,
+  selectedNodeId,
+  subnets,
+}: {
+  filteredNodeIds: Set<string>;
+  nodes: NetworkMapNode[];
+  selectedNodeId: string | null;
+  subnets: NetworkMapSubnet[];
+}): Node<FlowNodeData>[] {
+  const flowNodes: Node<FlowNodeData>[] = [];
+
+  subnets.forEach((subnet, subnetIndex) => {
+    const subnetNodes = nodes.filter((node) => node.subnetId === subnet.id);
+    const servers = subnetNodes.filter((node) => node.type === "SERVER");
+    const rows = Math.max(1, Math.ceil(servers.length / 2));
+    const width = 680;
+    const height = Math.max(260, 120 + rows * 132);
+    const x = (subnetIndex % 2) * 760;
+    const y = Math.floor(subnetIndex / 2) * (height + 90);
+
+    flowNodes.push({
+      id: subnet.id,
+      type: "subnet",
+      data: { subnet },
+      position: { x, y },
+      selectable: false,
+      draggable: false,
+      style: { width, height },
+      zIndex: 0,
+    });
+
+    subnetNodes.forEach((node, nodeIndex) => {
+      const isGateway = node.type === "GATEWAY";
+      const serverIndex = isGateway
+        ? 0
+        : servers.findIndex((server) => server.id === node.id);
+      const col = serverIndex % 2;
+      const row = Math.floor(serverIndex / 2);
+
+      flowNodes.push({
+        id: node.id,
+        type: isGateway ? "gateway" : "server",
+        data: {
+          dimmed: !isGateway && !filteredNodeIds.has(node.id),
+          networkNode: node,
+          networkNodeId: node.id,
+          selected: selectedNodeId === node.id,
+        },
+        extent: "parent",
+        parentNode: subnet.id,
+        position: isGateway
+          ? { x: 36, y: 90 }
+          : { x: 300 + col * 250, y: 84 + row * 132 },
+        draggable: false,
+        zIndex: nodeIndex + 1,
+      });
+    });
+  });
+
+  return flowNodes;
+}
+
+function createFlowEdges(
+  edges: NetworkMapEdge[],
+  filteredNodeIds: Set<string>
+): Edge[] {
+  return edges.map((edge) => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    type: "smoothstep",
+    animated: filteredNodeIds.has(edge.target),
+    style: {
+      opacity: filteredNodeIds.has(edge.target) ? 0.75 : 0.2,
+      stroke: "var(--muted-foreground)",
+      strokeWidth: 1.5,
+    },
+  }));
 }
 
 function NodeDetails({ node }: { node: NetworkMapNode | null }) {
