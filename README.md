@@ -108,16 +108,26 @@ Kyvora is built as a monorepo with a modular backend, a modern web UI, and a lig
 
 ### Docker Quick Start
 
-Run Kyvora Web, API, and PostgreSQL with Docker Compose:
+Kyvora ships separate Docker Compose files for local development and production
+deployment. The Go agent is not containerized.
+
+For local development, build Web and API images from source:
 
 ```bash
-cp .env.docker.example .env
+cp .env.dev.example .env
 ```
 
 Edit `.env`, change every `change-me` value, then start:
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.dev.yml up --build
+```
+
+For production, use the published GHCR images:
+
+```bash
+cp .env.prod.example .env
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 Open http://localhost:3000.
@@ -127,13 +137,15 @@ On the first startup with a fresh database, the API creates
 in the API logs:
 
 ```bash
-docker compose logs api
+docker compose -f docker-compose.prod.yml logs api
 ```
 
 Log in with those credentials and change the password when prompted.
 
-The Compose setup derives the internal JDBC and API URLs from simple `.env`
-values. The web container talks to the API at `http://api:8080` inside Docker.
+Production Compose uses `ghcr.io/hadzicni/kyvora-api:${KYVORA_VERSION}` and
+`ghcr.io/hadzicni/kyvora-web:${KYVORA_VERSION}`. The Compose setup derives the
+internal JDBC and API URLs from simple `.env` values. The web container talks to
+the API at `http://api:8080` inside Docker.
 See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for details.
 
 ### 1. Clone the repository

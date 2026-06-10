@@ -1,6 +1,11 @@
 # Docker Deployment
 
-This is the first simple Docker setup for Kyvora. It runs only:
+Kyvora provides separate Docker Compose files for development and production:
+
+- `docker-compose.dev.yml` builds local Web and API images from source.
+- `docker-compose.prod.yml` runs published GHCR images.
+
+Both stacks run:
 
 - PostgreSQL
 - Spring Boot API
@@ -9,12 +14,12 @@ This is the first simple Docker setup for Kyvora. It runs only:
 The Go agent is not containerized in this setup. Enroll an agent in the UI and
 run it on the host separately.
 
-## Quick Start
+## Development
 
 From the repository root:
 
 ```bash
-cp .env.docker.example .env
+cp .env.dev.example .env
 ```
 
 Edit `.env` and change every `change-me` value. Generate secrets with:
@@ -23,10 +28,10 @@ Edit `.env` and change every `change-me` value. Generate secrets with:
 openssl rand -base64 48
 ```
 
-Start Kyvora:
+Build local images from source and start the stack:
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.dev.yml up --build
 ```
 
 Open:
@@ -35,16 +40,49 @@ Open:
 http://localhost:3000
 ```
 
+## Production
+
+From the repository root:
+
+```bash
+cp .env.prod.example .env
+```
+
+Edit `.env` and change every `change-me` value. Set `KYVORA_VERSION` to the
+release tag you want to deploy, or keep `latest` if that is intentional.
+
+Production Compose uses these published images:
+
+```text
+ghcr.io/hadzicni/kyvora-api:${KYVORA_VERSION}
+ghcr.io/hadzicni/kyvora-web:${KYVORA_VERSION}
+```
+
+Start the production stack:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+Change `KYVORA_WEB_PORT` in `.env` if the host should expose the web dashboard
+on a different port.
+
 ## Configuration
 
-Users only edit simple values in `.env`. The Compose file derives internal
-runtime configuration from those values.
+Users edit simple values in `.env`. The Compose files derive internal runtime
+configuration from those values.
 
 PostgreSQL settings:
 
 - `POSTGRES_PASSWORD` is required.
-- `POSTGRES_DB` is optional and defaults to `kyvora`.
-- `POSTGRES_USER` is optional and defaults to `kyvora`.
+- `POSTGRES_DB` is optional in production and defaults to `kyvora`.
+- `POSTGRES_USER` is optional in production and defaults to `kyvora`.
 
 Backend secrets:
 
@@ -54,6 +92,10 @@ Web settings:
 
 - `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
+
+Production image version:
+
+- `KYVORA_VERSION`
 
 Do not put secrets in `NEXT_PUBLIC_*` variables.
 
@@ -74,12 +116,12 @@ postgres:5432
 Do not use `localhost` for container-to-container traffic. In a container,
 `localhost` means that same container, not another service.
 
-The root `docker-compose.yml` derives:
+The Compose files derive:
 
-- `KYVORA_DATASOURCE_URL` from `POSTGRES_DB`
-- `KYVORA_DATASOURCE_USERNAME` from `POSTGRES_USER`
-- `KYVORA_DATASOURCE_PASSWORD` from `POSTGRES_PASSWORD`
-- `KYVORA_API_URL=http://api:8080` for server-side web calls
+- `SPRING_DATASOURCE_URL` from the PostgreSQL service name and database name.
+- `SPRING_DATASOURCE_USERNAME` from `POSTGRES_USER`.
+- `SPRING_DATASOURCE_PASSWORD` from `POSTGRES_PASSWORD`.
+- `KYVORA_API_URL=http://api:8080` for server-side web calls.
 
 Users should not need to edit JDBC URLs or internal service hostnames.
 
@@ -97,7 +139,7 @@ The temporary password is generated randomly, stored only as a password hash,
 and printed once in the API startup logs:
 
 ```bash
-docker compose logs api
+docker compose -f docker-compose.prod.yml logs api
 ```
 
 Look for:
@@ -115,55 +157,64 @@ Log in at `http://localhost:3000/login` with those credentials. Kyvora will
 require a password change immediately. Later startups skip bootstrap when any
 user already exists, so the temporary password is not printed again.
 
-Deleting the database volume and starting from a fresh database generates a new
-first admin and a new temporary password:
+Deleting the database volume and starting from a fresh production database
+generates a new first admin and a new temporary password:
 
 ```bash
-docker compose down -v
-docker compose up -d --build
-docker compose logs api
+docker compose -f docker-compose.prod.yml down -v
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml logs api
+```
+
+## Updates
+
+Pull the configured production image versions and restart services:
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ## Data
 
 PostgreSQL data is stored in the named Docker volume `kyvora_postgres-data`.
 
-Stop the stack and keep data:
+Stop the production stack and keep data:
 
 ```bash
-docker compose down
+docker compose -f docker-compose.prod.yml down
 ```
 
-Stop the stack and delete database data:
+Stop the production stack and delete database data:
 
 ```bash
-docker compose down -v
+docker compose -f docker-compose.prod.yml down -v
 ```
 
-Back up the database:
+Back up the production database:
 
 ```bash
-docker compose exec postgres sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > kyvora-backup.sql
+docker compose -f docker-compose.prod.yml exec postgres sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > kyvora-backup.sql
 ```
 
 ## Useful Commands
 
-Validate Compose configuration:
+Validate development Compose configuration:
 
 ```bash
-docker compose config
+docker compose -f docker-compose.dev.yml config
 ```
 
-Start in the background:
+Validate production Compose configuration:
 
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.prod.yml config
 ```
 
-Follow logs:
+Follow production logs:
 
 ```bash
-docker compose logs -f
+docker compose -f docker-compose.prod.yml logs -f
 ```
 
 ## Discovered Environment Variables
@@ -173,10 +224,9 @@ These were discovered from the current code and configuration.
 Backend API:
 
 - `SPRING_PROFILES_ACTIVE`
-- `KYVORA_DATASOURCE_URL`
-- `KYVORA_DATASOURCE_USERNAME`
-- `KYVORA_DATASOURCE_PASSWORD`
-- `KYVORA_API_PORT`
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
 - `KYVORA_JWT_SECRET`
 - `KYVORA_JWT_ACCESS_TOKEN_TTL_SECONDS`
 - `KYVORA_REFRESH_TOKEN_TTL_SECONDS`
@@ -196,7 +246,9 @@ Docker users normally edit only:
 - `KYVORA_JWT_SECRET`
 - `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
+- `KYVORA_VERSION`
+- `KYVORA_WEB_PORT`
 
 `API_BASE_URL`, `AUTH_URL`, and `AUTH_SECRET` remain supported for local
-compatibility, but the Docker example uses `KYVORA_API_URL`, `NEXTAUTH_URL`,
-and maps `NEXTAUTH_SECRET` to `AUTH_SECRET` inside the web container.
+compatibility, but the Docker examples use `KYVORA_API_URL`, `NEXTAUTH_URL`,
+and map `NEXTAUTH_SECRET` to `AUTH_SECRET` inside the web container.
