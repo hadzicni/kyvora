@@ -23,11 +23,9 @@ import type {
   ManagedServiceItem,
   ServiceCategory,
   ServiceProtocol,
-  ServiceStatus,
 } from "@/lib/api/services";
 
 export const serviceProtocols = ["HTTP", "HTTPS", "TCP", "UDP"] as const;
-export const serviceStatuses = ["ONLINE", "OFFLINE", "UNKNOWN"] as const;
 export const serviceCategories = [
   "MONITORING",
   "NETWORKING",
@@ -85,9 +83,6 @@ export const serviceFormSchema = z.object({
   category: z.enum(serviceCategories, {
     error: "Choose a category.",
   }),
-  status: z.enum(serviceStatuses, {
-    error: "Choose a status.",
-  }),
   tags: z.string().transform((value, context) => {
     const tags = value
       .split(/[,\n]/)
@@ -128,7 +123,6 @@ export const emptyServiceFormValues: ServiceFormValues = {
   port: "",
   protocol: "HTTPS",
   category: "OTHER",
-  status: "UNKNOWN",
   tags: "",
   notes: "",
   linkedServerId: "NONE",
@@ -146,7 +140,6 @@ export function toServiceFormValues(
     port: service.port ? String(service.port) : "",
     protocol: service.protocol,
     category: service.category,
-    status: service.status,
     tags: service.tags.join(", "),
     notes: service.notes ?? "",
     linkedServerId: service.linkedServer?.id ?? "NONE",
@@ -165,7 +158,6 @@ export function toServiceInput(
     port: payload.port,
     protocol: payload.protocol,
     category: payload.category,
-    status: payload.status,
     tags: payload.tags,
     notes: payload.notes,
     linkedServerId:
@@ -204,7 +196,6 @@ export function ServiceForm({
 
   const selectedProtocol = watch("protocol");
   const selectedCategory = watch("category");
-  const selectedStatus = watch("status");
   const selectedServerId = watch("linkedServerId");
 
   return (
@@ -344,38 +335,6 @@ export function ServiceForm({
               {serviceCategories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {formatCategory(category)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
-
-        <FormField
-          error={errors.status?.message}
-          htmlFor={`${idPrefix}-status`}
-          label="Status"
-        >
-          <Select
-            value={selectedStatus}
-            onValueChange={(value) => {
-              form.setValue("status", value as ServiceStatus, {
-                shouldDirty: true,
-                shouldTouch: true,
-                shouldValidate: true,
-              });
-            }}
-          >
-            <SelectTrigger
-              id={`${idPrefix}-status`}
-              className="w-full"
-              aria-invalid={Boolean(errors.status)}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              {serviceStatuses.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {formatCategory(status)}
                 </SelectItem>
               ))}
             </SelectContent>

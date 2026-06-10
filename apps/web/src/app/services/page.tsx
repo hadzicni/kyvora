@@ -33,23 +33,18 @@ import {
 import { CreateServiceDialog } from "@/features/services/create-service-dialog";
 import { ServiceEmptyState } from "@/features/services/service-empty-state";
 import { ServiceErrorState } from "@/features/services/service-error-state";
-import {
-  formatCategory,
-  serviceCategories,
-  serviceStatuses,
-} from "@/features/services/service-form";
+import { formatCategory, serviceCategories } from "@/features/services/service-form";
 import { ServiceTable } from "@/features/services/service-table";
 import { ServiceTableSkeleton } from "@/features/services/service-table-skeleton";
 import { useServices } from "@/features/services/use-services";
 import { useServers } from "@/features/servers/use-servers";
-import type { ServiceCategory, ServiceStatus } from "@/lib/api/services";
+import type { ServiceCategory } from "@/lib/api/services";
 import { canManageServices } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 const pageSizeOptions = [10, 20, 50] as const;
 const sortOptions = [
   { label: "Name", value: "name,asc" },
-  { label: "Status", value: "status,asc" },
   { label: "Category", value: "category,asc" },
 ] as const;
 
@@ -58,7 +53,6 @@ export default function ServicesPage() {
   const mayManageServices = canManageServices(session?.user.role);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<ServiceCategory | "ALL">("ALL");
-  const [status, setStatus] = useState<ServiceStatus | "ALL">("ALL");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState<(typeof pageSizeOptions)[number]>(
     20
@@ -67,14 +61,12 @@ export default function ServicesPage() {
     "name,asc"
   );
   const debouncedSearch = useDebouncedValue(search.trim(), 300);
-  const hasActiveFilters =
-    debouncedSearch.length > 0 || category !== "ALL" || status !== "ALL";
+  const hasActiveFilters = debouncedSearch.length > 0 || category !== "ALL";
   const servicesQuery = useServices({
     page,
     size: pageSize,
     q: debouncedSearch,
     category: category === "ALL" ? undefined : category,
-    status: status === "ALL" ? undefined : status,
     sort,
   });
   const serversQuery = useServers({ size: 100, sort: "name,asc" });
@@ -91,13 +83,6 @@ export default function ServicesPage() {
   const canGoBack = page > 0 && !servicesQuery.isFetching;
   const canGoForward =
     totalPages > 0 && page + 1 < totalPages && !servicesQuery.isFetching;
-  const onlineServicesOnPage = services.filter(
-    (service) => service.status === "ONLINE"
-  ).length;
-  const offlineServicesOnPage = services.filter(
-    (service) => service.status === "OFFLINE"
-  ).length;
-
   return (
     <AppShell>
       <div className="space-y-6">
@@ -133,7 +118,7 @@ export default function ServicesPage() {
           }
         />
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
               <CardDescription>Total services</CardDescription>
@@ -142,14 +127,8 @@ export default function ServicesPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardDescription>Online on this page</CardDescription>
-              <CardTitle>{onlineServicesOnPage}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardDescription>Offline on this page</CardDescription>
-              <CardTitle>{offlineServicesOnPage}</CardTitle>
+              <CardDescription>Shown on this page</CardDescription>
+              <CardTitle>{services.length}</CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -169,7 +148,7 @@ export default function ServicesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
-            <div className="grid gap-3 rounded-md border bg-muted/10 p-3 lg:grid-cols-[minmax(16rem,1fr)_12rem_12rem_12rem_auto] lg:items-end">
+            <div className="grid gap-3 rounded-md border bg-muted/10 p-3 lg:grid-cols-[minmax(16rem,1fr)_12rem_12rem_auto] lg:items-end">
               <div className="grid gap-2">
                 <Label htmlFor="service-search">Search</Label>
                 <div className="relative">
@@ -211,29 +190,6 @@ export default function ServicesPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="service-status">Status</Label>
-                <Select
-                  value={status}
-                  onValueChange={(value) => {
-                    setStatus(value as ServiceStatus | "ALL");
-                    setPage(0);
-                  }}
-                >
-                  <SelectTrigger id="service-status" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectItem value="ALL">All statuses</SelectItem>
-                    {serviceStatuses.map((serviceStatus) => (
-                      <SelectItem key={serviceStatus} value={serviceStatus}>
-                        {formatCategory(serviceStatus)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
                 <Label htmlFor="service-sort">Sort</Label>
                 <Select
                   value={sort}
@@ -262,7 +218,6 @@ export default function ServicesPage() {
                 onClick={() => {
                   setSearch("");
                   setCategory("ALL");
-                  setStatus("ALL");
                   setPage(0);
                 }}
               >

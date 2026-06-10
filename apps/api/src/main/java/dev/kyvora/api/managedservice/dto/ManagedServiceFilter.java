@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import dev.kyvora.api.managedservice.entity.ManagedServiceCategory;
 import dev.kyvora.api.managedservice.entity.ManagedServiceProtocol;
-import dev.kyvora.api.managedservice.entity.ManagedServiceStatus;
 
 public record ManagedServiceFilter(
 		String q,
@@ -14,7 +13,6 @@ public record ManagedServiceFilter(
 		String ipAddress,
 		ManagedServiceProtocol protocol,
 		ManagedServiceCategory category,
-		ManagedServiceStatus status,
 		List<String> tags,
 		UUID linkedServerId) {
 }

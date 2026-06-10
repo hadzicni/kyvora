@@ -28,7 +28,6 @@ public class ManagedServiceMapper {
 				request.port(),
 				request.protocol(),
 				request.category(),
-				request.status(),
 				new LinkedHashSet<>(normalizeTags(request.tags())),
 				trimToNull(request.notes()),
 				linkedServer);
@@ -43,7 +42,6 @@ public class ManagedServiceMapper {
 		entity.setPort(request.port());
 		entity.setProtocol(request.protocol());
 		entity.setCategory(request.category());
-		entity.setStatus(request.status());
 		entity.setTags(new LinkedHashSet<>(normalizeTags(request.tags())));
 		entity.setNotes(trimToNull(request.notes()));
 		entity.setLinkedServer(linkedServer);
@@ -60,7 +58,6 @@ public class ManagedServiceMapper {
 				entity.getPort(),
 				entity.getProtocol(),
 				entity.getCategory(),
-				entity.getStatus(),
 				entity.getTags(),
 				entity.getNotes(),
 				toLinkedServerResponse(entity.getLinkedServer()),

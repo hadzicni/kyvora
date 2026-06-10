@@ -39,9 +39,6 @@ public final class ManagedServiceSpecifications {
 		if (filter.category() != null) {
 			specification = specification.and((root, query, cb) -> cb.equal(root.get("category"), filter.category()));
 		}
-		if (filter.status() != null) {
-			specification = specification.and((root, query, cb) -> cb.equal(root.get("status"), filter.status()));
-		}
 		if (filter.linkedServerId() != null) {
 			specification = specification.and((root, query, cb) -> cb.equal(root.get("linkedServer").get("id"), filter.linkedServerId()));
 		}

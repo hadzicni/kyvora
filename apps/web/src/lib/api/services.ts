@@ -1,5 +1,4 @@
 export type ServiceProtocol = "HTTP" | "HTTPS" | "TCP" | "UDP";
-export type ServiceStatus = "ONLINE" | "OFFLINE" | "UNKNOWN";
 export type ServiceCategory =
   | "MONITORING"
   | "NETWORKING"
@@ -30,7 +29,6 @@ export type ManagedServiceItem = {
   port: number | null;
   protocol: ServiceProtocol;
   category: ServiceCategory;
-  status: ServiceStatus;
   tags: string[];
   notes: string | null;
   linkedServer: LinkedServer | null;
@@ -58,7 +56,6 @@ export type ListServicesParams = {
   ipAddress?: string;
   protocol?: ServiceProtocol;
   category?: ServiceCategory;
-  status?: ServiceStatus;
   tags?: string[];
   linkedServerId?: string;
   sort?: string;
@@ -73,7 +70,6 @@ export type CreateServiceInput = {
   port: number | null;
   protocol: ServiceProtocol;
   category: ServiceCategory;
-  status: ServiceStatus;
   tags: string[];
   notes: string;
   linkedServerId: string | null;
@@ -158,7 +154,6 @@ export async function listServices(
   appendParam(searchParams, "ipAddress", params.ipAddress);
   appendParam(searchParams, "protocol", params.protocol);
   appendParam(searchParams, "category", params.category);
-  appendParam(searchParams, "status", params.status);
   appendParam(searchParams, "tags", params.tags);
   appendParam(searchParams, "linkedServerId", params.linkedServerId);
   appendParam(searchParams, "sort", params.sort);

@@ -26,7 +26,6 @@ import type { ManagedServiceItem } from "@/lib/api/services";
 import { DeleteServiceDialog } from "./delete-service-dialog";
 import { EditServiceDialog } from "./edit-service-dialog";
 import { formatCategory } from "./service-form";
-import { ServiceStatusBadge } from "./service-status-badge";
 
 export function ServiceTable({
   canEdit = true,
@@ -46,7 +45,6 @@ export function ServiceTable({
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>URL</TableHead>
             <TableHead>Host</TableHead>
@@ -75,9 +73,6 @@ export function ServiceTable({
                 <div className="max-w-56 truncate text-xs text-muted-foreground">
                   {service.description || "No description"}
                 </div>
-              </TableCell>
-              <TableCell>
-                <ServiceStatusBadge status={service.status} />
               </TableCell>
               <TableCell>{formatCategory(service.category)}</TableCell>
               <TableCell>
@@ -158,9 +153,6 @@ export function ServiceTable({
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-3 text-sm">
-                <DetailRow label="Status">
-                  <ServiceStatusBadge status={selectedService.status} />
-                </DetailRow>
                 <DetailRow label="Category">
                   {formatCategory(selectedService.category)}
                 </DetailRow>

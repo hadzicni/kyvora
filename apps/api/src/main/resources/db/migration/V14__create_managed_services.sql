@@ -8,7 +8,6 @@ create table managed_services (
     port integer,
     protocol varchar(16) not null,
     category varchar(32) not null,
-    status varchar(16) not null,
     notes varchar(10000),
     server_inventory_id uuid references server_inventory(id) on delete set null,
     created_at timestamp with time zone not null default current_timestamp,
@@ -17,7 +16,6 @@ create table managed_services (
 );
 
 create index idx_managed_services_name on managed_services (name);
-create index idx_managed_services_status on managed_services (status);
 create index idx_managed_services_category on managed_services (category);
 create index idx_managed_services_server_inventory_id on managed_services (server_inventory_id);
 

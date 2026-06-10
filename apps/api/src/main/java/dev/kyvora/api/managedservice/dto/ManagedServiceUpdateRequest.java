@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import dev.kyvora.api.managedservice.entity.ManagedServiceCategory;
 import dev.kyvora.api.managedservice.entity.ManagedServiceProtocol;
-import dev.kyvora.api.managedservice.entity.ManagedServiceStatus;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
@@ -43,9 +42,6 @@ public record ManagedServiceUpdateRequest(
 
 		@NotNull
 		ManagedServiceCategory category,
-
-		@NotNull
-		ManagedServiceStatus status,
 
 		@ArraySchema(schema = @Schema(maxLength = 50), arraySchema = @Schema(description = "Maximum 20 tags."))
 		@NotNull

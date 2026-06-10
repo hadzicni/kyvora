@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import dev.kyvora.api.managedservice.entity.ManagedServiceCategory;
 import dev.kyvora.api.managedservice.entity.ManagedServiceProtocol;
-import dev.kyvora.api.managedservice.entity.ManagedServiceStatus;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
@@ -51,10 +50,6 @@ public record ManagedServiceCreateRequest(
 		@Schema(description = "Service category.", example = "MONITORING")
 		@NotNull
 		ManagedServiceCategory category,
-
-		@Schema(description = "Manually tracked service status.", example = "UNKNOWN")
-		@NotNull
-		ManagedServiceStatus status,
 
 		@ArraySchema(
 				schema = @Schema(description = "Service tag. Must not be blank.", example = "internal", maxLength = 50),

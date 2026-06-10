@@ -27,7 +27,6 @@ import dev.kyvora.api.managedservice.dto.ManagedServiceResponse;
 import dev.kyvora.api.managedservice.dto.ManagedServiceUpdateRequest;
 import dev.kyvora.api.managedservice.entity.ManagedServiceCategory;
 import dev.kyvora.api.managedservice.entity.ManagedServiceProtocol;
-import dev.kyvora.api.managedservice.entity.ManagedServiceStatus;
 import dev.kyvora.api.managedservice.service.ManagedServiceService;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,7 +58,6 @@ public class ManagedServiceController {
 			@RequestParam(required = false) String ipAddress,
 			@RequestParam(required = false) ManagedServiceProtocol protocol,
 			@RequestParam(required = false) ManagedServiceCategory category,
-			@RequestParam(required = false) ManagedServiceStatus status,
 			@RequestParam(required = false, name = "tags") List<String> tags,
 			@RequestParam(required = false) UUID linkedServerId,
 			@PageableDefault(size = 20, sort = "name") Pageable pageable) {
@@ -70,7 +68,6 @@ public class ManagedServiceController {
 				ipAddress,
 				protocol,
 				category,
-				status,
 				tags,
 				linkedServerId);
 		return ResponseEntity.ok(ManagedServicePageResponse.from(service.findAll(filter, pageable)));

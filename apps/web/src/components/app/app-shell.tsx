@@ -446,7 +446,7 @@ function CommandPalette() {
                 <CommandItem
                   key={service.id}
                   onSelect={() => navigateTo("/services")}
-                  value={`${service.name} ${service.url ?? ""} ${service.hostname ?? ""} ${service.ipAddress ?? ""} ${service.category} ${service.status} ${service.tags.join(" ")}`}
+                  value={`${service.name} ${service.url ?? ""} ${service.hostname ?? ""} ${service.ipAddress ?? ""} ${service.category} ${service.tags.join(" ")}`}
                 >
                   <Cable className="size-4" />
                   <span className="min-w-0 flex-1 truncate">{service.name}</span>

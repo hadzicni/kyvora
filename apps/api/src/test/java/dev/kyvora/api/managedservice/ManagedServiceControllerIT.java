@@ -78,7 +78,6 @@ class ManagedServiceControllerIT {
 						3000,
 						"HTTPS",
 						"MONITORING",
-						"ONLINE",
 						List.of("monitoring", "internal"),
 						"Backed by docker compose.",
 						server.getId().toString()))))
@@ -91,7 +90,6 @@ class ManagedServiceControllerIT {
 				.andExpect(jsonPath("$.port", is(3000)))
 				.andExpect(jsonPath("$.protocol", is("HTTPS")))
 				.andExpect(jsonPath("$.category", is("MONITORING")))
-				.andExpect(jsonPath("$.status", is("ONLINE")))
 				.andExpect(jsonPath("$.tags", hasSize(2)))
 				.andExpect(jsonPath("$.linkedServer.name", is("NAS 01")))
 				.andExpect(jsonPath("$.createdAt", notNullValue()))
@@ -99,14 +97,13 @@ class ManagedServiceControllerIT {
 	}
 
 	@Test
-	void listSupportsSearchCategoryStatusAndTags() throws Exception {
-		createService("Grafana", "https://grafana.example.com", "MONITORING", "ONLINE", List.of("metrics"));
-		createService("Jellyfin", "https://jellyfin.example.com", "MEDIA", "OFFLINE", List.of("media"));
+	void listSupportsSearchCategoryAndTags() throws Exception {
+		createService("Grafana", "https://grafana.example.com", "MONITORING", List.of("metrics"));
+		createService("Jellyfin", "https://jellyfin.example.com", "MEDIA", List.of("media"));
 
 		mockMvc.perform(get("/api/v1/services")
 				.param("q", "jellyfin")
 				.param("category", "MEDIA")
-				.param("status", "OFFLINE")
 				.param("tags", "media"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.content", hasSize(1)))
@@ -117,7 +114,7 @@ class ManagedServiceControllerIT {
 
 	@Test
 	void updateAndDeleteWork() throws Exception {
-		String createdJson = createService("Pi-hole", "http://pihole.example.com", "NETWORKING", "UNKNOWN", List.of("dns"));
+		String createdJson = createService("Pi-hole", "http://pihole.example.com", "NETWORKING", List.of("dns"));
 		String id = objectMapper.readTree(createdJson).get("id").asText();
 
 		mockMvc.perform(put("/api/v1/services/{id}", id)
@@ -132,13 +129,11 @@ class ManagedServiceControllerIT {
 						80,
 						"HTTP",
 						"NETWORKING",
-						"ONLINE",
 						List.of("dns", "network"),
 						"Local resolver.",
 						null))))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.name", is("Pi-hole Admin")))
-				.andExpect(jsonPath("$.status", is("ONLINE")))
 				.andExpect(jsonPath("$.tags", hasSize(2)));
 
 		mockMvc.perform(delete("/api/v1/services/{id}", id)
@@ -151,7 +146,7 @@ class ManagedServiceControllerIT {
 
 	@Test
 	void viewerCanReadButCannotMutateServices() throws Exception {
-		String createdJson = createService("Vaultwarden", "https://vault.example.com", "SECURITY", "ONLINE", List.of("passwords"));
+		String createdJson = createService("Vaultwarden", "https://vault.example.com", "SECURITY", List.of("passwords"));
 		String id = objectMapper.readTree(createdJson).get("id").asText();
 
 		mockMvc.perform(get("/api/v1/services"))
@@ -171,7 +166,6 @@ class ManagedServiceControllerIT {
 						null,
 						"HTTPS",
 						"OTHER",
-						"UNKNOWN",
 						List.of(),
 						"",
 						null))))
@@ -195,7 +189,6 @@ class ManagedServiceControllerIT {
 						70000,
 						"HTTPS",
 						"OTHER",
-						"UNKNOWN",
 						List.of("this-tag-is-way-too-long-for-the-limit-because-it-keeps-going-forever"),
 						"",
 						null))))
@@ -220,7 +213,6 @@ class ManagedServiceControllerIT {
 			String name,
 			String url,
 			String category,
-			String status,
 			List<String> tags) throws Exception {
 		return mockMvc.perform(post("/api/v1/services")
 				.with(user("operator").roles("OPERATOR"))
@@ -234,7 +226,6 @@ class ManagedServiceControllerIT {
 						443,
 						"HTTPS",
 						category,
-						status,
 						tags,
 						"Notes for " + name,
 						null))))
@@ -253,7 +244,6 @@ class ManagedServiceControllerIT {
 			Integer port,
 			String protocol,
 			String category,
-			String status,
 			List<String> tags,
 			String notes,
 			String linkedServerId) {
@@ -266,7 +256,6 @@ class ManagedServiceControllerIT {
 		payload.put("port", port);
 		payload.put("protocol", protocol);
 		payload.put("category", category);
-		payload.put("status", status);
 		payload.put("tags", tags);
 		payload.put("notes", notes);
 		payload.put("linkedServerId", linkedServerId);

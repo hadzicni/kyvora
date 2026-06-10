@@ -57,10 +57,6 @@ public class ManagedService {
 	@Column(nullable = false, length = 32)
 	private ManagedServiceCategory category;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 16)
-	private ManagedServiceStatus status;
-
 	@ElementCollection(fetch = FetchType.LAZY)
 	@CollectionTable(name = "managed_service_tags", joinColumns = @JoinColumn(name = "managed_service_id"))
 	@Column(name = "tag", nullable = false, length = 50)
@@ -91,7 +87,6 @@ public class ManagedService {
 			Integer port,
 			ManagedServiceProtocol protocol,
 			ManagedServiceCategory category,
-			ManagedServiceStatus status,
 			Set<String> tags,
 			String notes,
 			ServerInventory linkedServer) {
@@ -103,7 +98,6 @@ public class ManagedService {
 		this.port = port;
 		this.protocol = protocol;
 		this.category = category;
-		this.status = status;
 		setTags(tags);
 		this.notes = notes;
 		this.linkedServer = linkedServer;
@@ -189,14 +183,6 @@ public class ManagedService {
 
 	public void setCategory(ManagedServiceCategory category) {
 		this.category = category;
-	}
-
-	public ManagedServiceStatus getStatus() {
-		return status;
-	}
-
-	public void setStatus(ManagedServiceStatus status) {
-		this.status = status;
 	}
 
 	public List<String> getTags() {

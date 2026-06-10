@@ -5,7 +5,6 @@ import java.util.List;
 
 import dev.kyvora.api.managedservice.entity.ManagedServiceCategory;
 import dev.kyvora.api.managedservice.entity.ManagedServiceProtocol;
-import dev.kyvora.api.managedservice.entity.ManagedServiceStatus;
 
 public record ManagedServiceResponse(
 		String id,
@@ -17,7 +16,6 @@ public record ManagedServiceResponse(
 		Integer port,
 		ManagedServiceProtocol protocol,
 		ManagedServiceCategory category,
-		ManagedServiceStatus status,
 		List<String> tags,
 		String notes,
 		LinkedServerResponse linkedServer,
