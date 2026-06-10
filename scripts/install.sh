@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-compose_file="docker-compose.prod.yml"
-env_example=".env.prod.example"
+compose_file="docker-compose.yml"
+env_example=".env.example"
 env_file=".env"
 install_ref="${KYVORA_INSTALL_REF:-main}"
 install_dir="${KYVORA_INSTALL_DIR:-./kyvora}"
