@@ -274,6 +274,7 @@ Before suggesting a commit:
 * Show `git status --short`
 * Mention any ignored local files that should not be committed, especially `.env.local`
 * Keep commits focused and small
+* Show commit message before committing, and ensure it follows the style below
 
 Commit message style:
 
