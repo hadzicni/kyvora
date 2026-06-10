@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
@@ -26,6 +26,10 @@ import type {
 } from "@/lib/api/services";
 
 export const serviceProtocols = ["HTTP", "HTTPS", "TCP", "UDP"] as const;
+const serviceProtocolUrlPrefixes: Partial<Record<ServiceProtocol, string>> = {
+  HTTP: "http://",
+  HTTPS: "https://",
+};
 export const serviceCategories = [
   "MONITORING",
   "NETWORKING",
@@ -173,6 +177,7 @@ export function ServiceForm({
   isPending,
   onCancel,
   onSubmit,
+  prefillUrlFromProtocol = false,
   servers,
   submitIcon,
   submitLabel,
@@ -184,6 +189,7 @@ export function ServiceForm({
   isPending: boolean;
   onCancel: () => void;
   onSubmit: (values: ServiceFormPayload) => Promise<void>;
+  prefillUrlFromProtocol?: boolean;
   servers: ServerInventoryItem[];
   submitIcon: ReactNode;
   submitLabel: string;
@@ -197,6 +203,34 @@ export function ServiceForm({
   const selectedProtocol = watch("protocol");
   const selectedCategory = watch("category");
   const selectedServerId = watch("linkedServerId");
+
+  useEffect(() => {
+    if (!prefillUrlFromProtocol) {
+      return;
+    }
+
+    const nextPrefix = serviceProtocolUrlPrefixes[selectedProtocol];
+    const currentUrl = form.getValues("url").trim();
+    const isEmptyOrGeneratedPrefix =
+      currentUrl === "" ||
+      Object.values(serviceProtocolUrlPrefixes).includes(currentUrl);
+
+    if (nextPrefix && isEmptyOrGeneratedPrefix && currentUrl !== nextPrefix) {
+      form.setValue("url", nextPrefix, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false,
+      });
+    }
+
+    if (!nextPrefix && isEmptyOrGeneratedPrefix && currentUrl !== "") {
+      form.setValue("url", "", {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false,
+      });
+    }
+  }, [form, prefillUrlFromProtocol, selectedProtocol]);
 
   return (
     <form

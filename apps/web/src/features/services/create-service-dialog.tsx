@@ -93,6 +93,7 @@ export function CreateServiceDialog({
           isPending={createService.isPending}
           onCancel={() => handleOpenChange(false)}
           onSubmit={onSubmit}
+          prefillUrlFromProtocol
           servers={servers}
           submitIcon={<Plus className="size-4" />}
           submitLabel="Create service"
