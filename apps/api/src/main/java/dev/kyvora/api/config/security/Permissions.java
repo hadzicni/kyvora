@@ -22,6 +22,10 @@ public class Permissions {
 		return hasAnyRole(authentication, "ADMIN", "OPERATOR");
 	}
 
+	public boolean canManageServices(Authentication authentication) {
+		return hasAnyRole(authentication, "ADMIN", "OPERATOR");
+	}
+
 	public boolean canDeleteServers(Authentication authentication) {
 		return hasRole(authentication, "ADMIN");
 	}

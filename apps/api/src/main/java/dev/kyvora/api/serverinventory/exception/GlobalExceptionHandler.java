@@ -20,6 +20,7 @@ import dev.kyvora.api.auth.service.InvalidCredentialsException;
 import dev.kyvora.api.auth.service.InvalidTokenException;
 import dev.kyvora.api.auth.exception.UserManagementException;
 import dev.kyvora.api.auth.exception.UserNotFoundException;
+import dev.kyvora.api.managedservice.exception.ManagedServiceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import dev.kyvora.api.settings.exception.SettingsValidationException;
@@ -37,6 +38,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(AgentNotFoundException.class)
 	public ResponseEntity<ApiErrorResponse> handleAgentNotFound(
 			AgentNotFoundException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
+	}
+
+	@ExceptionHandler(ManagedServiceNotFoundException.class)
+	public ResponseEntity<ApiErrorResponse> handleManagedServiceNotFound(
+			ManagedServiceNotFoundException exception,
 			HttpServletRequest request) {
 		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
 	}

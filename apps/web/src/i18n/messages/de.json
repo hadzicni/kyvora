@@ -27,6 +27,7 @@
   "navigation": {
     "overview": "Übersicht",
     "servers": "Server",
+    "services": "Services",
     "networkMap": "Netzwerkkarte",
     "agents": "Agents",
     "activity": "Aktivität",

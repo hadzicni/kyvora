@@ -52,6 +52,7 @@ export type ListServersParams = {
   hostname?: string;
   ipAddress?: string;
   tags?: string[];
+  sort?: string;
 };
 
 export type CreateServerInput = {
@@ -143,6 +144,7 @@ export async function listServers(
   appendParam(searchParams, "hostname", params.hostname);
   appendParam(searchParams, "ipAddress", params.ipAddress);
   appendParam(searchParams, "tags", params.tags);
+  appendParam(searchParams, "sort", params.sort);
 
   return request<ServerInventoryPage>(
     `/api/server-inventory?${searchParams.toString()}`

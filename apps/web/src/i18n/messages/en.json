@@ -28,6 +28,7 @@
   "navigation": {
     "overview": "Overview",
     "servers": "Servers",
+    "services": "Services",
     "networkMap": "Network Map",
     "agents": "Agents",
     "activity": "Activity",

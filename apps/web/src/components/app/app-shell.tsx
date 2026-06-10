@@ -3,6 +3,7 @@
 import {
   Activity,
   Bot,
+  Cable,
   CircleHelp,
   LayoutDashboard,
   LogOut,
@@ -53,6 +54,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useAgents } from "@/features/agents/use-agents";
+import { useServices } from "@/features/services/use-services";
 import { useSettings } from "@/features/settings/use-settings";
 import { useServers } from "@/features/servers/use-servers";
 import { supportedLocales } from "@/i18n/config";
@@ -66,6 +68,7 @@ type NavItem = {
   labelKey:
     | "overview"
     | "servers"
+    | "services"
     | "networkMap"
     | "agents"
     | "activity"
@@ -87,6 +90,11 @@ const navItems: NavItem[] = [
     href: "/servers",
     labelKey: "servers",
     icon: Server,
+  },
+  {
+    href: "/services",
+    labelKey: "services",
+    icon: Cable,
   },
   {
     href: "/network-map",
@@ -312,8 +320,10 @@ function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const serversQuery = useServers({ q: search, size: 8 });
+  const servicesQuery = useServices({ q: search, size: 8 });
   const agentsQuery = useAgents({ size: 50 });
   const servers = serversQuery.data?.content ?? [];
+  const services = servicesQuery.data?.content ?? [];
   const agents = agentsQuery.data?.content ?? [];
   const { data: session } = useSession();
   const visibleNavItems = navItems.filter(
@@ -354,7 +364,7 @@ function CommandPalette() {
       </Button>
       <CommandDialog
         className="sm:max-w-xl"
-        description={`${t("navigation.navigation")}, ${t("navigation.servers")}, ${t("navigation.agents")}`}
+        description={`${t("navigation.navigation")}, ${t("navigation.servers")}, ${t("navigation.services")}, ${t("navigation.agents")}`}
         onOpenChange={setOpen}
         open={open}
         title="Command palette"
@@ -368,7 +378,7 @@ function CommandPalette() {
           />
           <CommandList>
             <CommandEmpty>
-              {serversQuery.isLoading || agentsQuery.isLoading
+              {serversQuery.isLoading || servicesQuery.isLoading || agentsQuery.isLoading
                 ? `${t("common.loading")}...`
                 : "No results found."}
             </CommandEmpty>
@@ -416,6 +426,32 @@ function CommandPalette() {
                   <span className="min-w-0 flex-1 truncate">{server.name}</span>
                   <span className="truncate font-mono text-xs text-muted-foreground">
                     {server.hostname}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading={t("navigation.services")}>
+              {servicesQuery.isLoading ? (
+                <CommandItem disabled value="loading services">
+                  Loading services
+                </CommandItem>
+              ) : null}
+              {servicesQuery.isError ? (
+                <CommandItem disabled value="unable to load services">
+                  Unable to load services
+                </CommandItem>
+              ) : null}
+              {services.map((service) => (
+                <CommandItem
+                  key={service.id}
+                  onSelect={() => navigateTo("/services")}
+                  value={`${service.name} ${service.url ?? ""} ${service.hostname ?? ""} ${service.ipAddress ?? ""} ${service.category} ${service.status} ${service.tags.join(" ")}`}
+                >
+                  <Cable className="size-4" />
+                  <span className="min-w-0 flex-1 truncate">{service.name}</span>
+                  <span className="truncate font-mono text-xs text-muted-foreground">
+                    {service.hostname ?? service.url ?? service.protocol}
                   </span>
                 </CommandItem>
               ))}

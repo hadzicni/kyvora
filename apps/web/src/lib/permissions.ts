@@ -16,6 +16,10 @@ export function canManageServers(role: string | null | undefined) {
   return role === "ADMIN" || role === "OPERATOR";
 }
 
+export function canManageServices(role: string | null | undefined) {
+  return role === "ADMIN" || role === "OPERATOR";
+}
+
 export function canDeleteServers(role: string | null | undefined) {
   return role === "ADMIN";
 }
