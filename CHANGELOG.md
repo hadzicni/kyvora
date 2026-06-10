@@ -60,3 +60,10 @@
 ### Fixed
 * Fixed Docker web build issues for the Next.js monorepo setup.
 * Fixed the Docker web runtime error caused by importing full Auth.js config into middleware.
+
+## [0.2.1] - 2026-06-10
+
+### Added
+
+* Added automated Docker image publishing for API and web release builds.
+* Added GitHub Container Registry images for versioned Kyvora releases.
