@@ -1,13 +1,35 @@
-import Link from "next/link"
-import { ArrowRight, GitBranch, Server, ShieldCheck } from "lucide-react"
+"use client"
 
-import { siteConfig } from "@/config/site"
+import {
+  ArrowRight,
+  Check,
+  Copy,
+  GitBranch,
+  Server,
+  ShieldCheck,
+  Terminal,
+} from "lucide-react"
+import Link from "next/link"
+import { useState } from "react"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { siteConfig } from "@/config/site"
 
 const trustIndicators = ["Open source", "Self-hosted", "Built for homelabs"]
 
+const installCommand =
+  "curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/install.sh | bash"
+
 export function HeroSection() {
+  const [copied, setCopied] = useState(false)
+
+  async function copyInstallCommand() {
+    await navigator.clipboard.writeText(installCommand)
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1600)
+  }
+
   return (
     <section className="relative overflow-hidden px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_15%,rgba(16,185,129,0.22),transparent_28%),radial-gradient(circle_at_84%_8%,rgba(56,189,248,0.18),transparent_24%),linear-gradient(180deg,rgba(10,10,10,0)_0%,rgb(10,10,10)_86%)]" />
@@ -42,7 +64,7 @@ export function HeroSection() {
               className="h-11 bg-emerald-300 px-4 text-neutral-950 hover:bg-emerald-200"
             >
               <Link href={siteConfig.links.docs} target="_blank" rel="noopener noreferrer">
-                Get Started
+                Read the Docs
                 <ArrowRight aria-hidden="true" />
               </Link>
             </Button>
@@ -61,6 +83,40 @@ export function HeroSection() {
                 View on GitHub
               </Link>
             </Button>
+          </div>
+
+          <div className="mt-6 max-w-2xl rounded-xl border border-white/10 bg-neutral-950/80 p-3 shadow-lg shadow-black/30">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                <Terminal className="size-3.5" aria-hidden="true" />
+                One-command install
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={copyInstallCommand}
+                className="h-7 gap-1.5 px-2 text-xs text-neutral-400 hover:bg-white/10 hover:text-white"
+                aria-label="Copy install command"
+              >
+                {copied ? (
+                  <>
+                    <Check className="size-3.5" aria-hidden="true" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3.5" aria-hidden="true" />
+                    Copy
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <pre className="overflow-x-auto rounded-lg bg-black/40 px-4 py-3 text-sm text-emerald-200">
+              <code>{installCommand}</code>
+            </pre>
           </div>
         </div>
 
