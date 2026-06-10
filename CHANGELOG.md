@@ -2,13 +2,13 @@
 
 ### Added
 
-- Initial release of the project with basic features and functionalities.
+* Initial release of the project with basic features and functionalities.
 
 ## [0.1.1] - 2026-06-08
 
 ### Added
 
-- Added Help page with release information, agent setup guidance, server status explanations, and activity/audit notes.
+* Added Help page with release information, agent setup guidance, server status explanations, and activity/audit notes.
 
 ## [0.1.2] - 2026-06-09
 
@@ -43,3 +43,20 @@
 * Improved the dashboard layout.
 * Improved sidebar behavior so the collapsed state is preserved after navigation.
 * Updated global font handling to use local font files.
+
+## [0.2.0] - 2026-06-10
+
+### Added
+* Added Docker Compose setup for PostgreSQL, API, and web.
+* Added Dockerfiles for the Spring Boot API and Next.js web app.
+* Added production API configuration for Docker deployments.
+* Added deployment documentation and Docker helper scripts.
+* Added automatic first-admin creation with a generated one-time password.
+
+### Changed
+* Simplified the Docker `.env` setup by deriving internal service configuration in Compose.
+* Updated web server-side API configuration to support Docker-internal API URLs.
+
+### Fixed
+* Fixed Docker web build issues for the Next.js monorepo setup.
+* Fixed the Docker web runtime error caused by importing full Auth.js config into middleware.
