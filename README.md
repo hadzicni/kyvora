@@ -122,6 +122,16 @@ docker compose up --build
 
 Open http://localhost:3000.
 
+On the first startup with a fresh database, the API creates
+`admin@kyvora.local` automatically and prints a random temporary password once
+in the API logs:
+
+```bash
+docker compose logs api
+```
+
+Log in with those credentials and change the password when prompted.
+
 The Compose setup derives the internal JDBC and API URLs from simple `.env`
 values. The web container talks to the API at `http://api:8080` inside Docker.
 See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for details.
@@ -189,10 +199,10 @@ npm run dev:agent
 * Swagger UI: http://localhost:8080/swagger-ui.html
 * OpenAPI JSON: http://localhost:8080/v3/api-docs
 
-### Local bootstrap login:
-
-* Email: admin@kyvora.local
-* Password: admin-password
+On a fresh local database, the API creates the first admin automatically and
+prints the generated temporary password in the API startup logs. The password is
+shown only once; delete and recreate the database if you need a new first-admin
+bootstrap.
 
 ## Configuration
 
@@ -212,18 +222,9 @@ KYVORA_JWT_ACCESS_TOKEN_TTL_SECONDS=900
 KYVORA_REFRESH_TOKEN_TTL_SECONDS=2592000
 ```
 
-For local development only, start the API with the `local` Spring profile to
-bootstrap an admin user when the users table is empty:
-
-```env
-SPRING_PROFILES_ACTIVE=local
-KYVORA_BOOTSTRAP_ADMIN_EMAIL=admin@kyvora.local
-KYVORA_BOOTSTRAP_ADMIN_PASSWORD=admin-password
-KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME=Kyvora Admin
-```
-
-The bootstrap defaults are development-only. Do not use a weak JWT secret or
-the default admin email/password in production.
+When the users table is empty, the API bootstraps the first admin user with the
+email `admin@kyvora.local`, a generated temporary password, and a required
+password change on first login. Existing databases are left unchanged.
 
 Local web Auth.js configuration:
 
@@ -293,7 +294,7 @@ Login example:
 ```bash
 curl -s http://localhost:8080/api/v1/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@kyvora.local","password":"admin-password"}'
+  -d '{"email":"admin@kyvora.local","password":"<temporary-password-from-api-logs>"}'
 ```
 
 Use the returned access token with protected API endpoints:
@@ -307,8 +308,8 @@ When the access token expires, call `/api/v1/auth/refresh` with the refresh
 token from the login response. Refresh tokens are rotated on use; store the
 new refresh token returned by the refresh response.
 
-The local bootstrap credentials above are development-only. Do not use the
-default admin email or password in production.
+The first admin temporary password is generated per fresh database and is shown
+only once in the API startup logs.
 
 ## Agent Enrollment
 

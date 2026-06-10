@@ -46,16 +46,13 @@ PostgreSQL settings:
 - `POSTGRES_DB` is optional and defaults to `kyvora`.
 - `POSTGRES_USER` is optional and defaults to `kyvora`.
 
-Backend secrets and bootstrap admin settings:
+Backend secrets:
 
 - `KYVORA_JWT_SECRET`
-- `KYVORA_BOOTSTRAP_ADMIN_EMAIL`
-- `KYVORA_BOOTSTRAP_ADMIN_PASSWORD`
-- `KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME`
 
 Web settings:
 
-- `AUTH_SECRET`
+- `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
 
 Do not put secrets in `NEXT_PUBLIC_*` variables.
@@ -85,6 +82,47 @@ The root `docker-compose.yml` derives:
 - `KYVORA_API_URL=http://api:8080` for server-side web calls
 
 Users should not need to edit JDBC URLs or internal service hostnames.
+
+## First Admin
+
+On the first startup with a fresh database, the API automatically creates one
+enabled admin user:
+
+```text
+Email: admin@kyvora.local
+Display name: Kyvora Admin
+```
+
+The temporary password is generated randomly, stored only as a password hash,
+and printed once in the API startup logs:
+
+```bash
+docker compose logs api
+```
+
+Look for:
+
+```text
+============================================================
+Kyvora first admin created
+Email: admin@kyvora.local
+Temporary password: <generated-password>
+This password is shown only once. Log in and change it immediately.
+============================================================
+```
+
+Log in at `http://localhost:3000/login` with those credentials. Kyvora will
+require a password change immediately. Later startups skip bootstrap when any
+user already exists, so the temporary password is not printed again.
+
+Deleting the database volume and starting from a fresh database generates a new
+first admin and a new temporary password:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+docker compose logs api
+```
 
 ## Data
 
@@ -142,9 +180,6 @@ Backend API:
 - `KYVORA_JWT_SECRET`
 - `KYVORA_JWT_ACCESS_TOKEN_TTL_SECONDS`
 - `KYVORA_REFRESH_TOKEN_TTL_SECONDS`
-- `KYVORA_BOOTSTRAP_ADMIN_EMAIL`
-- `KYVORA_BOOTSTRAP_ADMIN_PASSWORD`
-- `KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME`
 
 Web dashboard:
 
@@ -159,12 +194,9 @@ Docker users normally edit only:
 
 - `POSTGRES_PASSWORD`
 - `KYVORA_JWT_SECRET`
-- `AUTH_SECRET`
-- `KYVORA_BOOTSTRAP_ADMIN_EMAIL`
-- `KYVORA_BOOTSTRAP_ADMIN_PASSWORD`
-- `KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME`
+- `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
 
-`API_BASE_URL`, `AUTH_URL`, and `NEXTAUTH_SECRET` remain supported for local
+`API_BASE_URL`, `AUTH_URL`, and `AUTH_SECRET` remain supported for local
 compatibility, but the Docker example uses `KYVORA_API_URL`, `NEXTAUTH_URL`,
-and `AUTH_SECRET`.
+and maps `NEXTAUTH_SECRET` to `AUTH_SECRET` inside the web container.

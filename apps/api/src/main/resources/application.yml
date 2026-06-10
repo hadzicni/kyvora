@@ -33,12 +33,6 @@ kyvora:
     access-token-ttl-seconds: ${KYVORA_JWT_ACCESS_TOKEN_TTL_SECONDS:900}
     refresh-token-ttl-seconds: ${KYVORA_REFRESH_TOKEN_TTL_SECONDS:2592000}
 
-  bootstrap:
-    admin:
-      email: ${KYVORA_BOOTSTRAP_ADMIN_EMAIL:admin@kyvora.local}
-      password: ${KYVORA_BOOTSTRAP_ADMIN_PASSWORD:admin-password}
-      display-name: ${KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME:Kyvora Admin}
-
   agent:
     offline-threshold-seconds: ${KYVORA_AGENT_OFFLINE_THRESHOLD_SECONDS:90}
     offline-check-interval-seconds: ${KYVORA_AGENT_OFFLINE_CHECK_INTERVAL_SECONDS:30}

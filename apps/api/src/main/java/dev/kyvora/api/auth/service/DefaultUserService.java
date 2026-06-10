@@ -49,12 +49,6 @@ public class DefaultUserService implements UserService {
 				true));
 	}
 
-	@Override
-	@Transactional(readOnly = true)
-	public boolean hasUsers() {
-		return repository.count() > 0;
-	}
-
 	private String normalizeEmail(String email) {
 		return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
 	}

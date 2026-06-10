@@ -21,9 +21,3 @@ springdoc:
 kyvora:
   jwt:
     secret: ${KYVORA_JWT_SECRET}
-
-  bootstrap:
-    admin:
-      email: ${KYVORA_BOOTSTRAP_ADMIN_EMAIL}
-      password: ${KYVORA_BOOTSTRAP_ADMIN_PASSWORD}
-      display-name: ${KYVORA_BOOTSTRAP_ADMIN_DISPLAY_NAME}

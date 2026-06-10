@@ -12,6 +12,4 @@ public interface UserService {
 	User findEnabledById(UUID id);
 
 	User create(String email, String rawPassword, String displayName, UserRole role);
-
-	boolean hasUsers();
 }
