@@ -214,9 +214,14 @@
     "ipAddresses": "IP addresses",
     "openPorts": "Open ports",
     "services": "Services",
+    "filters": "Filters",
+    "fullscreen": "Fullscreen",
+    "resetSelection": "Reset selection",
     "noAdditionalIps": "No additional addresses reported.",
     "noOpenPorts": "No port metadata yet.",
     "noServices": "No service metadata yet.",
+    "noMatchesTitle": "No matching nodes",
+    "noMatchesDescription": "Adjust the search, status, or subnet filters to show topology nodes.",
     "listFallback": "List view"
   },
   "agents": {

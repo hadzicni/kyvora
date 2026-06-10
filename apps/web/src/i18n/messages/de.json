@@ -213,9 +213,14 @@
     "ipAddresses": "IP-Adressen",
     "openPorts": "Offene Ports",
     "services": "Services",
+    "filters": "Filter",
+    "fullscreen": "Vollbild",
+    "resetSelection": "Auswahl zurücksetzen",
     "noAdditionalIps": "Keine zusätzlichen Adressen gemeldet.",
     "noOpenPorts": "Noch keine Port-Metadaten.",
     "noServices": "Noch keine Service-Metadaten.",
+    "noMatchesTitle": "Keine passenden Knoten",
+    "noMatchesDescription": "Passe Suche, Status oder Subnetzfilter an, um Topologieknoten anzuzeigen.",
     "listFallback": "Listenansicht"
   },
   "agents": {

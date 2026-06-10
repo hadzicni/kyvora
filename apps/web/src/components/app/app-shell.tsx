@@ -453,7 +453,13 @@ function CommandPalette() {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  contentClassName,
+}: {
+  children: React.ReactNode;
+  contentClassName?: string;
+}) {
   const t = useTranslations();
   const { locale, setLocale } = useLocalePreference();
   const { data: session, status } = useSession();
@@ -595,7 +601,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
+        <main
+          className={cn(
+            "mx-auto w-full max-w-7xl px-4 py-6 md:px-6",
+            contentClassName
+          )}
+        >
           {children}
         </main>
       </div>
