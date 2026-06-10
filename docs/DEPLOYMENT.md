@@ -42,7 +42,40 @@ http://localhost:3000
 
 ## Production
 
-From the repository root:
+For the fastest production install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/install.sh | bash
+```
+
+From a cloned repository, you can also run:
+
+```bash
+bash scripts/install.sh
+```
+
+The installer creates `.env` from `.env.prod.example` if needed, generates
+production secrets for every `change-me` value, and starts the production stack.
+If `.env` already exists, the installer leaves it unchanged and continues. When
+run through `curl`, it creates `./kyvora` and downloads missing production files
+from GitHub.
+
+Optional values can be passed when creating `.env`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/install.sh | \
+  NEXTAUTH_URL=https://kyvora.example.com \
+  KYVORA_VERSION=0.2.1 \
+  KYVORA_INSTALL_REF=v0.2.1 \
+  bash
+```
+
+You can also set `KYVORA_WEB_PORT` to expose the web dashboard on a different
+host port, and `KYVORA_INSTALL_DIR` to choose a directory other than `./kyvora`.
+The installer keeps `KYVORA_VERSION` and `NEXTAUTH_URL` from `.env.prod.example`
+unless you pass environment variables.
+
+Manual setup remains supported:
 
 ```bash
 cp .env.prod.example .env

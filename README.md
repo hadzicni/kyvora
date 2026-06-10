@@ -126,8 +126,28 @@ docker compose -f docker-compose.dev.yml up --build
 For production, use the published GHCR images:
 
 ```bash
-cp .env.prod.example .env
-docker compose -f docker-compose.prod.yml up -d
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/install.sh | bash
+```
+
+From a cloned repository, you can also run:
+
+```bash
+bash scripts/install.sh
+```
+
+The installer creates `.env` from `.env.prod.example` if needed, generates
+production secrets, and starts the production stack. It leaves an existing
+`.env` unchanged. When run through `curl`, it creates `./kyvora` and downloads
+the production Compose files from GitHub.
+
+Optional production values can be passed as environment variables:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/install.sh | \
+  NEXTAUTH_URL=https://kyvora.example.com \
+  KYVORA_VERSION=0.2.1 \
+  KYVORA_INSTALL_REF=v0.2.1 \
+  bash
 ```
 
 Open http://localhost:3000.
