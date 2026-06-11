@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Activity,
@@ -12,21 +12,20 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
-  Settings,
   Server,
+  Settings,
   UserCircle,
   Users,
-} from "lucide-react";
-import Image from "next/image";
-import { useTranslations } from "next-intl";
-import { signOut, useSession } from "next-auth/react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+} from "lucide-react"
+import { signOut, useSession } from "next-auth/react"
+import { useTranslations } from "next-intl"
+import Image from "next/image"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
   Command,
   CommandDialog,
@@ -36,7 +35,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command";
+} from "@/components/ui/command"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,22 +43,21 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/ui/dropdown-menu"
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
-import { useAgents } from "@/features/agents/use-agents";
-import { useServices } from "@/features/services/use-services";
-import { useSettings } from "@/features/settings/use-settings";
-import { useServers } from "@/features/servers/use-servers";
-import { supportedLocales } from "@/i18n/config";
-import { useLocalePreference } from "@/i18n/locale-provider";
-import { getInstanceSettings } from "@/lib/api/settings";
+} from "@/components/ui/sheet"
+import { useAgents } from "@/features/agents/use-agents"
+import { useServers } from "@/features/servers/use-servers"
+import { useServices } from "@/features/services/use-services"
+import { useSettings } from "@/features/settings/use-settings"
+import { supportedLocales } from "@/i18n/config"
+import { useLocalePreference } from "@/i18n/locale-provider"
+import { getInstanceSettings } from "@/lib/api/settings"
 import {
   canAccessUserManagement,
   canReadAgents,
@@ -69,11 +67,11 @@ import {
   canReadServers,
   canReadServices,
   canReadSettings,
-} from "@/lib/permissions";
-import { cn } from "@/lib/utils";
+} from "@/lib/permissions"
+import { cn } from "@/lib/utils"
 
 type NavItem = {
-  href: string;
+  href: string
   labelKey:
     | "overview"
     | "servers"
@@ -84,10 +82,10 @@ type NavItem = {
     | "users"
     | "settings"
     | "help"
-    | "profile";
-  icon: React.ComponentType<{ className?: string }>;
-  requiredPermission?: (permissions: readonly string[] | undefined) => boolean;
-};
+    | "profile"
+  icon: React.ComponentType<{ className?: string }>
+  requiredPermission?: (permissions: readonly string[] | undefined) => boolean
+}
 
 const navItems: NavItem[] = [
   {
@@ -114,12 +112,7 @@ const navItems: NavItem[] = [
     icon: Network,
     requiredPermission: canReadNetworkMap,
   },
-  {
-    href: "/agents",
-    labelKey: "agents",
-    icon: Bot,
-    requiredPermission: canReadAgents,
-  },
+  { href: "/agents", labelKey: "agents", icon: Bot, requiredPermission: canReadAgents },
   {
     href: "/activity",
     labelKey: "activity",
@@ -138,106 +131,132 @@ const navItems: NavItem[] = [
     icon: Settings,
     requiredPermission: canReadSettings,
   },
-  {
-    href: "/help",
-    labelKey: "help",
-    icon: CircleHelp,
-  },
-  {
-    href: "/profile",
-    labelKey: "profile",
-    icon: UserCircle,
-  },
-];
+  { href: "/help", labelKey: "help", icon: CircleHelp },
+  { href: "/profile", labelKey: "profile", icon: UserCircle },
+]
 
-const SIDEBAR_COLLAPSED_STORAGE_KEY = "kyvora.sidebar.collapsed";
-let sidebarCollapsedCache: boolean | undefined;
+// ─── Bottom nav items (rendered separately below divider) ────────────────────
+const bottomNavKeys = new Set(["settings", "help", "profile"])
+
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "kyvora.sidebar.collapsed"
+let sidebarCollapsedCache: boolean | undefined
 
 function readStoredSidebarCollapsed() {
-  if (sidebarCollapsedCache !== undefined) {
-    return sidebarCollapsedCache;
-  }
-
-  if (typeof window === "undefined") {
-    return false;
-  }
-
+  if (sidebarCollapsedCache !== undefined) return sidebarCollapsedCache
+  if (typeof window === "undefined") return false
   try {
     sidebarCollapsedCache =
-      window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true";
-    return sidebarCollapsedCache;
+      window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true"
+    return sidebarCollapsedCache
   } catch {
-    return false;
+    return false
   }
 }
 
 function storeSidebarCollapsed(collapsed: boolean) {
-  sidebarCollapsedCache = collapsed;
-
-  if (typeof window === "undefined") {
-    return;
-  }
-
+  sidebarCollapsedCache = collapsed
+  if (typeof window === "undefined") return
   try {
-    window.localStorage.setItem(
-      SIDEBAR_COLLAPSED_STORAGE_KEY,
-      String(collapsed)
-    );
-  } catch {
-    // The in-memory state still keeps navigation behavior correct for this session.
-  }
+    window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(collapsed))
+  } catch {}
 }
 
 async function logout() {
-  await fetch("/api/session/logout", { method: "POST" }).catch(() => {
-    // The local session should still be cleared even if backend logout fails.
-  });
-
-  await signOut({ callbackUrl: "/login" });
+  await fetch("/api/session/logout", { method: "POST" }).catch(() => {})
+  await signOut({ callbackUrl: "/login" })
 }
 
 function getInitials(displayName?: string, email?: string) {
-  const source = displayName?.trim() || email?.trim() || "K";
-  const parts = source.split(/\s+/).filter(Boolean);
-
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-
-  return source.slice(0, 2).toUpperCase();
+  const source = displayName?.trim() || email?.trim() || "K"
+  const parts = source.split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  return source.slice(0, 2).toUpperCase()
 }
+
+// ─── Nav link ─────────────────────────────────────────────────────────────────
+
+function NavLink({
+  item,
+  collapsed,
+  pathname,
+  label,
+}: {
+  item: NavItem
+  collapsed: boolean
+  pathname: string
+  label: string
+}) {
+  const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
+  const Icon = item.icon
+
+  return (
+    <Link
+      href={item.href}
+      title={collapsed ? label : undefined}
+      className={cn(
+        "group relative flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition-all duration-150",
+        collapsed && "justify-center px-0",
+        isActive
+          ? "bg-white/10 text-white"
+          : "text-white/45 hover:bg-white/6 hover:text-white/80",
+      )}
+    >
+      {/* Active indicator bar */}
+      {isActive && (
+        <span
+          className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-violet-400"
+          aria-hidden="true"
+        />
+      )}
+      <Icon className={cn("size-4 shrink-0", isActive ? "text-violet-400" : "")} />
+      {!collapsed ? label : <span className="sr-only">{label}</span>}
+    </Link>
+  )
+}
+
+// ─── Sidebar content ──────────────────────────────────────────────────────────
 
 function SidebarContent({
   collapsed = false,
   onToggleCollapsed,
 }: {
-  collapsed?: boolean;
-  onToggleCollapsed?: () => void;
+  collapsed?: boolean
+  onToggleCollapsed?: () => void
 }) {
-  const t = useTranslations();
-  const pathname = usePathname();
-  const { data: session } = useSession();
-  const mayReadSettings = canReadSettings(session?.user.permissions);
-  const settingsQuery = useSettings(mayReadSettings);
-  const instance = getInstanceSettings(settingsQuery.data);
-  const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
-  const visibleNavItems = navItems.filter(
-    (item) =>
-      !item.requiredPermission || item.requiredPermission(session?.user.permissions)
-  );
+  const t = useTranslations()
+  const pathname = usePathname()
+  const { data: session } = useSession()
+  const mayReadSettings = canReadSettings(session?.user.permissions)
+  const settingsQuery = useSettings(mayReadSettings)
+  const instance = getInstanceSettings(settingsQuery.data)
+  const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose
   const toggleLabel = collapsed
     ? t("navigation.expandSidebar")
-    : t("navigation.collapseSidebar");
+    : t("navigation.collapseSidebar")
+
+  const visibleNavItems = navItems.filter(
+    (item) =>
+      !item.requiredPermission || item.requiredPermission(session?.user.permissions),
+  )
+  const mainItems = visibleNavItems.filter((i) => !bottomNavKeys.has(i.labelKey))
+  const secondaryItems = visibleNavItems.filter((i) => bottomNavKeys.has(i.labelKey))
 
   return (
-    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
+    <div
+      className="flex h-full flex-col"
+      style={{
+        background: "#0d0f14",
+        borderRight: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      {/* Logo row */}
       <div
         className={cn(
-          "flex h-16 items-center gap-3 px-5",
-          collapsed && "justify-center px-3"
+          "flex h-16 items-center gap-3 px-4",
+          collapsed && "justify-center px-0",
         )}
       >
-        {!collapsed ? (
+        {!collapsed && (
           <span className="flex size-8 shrink-0 items-center justify-center">
             <Image
               src="/icon.svg"
@@ -249,137 +268,159 @@ function SidebarContent({
               className="size-8"
             />
           </span>
-        ) : null}
-        {!collapsed ? (
+        )}
+        {!collapsed && (
           <div className="min-w-0 flex-1">
-            <div className="max-w-44 truncate text-sm font-semibold leading-tight">
+            <div className="truncate text-sm font-semibold leading-tight text-white">
               {instance.name}
             </div>
-            <div className="max-w-44 truncate text-xs text-muted-foreground">
-              {instance.description}
-            </div>
+            <div className="truncate text-xs text-white/35">{instance.description}</div>
           </div>
-        ) : null}
-        {onToggleCollapsed ? (
-          <Button
+        )}
+        {onToggleCollapsed && (
+          <button
             aria-label={toggleLabel}
-            className="hidden size-8 shrink-0 md:inline-flex"
-            onClick={onToggleCollapsed}
-            size="icon"
             title={toggleLabel}
-            variant="ghost"
+            onClick={onToggleCollapsed}
+            className={cn(
+              "hidden size-7 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/8 hover:text-white/70 md:flex",
+              collapsed && "ml-0",
+            )}
           >
             <ToggleIcon className="size-4" />
-          </Button>
-        ) : null}
+          </button>
+        )}
       </div>
-      <Separator />
-      <nav className={cn("flex flex-1 flex-col gap-1 p-3", collapsed && "px-2")}>
-        {visibleNavItems.map((item) => {
-          const isActive =
-            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-          const Icon = item.icon;
-          const label = t(`navigation.${item.labelKey}`);
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={collapsed ? label : undefined}
-              className={cn(
-                "flex h-10 items-center gap-3 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                collapsed && "justify-center px-0",
-                isActive &&
-                  "bg-sidebar-accent text-sidebar-accent-foreground ring-1 ring-sidebar-border"
-              )}
-            >
-              <Icon className="size-4 shrink-0" />
-              {!collapsed ? label : <span className="sr-only">{label}</span>}
-            </Link>
-          );
-        })}
+      {/* Divider */}
+      <div className="mx-3 h-px bg-white/[0.06]" />
+
+      {/* Main nav */}
+      <nav
+        className={cn("flex flex-1 flex-col gap-0.5 p-3", collapsed && "px-2")}
+        aria-label="Main"
+      >
+        {mainItems.map((item) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            collapsed={collapsed}
+            pathname={pathname}
+            label={t(`navigation.${item.labelKey}`)}
+          />
+        ))}
       </nav>
-      <div className={cn("border-t border-sidebar-border p-4", collapsed && "p-3")}>
+
+      {/* Secondary nav */}
+      {secondaryItems.length > 0 && (
+        <>
+          <div className="mx-3 h-px bg-white/[0.06]" />
+          <nav
+            className={cn("flex flex-col gap-0.5 p-3", collapsed && "px-2")}
+            aria-label="Secondary"
+          >
+            {secondaryItems.map((item) => (
+              <NavLink
+                key={item.href}
+                item={item}
+                collapsed={collapsed}
+                pathname={pathname}
+                label={t(`navigation.${item.labelKey}`)}
+              />
+            ))}
+          </nav>
+        </>
+      )}
+
+      {/* API status pill */}
+      <div className={cn("p-3", collapsed && "px-2 pb-3")}>
         <div
           className={cn(
-            "flex items-center gap-3 rounded-md bg-muted/40 p-3",
-            collapsed && "justify-center p-2"
+            "flex items-center gap-2 rounded-lg px-3 py-2",
+            collapsed && "justify-center px-2",
           )}
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.06)",
+          }}
           title={
             collapsed
               ? `${t("navigation.apiStatus")}: ${t("navigation.inventoryEndpointReady")}`
               : undefined
           }
         >
-          <Activity className="size-4 shrink-0 text-emerald-400" />
-          {!collapsed ? (
+          {/* Pulsing dot */}
+          <span className="relative flex size-2 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
+            <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
+          </span>
+          {!collapsed && (
             <div className="min-w-0">
-              <div className="text-xs font-medium">
+              <div className="text-[11px] font-medium text-white/70">
                 {t("navigation.apiStatus")}
               </div>
-              <div className="truncate text-xs text-muted-foreground">
+              <div className="truncate text-[10px] text-white/35">
                 {t("navigation.inventoryEndpointReady")}
               </div>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
-  );
+  )
 }
 
+// ─── Command palette ──────────────────────────────────────────────────────────
+
 function CommandPalette() {
-  const t = useTranslations();
-  const pathname = usePathname();
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const { data: session } = useSession();
-  const mayReadServers = canReadServers(session?.user.permissions);
-  const mayReadServices = canReadServices(session?.user.permissions);
-  const mayReadAgents = canReadAgents(session?.user.permissions);
-  const serversQuery = useServers({ q: search, size: 8 }, mayReadServers);
-  const servicesQuery = useServices({ q: search, size: 8 }, mayReadServices);
-  const agentsQuery = useAgents({ size: 50 }, mayReadAgents);
-  const servers = serversQuery.data?.content ?? [];
-  const services = servicesQuery.data?.content ?? [];
-  const agents = agentsQuery.data?.content ?? [];
+  const t = useTranslations()
+  const pathname = usePathname()
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const { data: session } = useSession()
+  const mayReadServers = canReadServers(session?.user.permissions)
+  const mayReadServices = canReadServices(session?.user.permissions)
+  const mayReadAgents = canReadAgents(session?.user.permissions)
+  const serversQuery = useServers({ q: search, size: 8 }, mayReadServers)
+  const servicesQuery = useServices({ q: search, size: 8 }, mayReadServices)
+  const agentsQuery = useAgents({ size: 50 }, mayReadAgents)
+  const servers = serversQuery.data?.content ?? []
+  const services = servicesQuery.data?.content ?? []
+  const agents = agentsQuery.data?.content ?? []
   const visibleNavItems = navItems.filter(
     (item) =>
-      !item.requiredPermission || item.requiredPermission(session?.user.permissions)
-  );
+      !item.requiredPermission || item.requiredPermission(session?.user.permissions),
+  )
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setOpen((value) => !value);
+        event.preventDefault()
+        setOpen((v) => !v)
       }
     }
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
 
   function navigateTo(href: string) {
-    setOpen(false);
-    router.push(href);
+    setOpen(false)
+    router.push(href)
   }
 
   return (
     <>
-      <Button
-        className="hidden h-9 w-full max-w-xs justify-start gap-2 rounded-md border bg-muted/30 px-3 text-sm font-normal text-muted-foreground xl:flex"
+      <button
         onClick={() => setOpen(true)}
-        variant="ghost"
+        className="hidden h-8 w-full max-w-xs items-center gap-2 rounded-lg border border-white/8 bg-white/[0.04] px-3 text-sm text-white/35 transition-colors hover:border-white/14 hover:bg-white/[0.07] hover:text-white/60 xl:flex"
       >
-        <Search className="size-4" />
+        <Search className="size-3.5 shrink-0" />
         <span className="flex-1 text-left">{t("forms.search")}</span>
-        <span className="rounded border bg-background px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
-          Ctrl K
-        </span>
-      </Button>
+        <kbd className="rounded border border-white/10 bg-white/6 px-1.5 py-0.5 text-[10px] leading-none text-white/30">
+          ⌘K
+        </kbd>
+      </button>
       <CommandDialog
         className="sm:max-w-xl"
         description={`${t("navigation.navigation")}, ${t("navigation.servers")}, ${t("navigation.services")}, ${t("navigation.agents")}`}
@@ -404,11 +445,10 @@ function CommandPalette() {
             </CommandEmpty>
             <CommandGroup heading={t("navigation.navigation")}>
               {visibleNavItems.map((item) => {
-                const Icon = item.icon;
-                const label = t(`navigation.${item.labelKey}`);
+                const Icon = item.icon
+                const label = t(`navigation.${item.labelKey}`)
                 const isActive =
-                  item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-
+                  item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
                 return (
                   <CommandItem
                     data-checked={isActive}
@@ -419,145 +459,146 @@ function CommandPalette() {
                     <Icon className="size-4" />
                     <span>{label}</span>
                   </CommandItem>
-                );
+                )
               })}
             </CommandGroup>
-            {mayReadServers ? (
+            {mayReadServers && (
               <>
                 <CommandSeparator />
                 <CommandGroup heading={t("navigation.servers")}>
-              {serversQuery.isLoading ? (
-                <CommandItem disabled value="loading servers">
-                  {t("servers.loadingInventory")}
-                </CommandItem>
-              ) : null}
-              {serversQuery.isError ? (
-                <CommandItem disabled value="unable to load servers">
-                  {t("servers.errorTitle")}
-                </CommandItem>
-              ) : null}
-              {servers.map((server) => (
-                <CommandItem
-                  key={server.id}
-                  onSelect={() =>
-                    navigateTo(`/servers/${encodeURIComponent(server.id)}`)
-                  }
-                  value={`${server.name} ${server.hostname} ${server.ipAddress} ${server.operatingSystem} ${server.tags.join(" ")}`}
-                >
-                  <Server className="size-4" />
-                  <span className="min-w-0 flex-1 truncate">{server.name}</span>
-                  <span className="truncate font-mono text-xs text-muted-foreground">
-                    {server.hostname}
-                  </span>
-                </CommandItem>
-              ))}
+                  {serversQuery.isLoading && (
+                    <CommandItem disabled value="loading servers">
+                      {t("servers.loadingInventory")}
+                    </CommandItem>
+                  )}
+                  {serversQuery.isError && (
+                    <CommandItem disabled value="unable to load servers">
+                      {t("servers.errorTitle")}
+                    </CommandItem>
+                  )}
+                  {servers.map((server) => (
+                    <CommandItem
+                      key={server.id}
+                      onSelect={() =>
+                        navigateTo(`/servers/${encodeURIComponent(server.id)}`)
+                      }
+                      value={`${server.name} ${server.hostname} ${server.ipAddress} ${server.operatingSystem} ${server.tags.join(" ")}`}
+                    >
+                      <Server className="size-4" />
+                      <span className="min-w-0 flex-1 truncate">{server.name}</span>
+                      <span className="truncate font-mono text-xs text-muted-foreground">
+                        {server.hostname}
+                      </span>
+                    </CommandItem>
+                  ))}
                 </CommandGroup>
               </>
-            ) : null}
-            {mayReadServices ? (
+            )}
+            {mayReadServices && (
               <>
                 <CommandSeparator />
                 <CommandGroup heading={t("navigation.services")}>
-              {servicesQuery.isLoading ? (
-                <CommandItem disabled value="loading services">
-                  Loading services
-                </CommandItem>
-              ) : null}
-              {servicesQuery.isError ? (
-                <CommandItem disabled value="unable to load services">
-                  Unable to load services
-                </CommandItem>
-              ) : null}
-              {services.map((service) => (
-                <CommandItem
-                  key={service.id}
-                  onSelect={() => navigateTo("/services")}
-                  value={`${service.name} ${service.url ?? ""} ${service.hostname ?? ""} ${service.ipAddress ?? ""} ${service.category} ${service.tags.join(" ")}`}
-                >
-                  <Cable className="size-4" />
-                  <span className="min-w-0 flex-1 truncate">{service.name}</span>
-                  <span className="truncate font-mono text-xs text-muted-foreground">
-                    {service.hostname ?? service.url ?? service.protocol}
-                  </span>
-                </CommandItem>
-              ))}
+                  {servicesQuery.isLoading && (
+                    <CommandItem disabled value="loading services">
+                      Loading services
+                    </CommandItem>
+                  )}
+                  {servicesQuery.isError && (
+                    <CommandItem disabled value="unable to load services">
+                      Unable to load services
+                    </CommandItem>
+                  )}
+                  {services.map((service) => (
+                    <CommandItem
+                      key={service.id}
+                      onSelect={() => navigateTo("/services")}
+                      value={`${service.name} ${service.url ?? ""} ${service.hostname ?? ""} ${service.ipAddress ?? ""} ${service.category} ${service.tags.join(" ")}`}
+                    >
+                      <Cable className="size-4" />
+                      <span className="min-w-0 flex-1 truncate">{service.name}</span>
+                      <span className="truncate font-mono text-xs text-muted-foreground">
+                        {service.hostname ?? service.url ?? service.protocol}
+                      </span>
+                    </CommandItem>
+                  ))}
                 </CommandGroup>
               </>
-            ) : null}
-            {mayReadAgents ? (
+            )}
+            {mayReadAgents && (
               <>
                 <CommandSeparator />
                 <CommandGroup heading={t("navigation.agents")}>
-              {agentsQuery.isLoading ? (
-                <CommandItem disabled value="loading agents">
-                  {t("agents.loadingAgents")}
-                </CommandItem>
-              ) : null}
-              {agentsQuery.isError ? (
-                <CommandItem disabled value="unable to load agents">
-                  {t("agents.errorTitle")}
-                </CommandItem>
-              ) : null}
-              {agents.map((agent) => (
-                <CommandItem
-                  key={agent.id}
-                  onSelect={() => navigateTo("/agents")}
-                  value={`${agent.name} ${agent.hostname} ${agent.version} ${agent.status}`}
-                >
-                  <Bot className="size-4" />
-                  <span className="min-w-0 flex-1 truncate">{agent.name}</span>
-                  <span className="truncate font-mono text-xs text-muted-foreground">
-                    {agent.hostname}
-                  </span>
-                </CommandItem>
-              ))}
+                  {agentsQuery.isLoading && (
+                    <CommandItem disabled value="loading agents">
+                      {t("agents.loadingAgents")}
+                    </CommandItem>
+                  )}
+                  {agentsQuery.isError && (
+                    <CommandItem disabled value="unable to load agents">
+                      {t("agents.errorTitle")}
+                    </CommandItem>
+                  )}
+                  {agents.map((agent) => (
+                    <CommandItem
+                      key={agent.id}
+                      onSelect={() => navigateTo("/agents")}
+                      value={`${agent.name} ${agent.hostname} ${agent.version} ${agent.status}`}
+                    >
+                      <Bot className="size-4" />
+                      <span className="min-w-0 flex-1 truncate">{agent.name}</span>
+                      <span className="truncate font-mono text-xs text-muted-foreground">
+                        {agent.hostname}
+                      </span>
+                    </CommandItem>
+                  ))}
                 </CommandGroup>
               </>
-            ) : null}
+            )}
           </CommandList>
         </Command>
       </CommandDialog>
     </>
-  );
+  )
 }
+
+// ─── App shell ────────────────────────────────────────────────────────────────
 
 export function AppShell({
   children,
   contentClassName,
 }: {
-  children: React.ReactNode;
-  contentClassName?: string;
+  children: React.ReactNode
+  contentClassName?: string
 }) {
-  const t = useTranslations();
-  const { locale, setLocale } = useLocalePreference();
-  const { data: session, status } = useSession();
-  const mayReadSettings = canReadSettings(session?.user.permissions);
-  const settingsQuery = useSettings(mayReadSettings);
-  const instance = getInstanceSettings(settingsQuery.data);
-  const initials = getInitials(session?.user.displayName, session?.user.email);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    readStoredSidebarCollapsed
-  );
+  const t = useTranslations()
+  const { locale, setLocale } = useLocalePreference()
+  const { data: session, status } = useSession()
+  const mayReadSettings = canReadSettings(session?.user.permissions)
+  const settingsQuery = useSettings(mayReadSettings)
+  const instance = getInstanceSettings(settingsQuery.data)
+  const initials = getInitials(session?.user.displayName, session?.user.email)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readStoredSidebarCollapsed)
 
   function toggleSidebarCollapsed() {
     setSidebarCollapsed((current) => {
-      const nextCollapsed = !current;
-      storeSidebarCollapsed(nextCollapsed);
-      return nextCollapsed;
-    });
+      const next = !current
+      storeSidebarCollapsed(next)
+      return next
+    })
   }
 
   function handleLogout() {
-    toast.info(t("auth.signingOut"));
-    void logout();
+    toast.info(t("auth.signingOut"))
+    void logout()
   }
 
   return (
     <div className="min-h-screen bg-background">
+      {/* ── Desktop sidebar ── */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-20 hidden border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:block",
-          sidebarCollapsed ? "w-16" : "w-64"
+          "fixed inset-y-0 left-0 z-20 hidden transition-[width] duration-200 md:block",
+          sidebarCollapsed ? "w-16" : "w-64",
         )}
       >
         <SidebarContent
@@ -565,13 +606,25 @@ export function AppShell({
           onToggleCollapsed={toggleSidebarCollapsed}
         />
       </aside>
+
+      {/* ── Main area ── */}
       <div
         className={cn(
           "min-h-screen transition-[padding-left] duration-200",
-          sidebarCollapsed ? "md:pl-16" : "md:pl-64"
+          sidebarCollapsed ? "md:pl-16" : "md:pl-64",
         )}
       >
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur md:px-6">
+        {/* ── Header ── */}
+        <header
+          className="sticky top-0 z-10 flex h-14 items-center gap-3 px-4 md:px-5"
+          style={{
+            background: "rgba(9, 10, 15, 0.85)",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+          }}
+        >
+          {/* Mobile hamburger */}
           <Sheet>
             <SheetTrigger asChild>
               <Button
@@ -583,7 +636,7 @@ export function AppShell({
                 <Menu className="size-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent className="w-72 p-0" side="left">
+            <SheetContent className="w-64 p-0" side="left">
               <SheetHeader className="sr-only">
                 <SheetTitle>{t("navigation.navigation")}</SheetTitle>
               </SheetHeader>
@@ -591,18 +644,22 @@ export function AppShell({
             </SheetContent>
           </Sheet>
 
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium">{instance.name}</div>
-            <div className="truncate text-xs text-muted-foreground">
-              {instance.description}
+          {/* Instance name — mobile only */}
+          <div className="min-w-0 flex-1 md:hidden">
+            <div className="truncate text-sm font-semibold text-white">
+              {instance.name}
             </div>
           </div>
 
+          <div className="hidden flex-1 md:block" />
+
+          {/* Command palette */}
           <CommandPalette />
 
+          {/* User info + avatar */}
           <div className="ml-auto flex items-center gap-3">
-            <div className="hidden min-w-0 text-right text-xs text-muted-foreground sm:block">
-              <div className="truncate font-medium text-foreground">
+            <div className="hidden min-w-0 text-right text-xs text-white/40 sm:block">
+              <div className="truncate font-medium text-white/80">
                 {status === "loading"
                   ? t("common.loadingSession")
                   : session?.user.displayName ||
@@ -611,29 +668,33 @@ export function AppShell({
               </div>
               <div className="truncate">
                 {session?.user.permissions?.length
-                  ? t("permissions.summary", {
-                      count: session.user.permissions.length,
-                    })
+                  ? t("permissions.summary", { count: session.user.permissions.length })
                   : t("common.authenticated")}
               </div>
             </div>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button aria-label="Open user menu" size="icon" variant="outline">
-                  <Avatar size="sm">
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
-                </Button>
+                <button
+                  aria-label="Open user menu"
+                  className="flex size-8 items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090a0f]"
+                  style={{
+                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                    boxShadow: "0 0 12px rgba(99,102,241,0.35)",
+                  }}
+                >
+                  <span className="text-[11px] font-semibold text-white">{initials}</span>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel>
-                  <div className="min-w-0 space-y-1">
+                  <div className="min-w-0 space-y-0.5">
                     <div className="truncate text-sm font-medium text-foreground">
                       {session?.user.displayName ||
                         session?.user.email ||
                         t("common.signedIn")}
                     </div>
-                    <div className="truncate text-xs">
+                    <div className="truncate text-xs text-muted-foreground">
                       {session?.user.email || t("common.authenticatedSession")}
                     </div>
                   </div>
@@ -650,9 +711,7 @@ export function AppShell({
                     <span className="w-4 text-xs">
                       {locale === supportedLocale ? "✓" : ""}
                     </span>
-                    {supportedLocale === "en"
-                      ? t("common.english")
-                      : t("common.german")}
+                    {supportedLocale === "en" ? t("common.english") : t("common.german")}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
@@ -671,15 +730,14 @@ export function AppShell({
             </DropdownMenu>
           </div>
         </header>
+
+        {/* ── Page content ── */}
         <main
-          className={cn(
-            "mx-auto w-full max-w-7xl px-4 py-6 md:px-6",
-            contentClassName
-          )}
+          className={cn("mx-auto w-full max-w-7xl px-4 py-6 md:px-6", contentClassName)}
         >
           {children}
         </main>
       </div>
     </div>
-  );
+  )
 }
