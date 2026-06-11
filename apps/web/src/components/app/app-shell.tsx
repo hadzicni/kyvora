@@ -293,7 +293,12 @@ function SidebarContent({
       </div>
 
       {/* Divider */}
-      <div className="mx-3 h-px bg-white/[0.06]" />
+      <div className="mx-3 h-px bg-white/6" />
+
+      {/* Search bar */}
+      <div className={cn("px-3 pt-3", collapsed && "px-2")}>
+        <CommandPalette collapsed={collapsed} />
+      </div>
 
       {/* Main nav */}
       <nav
@@ -314,7 +319,7 @@ function SidebarContent({
       {/* Secondary nav */}
       {secondaryItems.length > 0 && (
         <>
-          <div className="mx-3 h-px bg-white/[0.06]" />
+          <div className="mx-3 h-px bg-white/6" />
           <nav
             className={cn("flex flex-col gap-0.5 p-3", collapsed && "px-2")}
             aria-label="Secondary"
@@ -337,7 +342,7 @@ function SidebarContent({
 
 // ─── Command palette ──────────────────────────────────────────────────────────
 
-function CommandPalette() {
+function CommandPalette({ collapsed = false }: { collapsed?: boolean }) {
   const t = useTranslations()
   const pathname = usePathname()
   const router = useRouter()
@@ -378,13 +383,24 @@ function CommandPalette() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="hidden h-8 w-full max-w-xs items-center gap-2 rounded-lg border border-white/8 bg-white/[0.04] px-3 text-sm text-white/35 transition-colors hover:border-white/14 hover:bg-white/[0.07] hover:text-white/60 xl:flex"
+        title={collapsed ? t("forms.search") : undefined}
+        className={cn(
+          "flex h-9 w-full items-center gap-3 rounded-lg px-3 text-sm transition-all duration-150",
+          collapsed && "justify-center px-0",
+          "text-white/45 hover:bg-white/6 hover:text-white/80",
+        )}
       >
-        <Search className="size-3.5 shrink-0" />
-        <span className="flex-1 text-left">{t("forms.search")}</span>
-        <kbd className="rounded border border-white/10 bg-white/6 px-1.5 py-0.5 text-[10px] leading-none text-white/30">
-          ⌘K
-        </kbd>
+        <Search className="size-4 shrink-0" />
+        {!collapsed ? (
+          <>
+            <span className="flex-1 text-left">{t("forms.search")}</span>
+            <kbd className="rounded border border-white/10 bg-white/6 px-1.5 py-0.5 text-[10px] leading-none text-white/30">
+              ⌘K
+            </kbd>
+          </>
+        ) : (
+          <span className="sr-only">{t("forms.search")}</span>
+        )}
       </button>
       <CommandDialog
         className="sm:max-w-xl"
@@ -617,9 +633,6 @@ export function AppShell({
           </div>
 
           <div className="hidden flex-1 md:block" />
-
-          {/* Command palette */}
-          <CommandPalette />
 
           {/* User info + avatar */}
           <div className="ml-auto flex items-center gap-3">
