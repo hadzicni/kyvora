@@ -9,7 +9,6 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useLocalePreference } from "@/i18n/locale-provider"
 
 // ─── Particle canvas ──────────────────────────────────────────────────────────
 
@@ -91,7 +90,6 @@ function ParticleCanvas() {
 
 export default function LoginPage() {
   const t = useTranslations()
-  const { locale, setLocale } = useLocalePreference()
   const router = useRouter()
   const { data: session, status } = useSession()
 

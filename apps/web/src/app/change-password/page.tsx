@@ -14,7 +14,6 @@ import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useChangePassword } from "@/features/users/use-users";
-import { useLocalePreference } from "@/i18n/locale-provider";
 import { UsersApiError } from "@/lib/api/users";
 
 // ─── Particle canvas (identical to login) ─────────────────────────────────────
@@ -92,7 +91,6 @@ function errorMessage(error: unknown) {
 
 export default function ForcedPasswordChangePage() {
   const t = useTranslations();
-  const { locale, setLocale } = useLocalePreference();
   const router = useRouter();
   const { data: session, update } = useSession();
   const changePasswordMutation = useChangePassword();
