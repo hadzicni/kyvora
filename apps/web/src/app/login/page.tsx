@@ -9,7 +9,6 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { supportedLocales } from "@/i18n/config"
 import { useLocalePreference } from "@/i18n/locale-provider"
 
 // ─── Particle canvas ──────────────────────────────────────────────────────────
@@ -231,33 +230,6 @@ export default function LoginPage() {
           <p className="mt-1.5 text-sm leading-6 text-white/38">
             {t("auth.loginSubtitle")}
           </p>
-        </div>
-
-        {/* ── Language toggle ── */}
-        <div className="mb-6 flex justify-center">
-          <div
-            className="flex gap-0.5 rounded-lg p-0.5"
-            style={{
-              background: "rgba(255,255,255,0.045)",
-              border: "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-            {supportedLocales.map((supportedLocale) => (
-              <button
-                key={supportedLocale}
-                onClick={() => setLocale(supportedLocale)}
-                type="button"
-                className={[
-                  "rounded-[5px] px-3.5 py-1 text-xs font-medium transition-all duration-150",
-                  locale === supportedLocale
-                    ? "bg-white text-zinc-950 shadow-sm"
-                    : "text-white/40 hover:text-white/70",
-                ].join(" ")}
-              >
-                {supportedLocale === "en" ? t("common.english") : t("common.german")}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* ── Form ── */}
