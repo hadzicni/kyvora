@@ -112,3 +112,13 @@
 
 - Resolved various web and API warnings.
 - Removed the obsolete backend status indicator from the application shell.
+
+## [0.4.1] - 2026-06-11
+
+### Changed
+
+- Modernized the change password page.
+
+### Fixed
+
+- Removed the language picker from the login page.
