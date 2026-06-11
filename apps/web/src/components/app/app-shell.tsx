@@ -331,41 +331,6 @@ function SidebarContent({
           </nav>
         </>
       )}
-
-      {/* API status pill */}
-      <div className={cn("p-3", collapsed && "px-2 pb-3")}>
-        <div
-          className={cn(
-            "flex items-center gap-2 rounded-lg px-3 py-2",
-            collapsed && "justify-center px-2",
-          )}
-          style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
-          title={
-            collapsed
-              ? `${t("navigation.apiStatus")}: ${t("navigation.inventoryEndpointReady")}`
-              : undefined
-          }
-        >
-          {/* Pulsing dot */}
-          <span className="relative flex size-2 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
-          </span>
-          {!collapsed && (
-            <div className="min-w-0">
-              <div className="text-[11px] font-medium text-white/70">
-                {t("navigation.apiStatus")}
-              </div>
-              <div className="truncate text-[10px] text-white/35">
-                {t("navigation.inventoryEndpointReady")}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   )
 }
