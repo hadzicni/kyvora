@@ -6,7 +6,6 @@ import {
   Cable,
   CircleHelp,
   LayoutDashboard,
-  LogOut,
   Menu,
   Network,
   PanelLeftClose,
@@ -17,14 +16,14 @@ import {
   UserCircle,
   Users,
 } from "lucide-react"
-import { signOut, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { useTranslations } from "next-intl"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
 
+import { UserMenu } from "@/components/app/user-menu"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -37,14 +36,6 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -55,8 +46,6 @@ import { useAgents } from "@/features/agents/use-agents"
 import { useServers } from "@/features/servers/use-servers"
 import { useServices } from "@/features/services/use-services"
 import { useSettings } from "@/features/settings/use-settings"
-import { supportedLocales } from "@/i18n/config"
-import { useLocalePreference } from "@/i18n/locale-provider"
 import { getInstanceSettings } from "@/lib/api/settings"
 import {
   canAccessUserManagement,
@@ -161,18 +150,6 @@ function storeSidebarCollapsed(collapsed: boolean) {
   } catch {}
 }
 
-async function logout() {
-  await fetch("/api/session/logout", { method: "POST" }).catch(() => {})
-  await signOut({ callbackUrl: "/login" })
-}
-
-function getInitials(displayName?: string, email?: string) {
-  const source = displayName?.trim() || email?.trim() || "K"
-  const parts = source.split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-  return source.slice(0, 2).toUpperCase()
-}
-
 // ─── Nav link ─────────────────────────────────────────────────────────────────
 
 function NavLink({
@@ -219,9 +196,11 @@ function NavLink({
 function SidebarContent({
   collapsed = false,
   onToggleCollapsed,
+  userMenu,
 }: {
   collapsed?: boolean
   onToggleCollapsed?: () => void
+  userMenu?: React.ReactNode
 }) {
   const t = useTranslations()
   const pathname = usePathname()
@@ -334,6 +313,12 @@ function SidebarContent({
               />
             ))}
           </nav>
+        </>
+      )}
+      {userMenu && (
+        <>
+          <div className="mx-3 h-px bg-white/6" />
+          <div className={cn("p-3", collapsed && "px-2")}>{userMenu}</div>
         </>
       )}
     </div>
@@ -552,12 +537,10 @@ export function AppShell({
   contentClassName?: string
 }) {
   const t = useTranslations()
-  const { locale, setLocale } = useLocalePreference()
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
   const mayReadSettings = canReadSettings(session?.user.permissions)
   const settingsQuery = useSettings(mayReadSettings)
   const instance = getInstanceSettings(settingsQuery.data)
-  const initials = getInitials(session?.user.displayName, session?.user.email)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readStoredSidebarCollapsed)
 
   function toggleSidebarCollapsed() {
@@ -566,11 +549,6 @@ export function AppShell({
       storeSidebarCollapsed(next)
       return next
     })
-  }
-
-  function handleLogout() {
-    toast.info(t("auth.signingOut"))
-    void logout()
   }
 
   return (
@@ -585,6 +563,7 @@ export function AppShell({
         <SidebarContent
           collapsed={sidebarCollapsed}
           onToggleCollapsed={toggleSidebarCollapsed}
+          userMenu={<UserMenu collapsed={sidebarCollapsed} />}
         />
       </aside>
 
@@ -621,7 +600,7 @@ export function AppShell({
               <SheetHeader className="sr-only">
                 <SheetTitle>{t("navigation.navigation")}</SheetTitle>
               </SheetHeader>
-              <SidebarContent />
+              <SidebarContent userMenu={<UserMenu />} />
             </SheetContent>
           </Sheet>
 
@@ -633,80 +612,6 @@ export function AppShell({
           </div>
 
           <div className="hidden flex-1 md:block" />
-
-          {/* User info + avatar */}
-          <div className="ml-auto flex items-center gap-3">
-            <div className="hidden min-w-0 text-right text-xs text-white/40 sm:block">
-              <div className="truncate font-medium text-white/80">
-                {status === "loading"
-                  ? t("common.loadingSession")
-                  : session?.user.displayName ||
-                    session?.user.email ||
-                    t("common.signedIn")}
-              </div>
-              <div className="truncate">
-                {session?.user.permissions?.length
-                  ? t("permissions.summary", { count: session.user.permissions.length })
-                  : t("common.authenticated")}
-              </div>
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  aria-label="Open user menu"
-                  className="flex size-8 items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090a0f]"
-                  style={{
-                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                    boxShadow: "0 0 12px rgba(99,102,241,0.35)",
-                  }}
-                >
-                  <span className="text-[11px] font-semibold text-white">{initials}</span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel>
-                  <div className="min-w-0 space-y-0.5">
-                    <div className="truncate text-sm font-medium text-foreground">
-                      {session?.user.displayName ||
-                        session?.user.email ||
-                        t("common.signedIn")}
-                    </div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {session?.user.email || t("common.authenticatedSession")}
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-                  {t("common.language")}
-                </DropdownMenuLabel>
-                {supportedLocales.map((supportedLocale) => (
-                  <DropdownMenuItem
-                    key={supportedLocale}
-                    onClick={() => setLocale(supportedLocale)}
-                  >
-                    <span className="w-4 text-xs">
-                      {locale === supportedLocale ? "✓" : ""}
-                    </span>
-                    {supportedLocale === "en" ? t("common.english") : t("common.german")}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/profile">
-                    <UserCircle className="size-4" />
-                    {t("navigation.profile")}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} variant="destructive">
-                  <LogOut className="size-4" />
-                  {t("auth.signOut")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </header>
 
         {/* ── Page content ── */}
