@@ -93,3 +93,22 @@
 - Fixed Docker Compose and environment file naming issues in the installer.
 - Fixed network map node positioning within subnet groups.
 - Fixed handling of generated `next-env.d.ts` files in the web application repository.
+
+## [0.4.0] - 2026-06-11
+
+### Added
+
+- Added permission-based access control, replacing role-based authorization.
+- Added sidebar-integrated search bar and command palette.
+- Added a dedicated user menu component.
+
+### Changed
+
+- Modernized the login page, dashboard, and application shell.
+- Improved navigation and overall user experience.
+- Refactored the authorization system to use granular permissions.
+
+### Fixed
+
+- Resolved various web and API warnings.
+- Removed the obsolete backend status indicator from the application shell.
