@@ -30,7 +30,7 @@ public class NetworkMapController {
 	}
 
 	@GetMapping
-	@PreAuthorize("@permissions.canViewOperationalData(authentication)")
+	@PreAuthorize("@permissions.canReadNetworkMap(authentication)")
 	@Operation(
 			summary = "Get the network map",
 			description = "Returns a frontend-friendly topology snapshot. This endpoint does not perform network scanning.",

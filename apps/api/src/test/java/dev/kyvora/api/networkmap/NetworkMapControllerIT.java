@@ -65,7 +65,7 @@ class NetworkMapControllerIT {
 		createServer("App 01", "app01.example.com", "10.0.0.11", ServerStatus.ONLINE, List.of("prod", "app"));
 		createServer("DB 01", "db01.example.com", "10.0.0.12", ServerStatus.OFFLINE, List.of("prod", "db"));
 
-		mockMvc.perform(get("/api/v1/network-map").with(user("viewer").roles("VIEWER")))
+		mockMvc.perform(get("/api/v1/network-map").with(user("viewer").authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_DASHBOARD_READ"), new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_AUDIT_LOG_READ"), new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_NETWORK_MAP_READ"), new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_SERVER_READ"), new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_SERVICE_READ"), new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_AGENT_READ"))))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.subnets", hasSize(1)))
 				.andExpect(jsonPath("$.subnets[0].cidr", is("10.0.0.0/24")))

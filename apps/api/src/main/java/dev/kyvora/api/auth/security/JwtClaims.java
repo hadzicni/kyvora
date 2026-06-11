@@ -1,14 +1,15 @@
 package dev.kyvora.api.auth.security;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
-import dev.kyvora.api.auth.entity.UserRole;
+import dev.kyvora.api.auth.entity.UserPermission;
 
 public record JwtClaims(
 		UUID userId,
 		String email,
 		String displayName,
-		UserRole role,
+		Set<UserPermission> permissions,
 		Instant expiresAt) {
 }

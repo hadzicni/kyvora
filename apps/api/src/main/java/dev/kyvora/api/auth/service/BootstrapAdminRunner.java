@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import dev.kyvora.api.auth.entity.User;
-import dev.kyvora.api.auth.entity.UserRole;
+import dev.kyvora.api.auth.entity.PermissionPreset;
 import dev.kyvora.api.auth.repository.UserRepository;
 
 @Component
@@ -44,7 +44,7 @@ public class BootstrapAdminRunner implements CommandLineRunner {
 				FIRST_ADMIN_EMAIL,
 				passwordEncoder.encode(temporaryPassword),
 				FIRST_ADMIN_DISPLAY_NAME,
-				UserRole.ADMIN,
+				PermissionPreset.ADMIN.permissions(),
 				true);
 		admin.setMustChangePassword(true);
 		userRepository.save(admin);

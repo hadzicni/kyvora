@@ -48,8 +48,11 @@ import type { Agent, AgentEnrollment } from "@/lib/api/agents";
 import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
 import {
   canDeleteServers,
-  canManageAgents,
-  canManageServers,
+  canCancelAgentEnrollments,
+  canDecommissionAgents,
+  canEnrollAgents,
+  canRotateAgentTokens,
+  canUpdateServers,
 } from "@/lib/permissions";
 import { formatBytes, formatUptime } from "@/features/servers/format";
 import { cn } from "@/lib/utils";
@@ -362,13 +365,18 @@ function HostFactsSection({ server }: { server: ServerInventoryItem }) {
 }
 
 function AgentSection({
+  actions,
   agent,
-  canManage,
   isLoading,
   server,
 }: {
+  actions: {
+    canCancelEnrollment: boolean;
+    canDecommission: boolean;
+    canEnroll: boolean;
+    canRotateToken: boolean;
+  };
   agent?: Agent;
-  canManage: boolean;
   isLoading: boolean;
   server: ServerInventoryItem;
 }) {
@@ -485,7 +493,7 @@ function AgentSection({
                 ) : null}
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
-                {canManage && agent.status !== "DECOMMISSIONED" ? (
+                {actions.canRotateToken && agent.status !== "DECOMMISSIONED" ? (
                   <Button
                     type="button"
                     variant={pending ? "default" : "outline"}
@@ -500,7 +508,7 @@ function AgentSection({
                     {pending ? "Generate setup token" : "Rotate token"}
                   </Button>
                 ) : null}
-                {canManage && pending ? (
+                {actions.canCancelEnrollment && pending ? (
                   <Button
                     type="button"
                     variant="outline"
@@ -513,7 +521,7 @@ function AgentSection({
                     Cancel enrollment
                   </Button>
                 ) : null}
-                {canManage && agent && canDecommission ? (
+                {actions.canDecommission && agent && canDecommission ? (
                   <DecommissionAgentDialog agent={agent} />
                 ) : null}
                 <Button asChild type="button" variant="outline">
@@ -544,7 +552,7 @@ function AgentSection({
               Install a Kyvora Agent on this server to report live status and
               heartbeats.
             </p>
-            {canManage ? (
+            {actions.canEnroll ? (
               <RegisterAgentDialog
                 initialServer={server}
                 triggerLabel="Enroll Agent"
@@ -601,15 +609,20 @@ function AgentSection({
 
 function ServerDetails({
   canDelete,
-  canManageAgents,
-  canManageServers,
+  agentActions,
+  canUpdateServer,
   linkedAgent,
   linkedAgentLoading,
   server,
 }: {
   canDelete: boolean;
-  canManageAgents: boolean;
-  canManageServers: boolean;
+  agentActions: {
+    canCancelEnrollment: boolean;
+    canDecommission: boolean;
+    canEnroll: boolean;
+    canRotateToken: boolean;
+  };
+  canUpdateServer: boolean;
   linkedAgent?: Agent;
   linkedAgentLoading: boolean;
   server: ServerInventoryItem;
@@ -637,7 +650,7 @@ function ServerDetails({
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              {canManageServers ? (
+              {canUpdateServer ? (
                 <EditServerDialog server={server} triggerLabel="Edit" />
               ) : null}
               {canDelete ? (
@@ -706,8 +719,8 @@ function ServerDetails({
         </DetailSection>
 
         <AgentSection
+          actions={agentActions}
           agent={linkedAgent}
-          canManage={canManageAgents}
           isLoading={linkedAgentLoading}
           server={server}
         />
@@ -805,9 +818,14 @@ export default function ServerDetailPage() {
         ) : null}
         {serverQuery.isSuccess ? (
           <ServerDetails
-            canDelete={canDeleteServers(session?.user.role)}
-            canManageAgents={canManageAgents(session?.user.role)}
-            canManageServers={canManageServers(session?.user.role)}
+            canDelete={canDeleteServers(session?.user.permissions)}
+            agentActions={{
+              canCancelEnrollment: canCancelAgentEnrollments(session?.user.permissions),
+              canDecommission: canDecommissionAgents(session?.user.permissions),
+              canEnroll: canEnrollAgents(session?.user.permissions),
+              canRotateToken: canRotateAgentTokens(session?.user.permissions),
+            }}
+            canUpdateServer={canUpdateServers(session?.user.permissions)}
             linkedAgent={linkedAgent}
             linkedAgentLoading={agentsQuery.isLoading}
             server={serverQuery.data}

@@ -92,7 +92,6 @@
     "tags": "Tags",
     "operatingSystem": "Operating system",
     "status": "Status",
-    "role": "Role",
     "displayName": "Display name",
     "temporaryPassword": "Temporary password",
     "newTemporaryPassword": "New temporary password",
@@ -109,10 +108,55 @@
     "PENDING": "Pending",
     "DECOMMISSIONED": "Decommissioned"
   },
-  "roles": {
+  "permissionPresets": {
     "ADMIN": "Admin",
     "OPERATOR": "Operator",
     "VIEWER": "Viewer"
+  },
+  "permissions": {
+    "title": "Permissions",
+    "preset": "Permission preset",
+    "choosePreset": "Choose a preset",
+    "summary": "{count} permissions",
+    "selected": "{count} of {total} selected",
+    "presetHint": "Presets only fill the permission list.",
+    "groupSelected": "{count} of {total} enabled",
+    "selectAll": "Select all",
+    "clearGroup": "Clear",
+    "groups": {
+      "overview": "Overview",
+      "users": "Users",
+      "settings": "Settings",
+      "servers": "Servers",
+      "services": "Services",
+      "agents": "Agents"
+    },
+    "items": {
+      "DASHBOARD_READ": "View dashboard",
+      "AUDIT_LOG_READ": "View audit logs",
+      "NETWORK_MAP_READ": "View network map",
+      "USER_READ": "View users",
+      "USER_CREATE": "Create users",
+      "USER_UPDATE": "Update users and permissions",
+      "USER_DISABLE": "Disable users",
+      "USER_ENABLE": "Enable users",
+      "USER_PASSWORD_RESET": "Reset user passwords",
+      "SETTINGS_READ": "View settings",
+      "SETTINGS_UPDATE": "Update settings",
+      "SERVER_READ": "View servers",
+      "SERVER_CREATE": "Create servers",
+      "SERVER_UPDATE": "Update servers",
+      "SERVER_DELETE": "Delete servers",
+      "SERVICE_READ": "View services",
+      "SERVICE_CREATE": "Create services",
+      "SERVICE_UPDATE": "Update services",
+      "SERVICE_DELETE": "Delete services",
+      "AGENT_READ": "View agents",
+      "AGENT_ENROLL": "Enroll agents",
+      "AGENT_CANCEL_ENROLLMENT": "Cancel agent enrollments",
+      "AGENT_ROTATE_TOKEN": "Rotate agent tokens",
+      "AGENT_DECOMMISSION": "Decommission agents"
+    }
   },
   "dashboard": {
     "liveOverview": "Live overview",
@@ -268,7 +312,7 @@
   },
   "users": {
     "title": "Users",
-    "subtitle": "Manage local Kyvora accounts and access roles.",
+    "subtitle": "Manage local Kyvora accounts and assigned permissions.",
     "accounts": "{count} accounts",
     "createUser": "Create user",
     "accountsTitle": "Accounts",
@@ -289,14 +333,14 @@
     "enabledCanSignIn": "Enabled users can sign in with their current password.",
     "resetPassword": "Reset password",
     "resetPasswordDescription": "User will be required to change this password on next login.",
-    "lastAdmin": "Cannot disable the last enabled admin",
+    "lastUserManager": "Cannot disable the last enabled user manager",
     "createdToast": "User created",
     "updatedToast": "User updated",
     "disabledToast": "User disabled",
     "enabledToast": "User enabled",
     "passwordResetToast": "Password reset",
     "operationFailed": "User operation failed",
-    "notAuthorized": "User management requires an ADMIN account."
+    "notAuthorized": "User management requires a user administration permission."
   },
   "settings": {
     "title": "Settings",
@@ -326,7 +370,7 @@
     "saveFailed": "Settings could not be saved",
     "unavailableTitle": "Settings are unavailable",
     "unavailableDescription": "The API did not return system settings. Retry after checking the backend connection.",
-    "notAuthorized": "Settings management requires an ADMIN account."
+    "notAuthorized": "Settings requires the View settings permission."
   },
   "help": {
     "title": "Help",

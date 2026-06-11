@@ -28,10 +28,12 @@ import { EditServiceDialog } from "./edit-service-dialog";
 import { formatCategory } from "./service-form";
 
 export function ServiceTable({
+  canDelete = true,
   canEdit = true,
   services,
   servers,
 }: {
+  canDelete?: boolean;
   canEdit?: boolean;
   services: ManagedServiceItem[];
   servers: ServerInventoryItem[];
@@ -122,12 +124,8 @@ export function ServiceTable({
                 onKeyDown={(event) => event.stopPropagation()}
               >
                 <div className="flex justify-end gap-1">
-                  {canEdit ? (
-                    <>
-                      <EditServiceDialog service={service} servers={servers} />
-                      <DeleteServiceDialog service={service} />
-                    </>
-                  ) : null}
+                  {canEdit ? <EditServiceDialog service={service} servers={servers} /> : null}
+                  {canDelete ? <DeleteServiceDialog service={service} /> : null}
                 </div>
               </TableCell>
             </TableRow>

@@ -50,12 +50,22 @@ import {
   formatUptime,
 } from "@/features/servers/format";
 import { AgentApiError, type Agent, type AgentEnrollment } from "@/lib/api/agents";
-import { canManageAgents } from "@/lib/permissions";
+import {
+  canCancelAgentEnrollments,
+  canDecommissionAgents,
+  canRotateAgentTokens,
+} from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 function getParamId(id: string | string[] | undefined) {
   return Array.isArray(id) ? id[0] : (id ?? "");
 }
+
+type AgentActionPermissions = {
+  canCancelEnrollment: boolean;
+  canDecommission: boolean;
+  canRotateToken: boolean;
+};
 
 function Field({
   label,
@@ -247,13 +257,13 @@ function HostFactsSection({ agent }: { agent: Agent }) {
 }
 
 function AgentActions({
+  actions,
   agent,
-  canManage,
   onCancelEnrollment,
   onRotateToken,
 }: {
+  actions: AgentActionPermissions;
   agent: Agent;
-  canManage: boolean;
   onCancelEnrollment: () => void;
   onRotateToken: () => void;
 }) {
@@ -262,30 +272,30 @@ function AgentActions({
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row">
-      {canManage && agent.status !== "DECOMMISSIONED" ? (
+      {actions.canRotateToken && agent.status !== "DECOMMISSIONED" ? (
         <Button type="button" variant={pending ? "default" : "outline"} onClick={onRotateToken}>
           <Terminal className="size-4" />
           {pending ? "Generate setup token" : "Rotate token"}
         </Button>
       ) : null}
-      {canManage && pending ? (
+      {actions.canCancelEnrollment && pending ? (
         <Button type="button" variant="outline" onClick={onCancelEnrollment}>
           Cancel enrollment
         </Button>
       ) : null}
-      {canManage && connected ? <DecommissionAgentDialog agent={agent} /> : null}
+      {actions.canDecommission && connected ? <DecommissionAgentDialog agent={agent} /> : null}
     </div>
   );
 }
 
 function TokenLifecycleSection({
+  actions,
   agent,
-  canManage,
   onCancelEnrollment,
   onRotateToken,
 }: {
+  actions: AgentActionPermissions;
   agent: Agent;
-  canManage: boolean;
   onCancelEnrollment: () => void;
   onRotateToken: () => void;
 }) {
@@ -322,8 +332,8 @@ function TokenLifecycleSection({
           <Field label="Token revoked" value={formatDateTime(agent.tokenRevokedAt)} muted={!agent.tokenRevokedAt} />
         </dl>
         <AgentActions
+          actions={actions}
           agent={agent}
-          canManage={canManage}
           onCancelEnrollment={onCancelEnrollment}
           onRotateToken={onRotateToken}
         />
@@ -332,7 +342,7 @@ function TokenLifecycleSection({
   );
 }
 
-function AgentDetail({ agent, canManage }: { agent: Agent; canManage: boolean }) {
+function AgentDetail({ actions, agent }: { actions: AgentActionPermissions; agent: Agent }) {
   const router = useRouter();
   const [enrollment, setEnrollment] = useState<AgentEnrollment | null>(null);
   const [agentConnected, setAgentConnected] = useState(false);
@@ -426,8 +436,8 @@ function AgentDetail({ agent, canManage }: { agent: Agent; canManage: boolean })
                 </CardDescription>
               </div>
               <AgentActions
+                actions={actions}
                 agent={agent}
-                canManage={canManage}
                 onCancelEnrollment={() => void cancelEnrollment()}
                 onRotateToken={() => void rotateToken()}
               />
@@ -485,8 +495,8 @@ function AgentDetail({ agent, canManage }: { agent: Agent; canManage: boolean })
           <HostFactsSection agent={agent} />
 
           <TokenLifecycleSection
+            actions={actions}
             agent={agent}
-            canManage={canManage}
             onCancelEnrollment={() => void cancelEnrollment()}
             onRotateToken={() => void rotateToken()}
           />
@@ -657,8 +667,12 @@ export default function AgentDetailPage() {
         ) : null}
         {agentQuery.isSuccess ? (
           <AgentDetail
+            actions={{
+              canCancelEnrollment: canCancelAgentEnrollments(session?.user.permissions),
+              canDecommission: canDecommissionAgents(session?.user.permissions),
+              canRotateToken: canRotateAgentTokens(session?.user.permissions),
+            }}
             agent={agentQuery.data}
-            canManage={canManageAgents(session?.user.role)}
           />
         ) : null}
       </div>

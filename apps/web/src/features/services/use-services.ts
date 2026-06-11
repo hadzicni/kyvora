@@ -20,10 +20,11 @@ import {
   type UpdateServiceInput,
 } from "@/lib/api/services";
 
-export function useServices(params: ListServicesParams = {}) {
+export function useServices(params: ListServicesParams = {}, enabled = true) {
   return useQuery({
     queryKey: serviceKeys.list(params),
     queryFn: () => listServices(params),
+    enabled,
     placeholderData: keepPreviousData,
   });
 }

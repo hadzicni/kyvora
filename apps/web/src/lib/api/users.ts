@@ -1,12 +1,12 @@
-import type { UserRole } from "@/lib/permissions";
+import type { PermissionPreset, UserPermission } from "@/lib/permissions";
 
-export type { UserRole };
+export type { PermissionPreset, UserPermission };
 
 export type UserAccount = {
   id: string;
   email: string;
   displayName: string;
-  role: UserRole;
+  permissions: UserPermission[];
   enabled: boolean;
   mustChangePassword: boolean;
   lastLoginAt: string | null;
@@ -17,14 +17,16 @@ export type UserAccount = {
 export type CreateUserInput = {
   email: string;
   displayName: string;
-  role: UserRole;
+  permissionPreset?: PermissionPreset;
+  permissions: UserPermission[];
   temporaryPassword: string;
   mustChangePassword: boolean;
 };
 
 export type UpdateUserInput = {
   displayName: string;
-  role: UserRole;
+  permissionPreset?: PermissionPreset;
+  permissions: UserPermission[];
 };
 
 export type ResetUserPasswordInput = {

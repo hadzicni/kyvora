@@ -1,6 +1,7 @@
 package dev.kyvora.api.auth.service;
 
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import dev.kyvora.api.auth.entity.User;
-import dev.kyvora.api.auth.entity.UserRole;
+import dev.kyvora.api.auth.entity.UserPermission;
 import dev.kyvora.api.auth.repository.UserRepository;
 
 @Service
@@ -40,12 +41,12 @@ public class DefaultUserService implements UserService {
 	}
 
 	@Override
-	public User create(String email, String rawPassword, String displayName, UserRole role) {
+	public User create(String email, String rawPassword, String displayName, Set<UserPermission> permissions) {
 		return repository.save(new User(
 				normalizeEmail(email),
 				passwordEncoder.encode(rawPassword),
 				displayName,
-				role,
+				permissions,
 				true));
 	}
 

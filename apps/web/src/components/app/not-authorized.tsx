@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 
 export function NotAuthorized({
-  description = "Your role does not allow access to this area.",
+  description = "Your permissions do not allow access to this area.",
 }: {
   description?: string;
 }) {

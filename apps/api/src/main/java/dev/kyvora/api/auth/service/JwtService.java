@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.Set;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -18,7 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.kyvora.api.auth.entity.User;
-import dev.kyvora.api.auth.entity.UserRole;
+import dev.kyvora.api.auth.entity.UserPermission;
 import dev.kyvora.api.auth.security.JwtClaims;
 
 @Service
@@ -58,7 +60,7 @@ public class JwtService {
 		payload.put("sub", user.getEmail());
 		payload.put("uid", user.getId().toString());
 		payload.put("name", user.getDisplayName());
-		payload.put("role", user.getRole().name());
+		payload.put("permissions", user.getPermissions().stream().map(Enum::name).sorted().toList());
 		payload.put("iat", now.getEpochSecond());
 		payload.put("exp", expiresAt.getEpochSecond());
 
@@ -87,7 +89,7 @@ public class JwtService {
 				UUID.fromString(stringClaim(payload, "uid")),
 				stringClaim(payload, "sub"),
 				stringClaim(payload, "name"),
-				UserRole.valueOf(stringClaim(payload, "role")),
+				permissionsClaim(payload, "permissions"),
 				expiresAt);
 	}
 
@@ -136,6 +138,23 @@ public class JwtService {
 		Object value = payload.get(name);
 		if (value instanceof Number numberValue) {
 			return numberValue;
+		}
+		throw new InvalidTokenException("Invalid or expired token");
+	}
+
+	private Set<UserPermission> permissionsClaim(Map<String, Object> payload, String name) {
+		Object value = payload.get(name);
+		if (value instanceof Collection<?> permissions) {
+			try {
+				return permissions.stream()
+						.filter(String.class::isInstance)
+						.map(String.class::cast)
+						.map(UserPermission::valueOf)
+						.collect(java.util.stream.Collectors.toUnmodifiableSet());
+			}
+			catch (IllegalArgumentException exception) {
+				throw new InvalidTokenException("Invalid or expired token");
+			}
 		}
 		throw new InvalidTokenException("Invalid or expired token");
 	}

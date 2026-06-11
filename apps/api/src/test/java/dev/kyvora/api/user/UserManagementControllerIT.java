@@ -1,6 +1,7 @@
 package dev.kyvora.api.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,7 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.kyvora.api.auditlog.entity.AuditEventType;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
 import dev.kyvora.api.auth.entity.User;
-import dev.kyvora.api.auth.entity.UserRole;
+import dev.kyvora.api.auth.entity.PermissionPreset;
 import dev.kyvora.api.auth.repository.RefreshTokenRepository;
 import dev.kyvora.api.auth.repository.UserRepository;
 import dev.kyvora.api.auth.service.UserService;
@@ -76,9 +77,9 @@ class UserManagementControllerIT {
 		auditLogRepository.deleteAll();
 		refreshTokenRepository.deleteAll();
 		userRepository.deleteAll();
-		admin = userService.create(ADMIN_EMAIL, PASSWORD, "Admin User", UserRole.ADMIN);
-		viewer = userService.create(VIEWER_EMAIL, PASSWORD, "Viewer User", UserRole.VIEWER);
-		operator = userService.create(OPERATOR_EMAIL, PASSWORD, "Operator User", UserRole.OPERATOR);
+		admin = userService.create(ADMIN_EMAIL, PASSWORD, "Admin User", PermissionPreset.ADMIN.permissions());
+		viewer = userService.create(VIEWER_EMAIL, PASSWORD, "Viewer User", PermissionPreset.VIEWER.permissions());
+		operator = userService.create(OPERATOR_EMAIL, PASSWORD, "Operator User", PermissionPreset.OPERATOR.permissions());
 		auditLogRepository.deleteAll();
 		refreshTokenRepository.deleteAll();
 	}
@@ -117,7 +118,7 @@ class UserManagementControllerIT {
 				.content(objectMapper.writeValueAsString(createPayload("new@example.com", "New User", "VIEWER", "temporary-password"))))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.email", is("new@example.com")))
-				.andExpect(jsonPath("$.role", is("VIEWER")))
+				.andExpect(jsonPath("$.permissions", hasItem("DASHBOARD_READ")))
 				.andExpect(jsonPath("$.mustChangePassword", is(true)))
 				.andExpect(jsonPath("$.passwordHash").doesNotExist());
 
@@ -130,7 +131,7 @@ class UserManagementControllerIT {
 
 		assertThat(auditLogRepository.findAll())
 				.anyMatch(log -> log.getEventType() == AuditEventType.USER_CREATED
-						&& "VIEWER".equals(log.getMetadata().get("role"))
+						&& ((java.util.List<?>) log.getMetadata().get("permissions")).contains("DASHBOARD_READ")
 						&& Boolean.TRUE.equals(log.getMetadata().get("mustChangePassword"))
 						&& !log.getMetadata().containsKey("password"));
 	}
@@ -257,11 +258,11 @@ class UserManagementControllerIT {
 	}
 
 	@Test
-	void cannotDisableLastEnabledAdmin() throws Exception {
+	void cannotDisableLastEnabledUserManager() throws Exception {
 		mockMvc.perform(post("/api/v1/users/{id}/disable", admin.getId())
 				.header(HttpHeaders.AUTHORIZATION, bearer(adminToken())))
 				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.message", is("Cannot disable the last enabled admin")));
+				.andExpect(jsonPath("$.message", is("Cannot disable the last enabled user manager")));
 	}
 
 	@Test
@@ -271,9 +272,10 @@ class UserManagementControllerIT {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(Map.of(
 						"displayName", "Updated User",
-						"role", "OPERATOR"))))
+						"permissionPreset", "OPERATOR"))))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.displayName", is("Updated User")))
+				.andExpect(jsonPath("$.permissions", hasItem("SERVER_UPDATE")))
 				.andExpect(jsonPath("$.passwordHash").doesNotExist());
 
 		assertThat(auditLogRepository.findAll())
@@ -312,11 +314,11 @@ class UserManagementControllerIT {
 		return Map.of("email", email, "password", password);
 	}
 
-	private Map<String, Object> createPayload(String email, String displayName, String role, String temporaryPassword) {
+	private Map<String, Object> createPayload(String email, String displayName, String preset, String temporaryPassword) {
 		Map<String, Object> payload = new LinkedHashMap<>();
 		payload.put("email", email);
 		payload.put("displayName", displayName);
-		payload.put("role", role);
+		payload.put("permissionPreset", preset);
 		payload.put("temporaryPassword", temporaryPassword);
 		return payload;
 	}

@@ -38,7 +38,7 @@ import { ServerStatusBadge } from "@/features/servers/server-status-badge";
 import { ServerTable } from "@/features/servers/server-table";
 import { useServers } from "@/features/servers/use-servers";
 import { getInstanceSettings } from "@/lib/api/settings";
-import { canDeleteServers, canManageServers } from "@/lib/permissions";
+import { canDeleteServers, canUpdateServers } from "@/lib/permissions";
 
 function StatCard({
   accentClassName,
@@ -375,8 +375,8 @@ export default function DashboardOverviewPage() {
               ) : null}
               {serversQuery.isSuccess && servers.length > 0 ? (
                 <ServerTable
-                  canDelete={canDeleteServers(session?.user.role)}
-                  canEdit={canManageServers(session?.user.role)}
+                  canDelete={canDeleteServers(session?.user.permissions)}
+                  canEdit={canUpdateServers(session?.user.permissions)}
                   servers={servers.slice(0, 5)}
                 />
               ) : null}

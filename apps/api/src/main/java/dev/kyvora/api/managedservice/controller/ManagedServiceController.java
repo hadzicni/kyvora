@@ -48,7 +48,7 @@ public class ManagedServiceController {
 	}
 
 	@GetMapping
-	@PreAuthorize("@permissions.canViewOperationalData(authentication)")
+	@PreAuthorize("@permissions.canReadServices(authentication)")
 	@Operation(summary = "List service entries")
 	public ResponseEntity<ManagedServicePageResponse> findAll(
 			@Parameter(description = "Case-insensitive search across service fields.")
@@ -74,14 +74,14 @@ public class ManagedServiceController {
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("@permissions.canViewOperationalData(authentication)")
+	@PreAuthorize("@permissions.canReadServices(authentication)")
 	@Operation(summary = "Get a service entry")
 	public ResponseEntity<ManagedServiceResponse> findById(@PathVariable UUID id) {
 		return ResponseEntity.ok(service.findById(id));
 	}
 
 	@PostMapping
-	@PreAuthorize("@permissions.canManageServices(authentication)")
+	@PreAuthorize("@permissions.canCreateServices(authentication)")
 	@Operation(summary = "Create a service entry")
 	public ResponseEntity<ManagedServiceResponse> create(@Valid @RequestBody ManagedServiceCreateRequest request) {
 		ManagedServiceResponse created = service.create(request);
@@ -89,7 +89,7 @@ public class ManagedServiceController {
 	}
 
 	@PutMapping("/{id}")
-	@PreAuthorize("@permissions.canManageServices(authentication)")
+	@PreAuthorize("@permissions.canUpdateServices(authentication)")
 	@Operation(summary = "Update a service entry")
 	public ResponseEntity<ManagedServiceResponse> update(
 			@PathVariable UUID id,
@@ -98,7 +98,7 @@ public class ManagedServiceController {
 	}
 
 	@DeleteMapping("/{id}")
-	@PreAuthorize("@permissions.canManageServices(authentication)")
+	@PreAuthorize("@permissions.canDeleteServices(authentication)")
 	@Operation(summary = "Delete a service entry")
 	public ResponseEntity<Void> delete(@PathVariable UUID id) {
 		service.delete(id);

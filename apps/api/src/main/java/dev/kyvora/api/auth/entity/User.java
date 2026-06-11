@@ -1,15 +1,21 @@
 package dev.kyvora.api.auth.entity;
 
 import java.time.Instant;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -31,9 +37,11 @@ public class User {
 	@Column(name = "display_name", nullable = false, length = 120)
 	private String displayName;
 
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "user_permissions", joinColumns = @JoinColumn(name = "user_id"))
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 32)
-	private UserRole role;
+	@Column(name = "permission", nullable = false, length = 64)
+	private Set<UserPermission> permissions = EnumSet.noneOf(UserPermission.class);
 
 	@Column(nullable = false)
 	private boolean enabled = true;
@@ -53,11 +61,11 @@ public class User {
 	protected User() {
 	}
 
-	public User(String email, String passwordHash, String displayName, UserRole role, boolean enabled) {
+	public User(String email, String passwordHash, String displayName, Set<UserPermission> permissions, boolean enabled) {
 		this.email = email;
 		this.passwordHash = passwordHash;
 		this.displayName = displayName;
-		this.role = role;
+		setPermissions(permissions);
 		this.enabled = enabled;
 	}
 
@@ -93,8 +101,8 @@ public class User {
 		return displayName;
 	}
 
-	public UserRole getRole() {
-		return role;
+	public Set<UserPermission> getPermissions() {
+		return Set.copyOf(permissions);
 	}
 
 	public boolean isEnabled() {
@@ -125,8 +133,10 @@ public class User {
 		this.displayName = displayName;
 	}
 
-	public void setRole(UserRole role) {
-		this.role = role;
+	public void setPermissions(Set<UserPermission> permissions) {
+		this.permissions = permissions == null || permissions.isEmpty()
+				? EnumSet.noneOf(UserPermission.class)
+				: EnumSet.copyOf(permissions);
 	}
 
 	public void setEnabled(boolean enabled) {

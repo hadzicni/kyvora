@@ -13,7 +13,7 @@ public class UserMapper {
 				user.getId(),
 				user.getEmail(),
 				user.getDisplayName(),
-				user.getRole(),
+				user.getPermissions(),
 				user.isMustChangePassword());
 	}
 }

@@ -7,7 +7,7 @@ declare module "next-auth" {
       id: string;
       email: string;
       displayName: string;
-      role: string;
+      permissions: string[];
       mustChangePassword: boolean;
     };
     error?: string;
@@ -17,7 +17,7 @@ declare module "next-auth" {
     id: string;
     email: string;
     displayName: string;
-    role: string;
+    permissions: string[];
     mustChangePassword: boolean;
     accessToken: string;
     refreshToken: string;
@@ -34,7 +34,7 @@ declare module "next-auth/jwt" {
       id: string;
       email: string;
       displayName: string;
-      role: string;
+      permissions: string[];
       mustChangePassword: boolean;
     };
     error?: string;

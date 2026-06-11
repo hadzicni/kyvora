@@ -39,7 +39,11 @@ import { ServerTable } from "@/features/servers/server-table";
 import { ServerTableSkeleton } from "@/features/servers/server-table-skeleton";
 import { useServers } from "@/features/servers/use-servers";
 import type { ServerStatus } from "@/lib/api/servers";
-import { canDeleteServers, canManageServers } from "@/lib/permissions";
+import {
+  canCreateServers,
+  canDeleteServers,
+  canUpdateServers,
+} from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 const serverStatuses = ["ONLINE", "OFFLINE", "UNKNOWN"] as const;
@@ -49,8 +53,9 @@ export default function ServerInventoryPage() {
   const t = useTranslations();
   const locale = useLocale();
   const { data: session } = useSession();
-  const mayManageServers = canManageServers(session?.user.role);
-  const mayDeleteServers = canDeleteServers(session?.user.role);
+  const mayCreateServers = canCreateServers(session?.user.permissions);
+  const mayUpdateServers = canUpdateServers(session?.user.permissions);
+  const mayDeleteServers = canDeleteServers(session?.user.permissions);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<ServerStatus | "ALL">("ALL");
   const [tags, setTags] = useState("");
@@ -97,7 +102,7 @@ export default function ServerInventoryPage() {
           title={t("servers.title")}
           actions={
             <>
-              {mayManageServers ? <CreateServerDialog /> : null}
+            {mayCreateServers ? <CreateServerDialog /> : null}
             <Button
               disabled={serversQuery.isFetching}
               onClick={() => void serversQuery.refetch()}
@@ -223,7 +228,7 @@ export default function ServerInventoryPage() {
             {serversQuery.isSuccess && servers.length > 0 ? (
               <ServerTable
                 canDelete={mayDeleteServers}
-                canEdit={mayManageServers}
+                canEdit={mayUpdateServers}
                 servers={servers}
               />
             ) : null}

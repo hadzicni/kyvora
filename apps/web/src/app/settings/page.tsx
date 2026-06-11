@@ -39,7 +39,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSettings, useUpdateSettings } from "@/features/settings/use-settings";
 import { getStatus, statusKeys } from "@/lib/api/status";
 import { SettingsApiError, type SettingsResponse } from "@/lib/api/settings";
-import { canManageSettings } from "@/lib/permissions";
+import { canReadSettings, canUpdateSettings } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 
@@ -226,13 +226,14 @@ function InfoRow({
 export default function SettingsPage() {
   const t = useTranslations();
   const { data: session, status: sessionStatus } = useSession();
-  const mayManageSettings = canManageSettings(session?.user.role);
-  const settingsQuery = useSettings(mayManageSettings);
+  const mayReadSettings = canReadSettings(session?.user.permissions);
+  const mayUpdateSettings = canUpdateSettings(session?.user.permissions);
+  const settingsQuery = useSettings(mayReadSettings);
   const updateSettingsMutation = useUpdateSettings();
   const statusQuery = useQuery({
     queryKey: statusKeys.status,
     queryFn: getStatus,
-    enabled: mayManageSettings,
+    enabled: mayReadSettings,
   });
 
   const form = useForm<SettingsFormValues, unknown, SettingsFormPayload>({
@@ -297,7 +298,7 @@ export default function SettingsPage() {
   const saving = isSubmitting || updateSettingsMutation.isPending;
   const status = statusQuery.data;
 
-  if (sessionStatus !== "loading" && !mayManageSettings) {
+  if (sessionStatus !== "loading" && !mayReadSettings) {
     return (
       <AppShell>
         <NotAuthorized description={t("settings.notAuthorized")} />
@@ -350,6 +351,7 @@ export default function SettingsPage() {
                     <Input
                       id="instance-name"
                       aria-invalid={Boolean(errors.instanceName)}
+                      disabled={!mayUpdateSettings || saving}
                       {...register("instanceName")}
                     />
                     {fieldError(errors.instanceName)}
@@ -360,6 +362,7 @@ export default function SettingsPage() {
                       id="instance-description"
                       aria-invalid={Boolean(errors.instanceDescription)}
                       className="min-h-24"
+                      disabled={!mayUpdateSettings || saving}
                       {...register("instanceDescription")}
                     />
                     {fieldError(errors.instanceDescription)}
@@ -389,6 +392,7 @@ export default function SettingsPage() {
                       max={86400}
                       type="number"
                       aria-invalid={Boolean(errors.offlineThresholdSeconds)}
+                      disabled={!mayUpdateSettings || saving}
                       {...register("offlineThresholdSeconds", {
                         valueAsNumber: true,
                       })}
@@ -406,6 +410,7 @@ export default function SettingsPage() {
                       max={3600}
                       type="number"
                       aria-invalid={Boolean(errors.offlineCheckIntervalSeconds)}
+                      disabled={!mayUpdateSettings || saving}
                       {...register("offlineCheckIntervalSeconds", {
                         valueAsNumber: true,
                       })}
@@ -437,7 +442,7 @@ export default function SettingsPage() {
                     </div>
                     <Toggle
                       checked={showDevHints}
-                      disabled={saving}
+                      disabled={!mayUpdateSettings || saving}
                       onCheckedChange={(checked) =>
                         setValue("showDevHints", checked, {
                           shouldDirty: true,
@@ -512,7 +517,7 @@ export default function SettingsPage() {
                       {t("settings.saveDescription")}
                     </div>
                   </div>
-                  <Button disabled={!isDirty || saving} type="submit">
+                  <Button disabled={!mayUpdateSettings || !isDirty || saving} type="submit">
                     {saving ? (
                       <Loader2 className="size-4 animate-spin" />
                     ) : isDirty ? (

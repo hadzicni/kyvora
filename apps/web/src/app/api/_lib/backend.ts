@@ -15,7 +15,7 @@ type BackendUser = {
   id: string;
   email: string;
   displayName: string;
-  role: string;
+  permissions: string[];
   mustChangePassword: boolean;
 };
 

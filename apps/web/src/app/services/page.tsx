@@ -39,7 +39,11 @@ import { ServiceTableSkeleton } from "@/features/services/service-table-skeleton
 import { useServices } from "@/features/services/use-services";
 import { useServers } from "@/features/servers/use-servers";
 import type { ServiceCategory } from "@/lib/api/services";
-import { canManageServices } from "@/lib/permissions";
+import {
+  canCreateServices,
+  canDeleteServices,
+  canUpdateServices,
+} from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 const pageSizeOptions = [10, 20, 50] as const;
@@ -50,7 +54,9 @@ const sortOptions = [
 
 export default function ServicesPage() {
   const { data: session } = useSession();
-  const mayManageServices = canManageServices(session?.user.role);
+  const mayCreateServices = canCreateServices(session?.user.permissions);
+  const mayUpdateServices = canUpdateServices(session?.user.permissions);
+  const mayDeleteServices = canDeleteServices(session?.user.permissions);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<ServiceCategory | "ALL">("ALL");
   const [page, setPage] = useState(0);
@@ -98,7 +104,7 @@ export default function ServicesPage() {
           title="Services"
           actions={
             <>
-              {mayManageServices ? (
+              {mayCreateServices ? (
                 <CreateServiceDialog servers={servers} />
               ) : null}
               <Button
@@ -242,7 +248,8 @@ export default function ServicesPage() {
             ) : null}
             {servicesQuery.isSuccess && services.length > 0 ? (
               <ServiceTable
-                canEdit={mayManageServices}
+                canDelete={mayDeleteServices}
+                canEdit={mayUpdateServices}
                 services={services}
                 servers={servers}
               />

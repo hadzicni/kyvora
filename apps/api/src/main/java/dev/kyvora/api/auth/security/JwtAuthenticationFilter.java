@@ -52,12 +52,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 					user.getId(),
 					user.getEmail(),
 					user.getDisplayName(),
-					user.getRole(),
+					user.getPermissions(),
 					user.isMustChangePassword());
 			UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
 					principal,
 					null,
-					List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+					user.getPermissions().stream()
+							.map(permission -> new SimpleGrantedAuthority(permission.authority()))
+							.toList());
 			SecurityContextHolder.getContext().setAuthentication(authentication);
 			if (user.isMustChangePassword() && !isPasswordChangeAllowed(request)) {
 				writePasswordChangeRequired(response, request);

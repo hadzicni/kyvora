@@ -52,7 +52,7 @@ public class ServerInventoryController {
 	}
 
 	@GetMapping
-	@PreAuthorize("@permissions.canViewOperationalData(authentication)")
+	@PreAuthorize("@permissions.canReadServers(authentication)")
 	@Operation(
 			summary = "List server inventory entries",
 			description = "Returns a paginated list of servers, optionally filtered by inventory fields.",
@@ -84,7 +84,7 @@ public class ServerInventoryController {
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("@permissions.canViewOperationalData(authentication)")
+	@PreAuthorize("@permissions.canReadServers(authentication)")
 	@Operation(
 			summary = "Get a server inventory entry",
 			responses = {
@@ -101,7 +101,7 @@ public class ServerInventoryController {
 	}
 
 	@PostMapping
-	@PreAuthorize("@permissions.canManageServers(authentication)")
+	@PreAuthorize("@permissions.canCreateServers(authentication)")
 	@Operation(
 			summary = "Create a server inventory entry",
 			responses = {
@@ -119,7 +119,7 @@ public class ServerInventoryController {
 	}
 
 	@PutMapping("/{id}")
-	@PreAuthorize("@permissions.canManageServers(authentication)")
+	@PreAuthorize("@permissions.canUpdateServers(authentication)")
 	@Operation(
 			summary = "Update a server inventory entry",
 			responses = {

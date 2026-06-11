@@ -91,7 +91,6 @@
     "tags": "Tags",
     "operatingSystem": "Betriebssystem",
     "status": "Status",
-    "role": "Rolle",
     "displayName": "Anzeigename",
     "temporaryPassword": "Temporäres Passwort",
     "newTemporaryPassword": "Neues temporäres Passwort",
@@ -108,10 +107,55 @@
     "PENDING": "Ausstehend",
     "DECOMMISSIONED": "Außer Betrieb"
   },
-  "roles": {
+  "permissionPresets": {
     "ADMIN": "Admin",
     "OPERATOR": "Operator",
     "VIEWER": "Betrachter"
+  },
+  "permissions": {
+    "title": "Berechtigungen",
+    "preset": "Berechtigungsvorlage",
+    "choosePreset": "Vorlage auswählen",
+    "summary": "{count} Berechtigungen",
+    "selected": "{count} von {total} ausgewählt",
+    "presetHint": "Vorlagen füllen nur die Berechtigungsliste.",
+    "groupSelected": "{count} von {total} aktiv",
+    "selectAll": "Alle auswählen",
+    "clearGroup": "Leeren",
+    "groups": {
+      "overview": "Übersicht",
+      "users": "Benutzer",
+      "settings": "Einstellungen",
+      "servers": "Server",
+      "services": "Dienste",
+      "agents": "Agents"
+    },
+    "items": {
+      "DASHBOARD_READ": "Dashboard anzeigen",
+      "AUDIT_LOG_READ": "Audit-Logs anzeigen",
+      "NETWORK_MAP_READ": "Netzwerkkarte anzeigen",
+      "USER_READ": "Benutzer anzeigen",
+      "USER_CREATE": "Benutzer erstellen",
+      "USER_UPDATE": "Benutzer und Berechtigungen aktualisieren",
+      "USER_DISABLE": "Benutzer deaktivieren",
+      "USER_ENABLE": "Benutzer aktivieren",
+      "USER_PASSWORD_RESET": "Benutzerpasswörter zurücksetzen",
+      "SETTINGS_READ": "Einstellungen anzeigen",
+      "SETTINGS_UPDATE": "Einstellungen aktualisieren",
+      "SERVER_READ": "Server anzeigen",
+      "SERVER_CREATE": "Server erstellen",
+      "SERVER_UPDATE": "Server aktualisieren",
+      "SERVER_DELETE": "Server löschen",
+      "SERVICE_READ": "Dienste anzeigen",
+      "SERVICE_CREATE": "Dienste erstellen",
+      "SERVICE_UPDATE": "Dienste aktualisieren",
+      "SERVICE_DELETE": "Dienste löschen",
+      "AGENT_READ": "Agents anzeigen",
+      "AGENT_ENROLL": "Agents registrieren",
+      "AGENT_CANCEL_ENROLLMENT": "Agent-Registrierungen abbrechen",
+      "AGENT_ROTATE_TOKEN": "Agent-Tokens rotieren",
+      "AGENT_DECOMMISSION": "Agents außer Betrieb nehmen"
+    }
   },
   "dashboard": {
     "liveOverview": "Live-Übersicht",
@@ -267,7 +311,7 @@
   },
   "users": {
     "title": "Benutzer",
-    "subtitle": "Lokale Kyvora-Konten und Zugriffsrollen verwalten.",
+    "subtitle": "Lokale Kyvora-Konten und zugewiesene Berechtigungen verwalten.",
     "accounts": "{count} Konten",
     "createUser": "Benutzer erstellen",
     "accountsTitle": "Konten",
@@ -288,14 +332,14 @@
     "enabledCanSignIn": "Aktivierte Benutzer können sich mit ihrem aktuellen Passwort anmelden.",
     "resetPassword": "Passwort zurücksetzen",
     "resetPasswordDescription": "Der Benutzer muss dieses Passwort bei der nächsten Anmeldung ändern.",
-    "lastAdmin": "Der letzte aktivierte Admin kann nicht deaktiviert werden",
+    "lastUserManager": "Der letzte aktivierte Benutzerverwalter kann nicht deaktiviert werden",
     "createdToast": "Benutzer erstellt",
     "updatedToast": "Benutzer aktualisiert",
     "disabledToast": "Benutzer deaktiviert",
     "enabledToast": "Benutzer aktiviert",
     "passwordResetToast": "Passwort zurückgesetzt",
     "operationFailed": "Benutzeraktion fehlgeschlagen",
-    "notAuthorized": "Benutzerverwaltung erfordert ein ADMIN-Konto."
+    "notAuthorized": "Benutzerverwaltung erfordert eine Berechtigung zur Benutzeradministration."
   },
   "settings": {
     "title": "Einstellungen",
@@ -325,7 +369,7 @@
     "saveFailed": "Einstellungen konnten nicht gespeichert werden",
     "unavailableTitle": "Einstellungen sind nicht verfügbar",
     "unavailableDescription": "Die API hat keine Systemeinstellungen zurückgegeben. Prüfe die Backend-Verbindung und versuche es erneut.",
-    "notAuthorized": "Einstellungsverwaltung erfordert ein ADMIN-Konto."
+    "notAuthorized": "Einstellungen erfordern die Berechtigung Einstellungen anzeigen."
   },
   "help": {
     "title": "Hilfe",

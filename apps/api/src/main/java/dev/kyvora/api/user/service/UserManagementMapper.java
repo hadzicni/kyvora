@@ -13,7 +13,7 @@ class UserManagementMapper {
 				user.getId(),
 				user.getEmail(),
 				user.getDisplayName(),
-				user.getRole(),
+				user.getPermissions(),
 				user.isEnabled(),
 				user.isMustChangePassword(),
 				user.getLastLoginAt(),

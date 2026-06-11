@@ -25,10 +25,11 @@ import {
 import { dashboardKeys } from "@/lib/api/dashboard";
 import { serverKeys } from "@/lib/api/servers";
 
-export function useAgents(params: ListAgentsParams = {}) {
+export function useAgents(params: ListAgentsParams = {}, enabled = true) {
   return useQuery({
     queryKey: agentKeys.list(params),
     queryFn: () => listAgents(params),
+    enabled,
     placeholderData: keepPreviousData,
   });
 }

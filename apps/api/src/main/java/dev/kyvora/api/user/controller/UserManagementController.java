@@ -29,7 +29,6 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/users")
-@PreAuthorize("@permissions.canManageUsers(authentication)")
 @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH_SCHEME)
 @Tag(name = "Users", description = "Admin-managed user accounts.")
 public class UserManagementController {
@@ -41,30 +40,35 @@ public class UserManagementController {
 	}
 
 	@GetMapping
+	@PreAuthorize("@permissions.canReadUsers(authentication)")
 	@Operation(summary = "List users")
 	public ResponseEntity<List<UserResponse>> findAll() {
 		return ResponseEntity.ok(service.findAll());
 	}
 
 	@GetMapping("/{id}")
+	@PreAuthorize("@permissions.canReadUsers(authentication)")
 	@Operation(summary = "Get user")
 	public ResponseEntity<UserResponse> findById(@PathVariable UUID id) {
 		return ResponseEntity.ok(service.findById(id));
 	}
 
 	@PostMapping
+	@PreAuthorize("@permissions.canCreateUsers(authentication)")
 	@Operation(summary = "Create user")
 	public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
 	}
 
 	@PutMapping("/{id}")
+	@PreAuthorize("@permissions.canUpdateUsers(authentication)")
 	@Operation(summary = "Update user")
 	public ResponseEntity<UserResponse> update(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request) {
 		return ResponseEntity.ok(service.update(id, request));
 	}
 
 	@PostMapping("/{id}/disable")
+	@PreAuthorize("@permissions.canDisableUsers(authentication)")
 	@Operation(summary = "Disable user")
 	public ResponseEntity<UserResponse> disable(
 			@PathVariable UUID id,
@@ -73,12 +77,14 @@ public class UserManagementController {
 	}
 
 	@PostMapping("/{id}/enable")
+	@PreAuthorize("@permissions.canEnableUsers(authentication)")
 	@Operation(summary = "Enable user")
 	public ResponseEntity<UserResponse> enable(@PathVariable UUID id) {
 		return ResponseEntity.ok(service.enable(id));
 	}
 
 	@PostMapping("/{id}/reset-password")
+	@PreAuthorize("@permissions.canResetUserPasswords(authentication)")
 	@Operation(summary = "Reset user password")
 	public ResponseEntity<Void> resetPassword(@PathVariable UUID id, @Valid @RequestBody ResetPasswordRequest request) {
 		service.resetPassword(id, request);

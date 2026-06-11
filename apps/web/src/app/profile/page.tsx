@@ -193,9 +193,11 @@ export default function ProfilePage() {
       <div className="space-y-6">
         <PageHeader
           badge={
-            <Badge className="w-fit" variant="outline">
-              <BadgeCheck className="size-3" />
-              {user.role ? t(`roles.${user.role}`) : t("common.authenticated")}
+              <Badge className="w-fit" variant="outline">
+                <BadgeCheck className="size-3" />
+              {user.permissions.length
+                ? t("permissions.summary", { count: user.permissions.length })
+                : t("common.authenticated")}
             </Badge>
           }
           subtitle={t("profile.subtitle")}
@@ -220,8 +222,14 @@ export default function ProfilePage() {
               />
               <ProfileField label={t("users.email")} value={user.email || t("common.notProvided")} />
               <ProfileField
-                label={t("forms.role")}
-                value={user.role ? t(`roles.${user.role}`) : t("common.notProvided")}
+                label={t("permissions.title")}
+                value={
+                  user.permissions.length
+                    ? user.permissions
+                        .map((permission) => t(`permissions.items.${permission}`))
+                        .join(", ")
+                    : t("common.notProvided")
+                }
               />
               <ProfileField label="User ID" value={user.id || t("common.unavailable")} />
             </CardContent>

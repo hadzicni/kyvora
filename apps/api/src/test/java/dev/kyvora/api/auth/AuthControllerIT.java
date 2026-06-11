@@ -1,6 +1,7 @@
 package dev.kyvora.api.auth;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.blankOrNullString;
@@ -28,7 +29,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
-import dev.kyvora.api.auth.entity.UserRole;
+import dev.kyvora.api.auth.entity.PermissionPreset;
 import dev.kyvora.api.auth.repository.RefreshTokenRepository;
 import dev.kyvora.api.auth.repository.UserRepository;
 import dev.kyvora.api.auth.service.UserService;
@@ -68,7 +69,7 @@ class AuthControllerIT {
 		auditLogRepository.deleteAll();
 		refreshTokenRepository.deleteAll();
 		userRepository.deleteAll();
-		userService.create(EMAIL, PASSWORD, "Admin User", UserRole.ADMIN);
+		userService.create(EMAIL, PASSWORD, "Admin User", PermissionPreset.ADMIN.permissions());
 	}
 
 	@Test
@@ -83,7 +84,7 @@ class AuthControllerIT {
 				.andExpect(jsonPath("$.expiresIn", is(900)))
 				.andExpect(jsonPath("$.user.email", is(EMAIL)))
 				.andExpect(jsonPath("$.user.displayName", is("Admin User")))
-				.andExpect(jsonPath("$.user.role", is("ADMIN")))
+				.andExpect(jsonPath("$.user.permissions", hasItem("USER_UPDATE")))
 				.andExpect(jsonPath("$.user.mustChangePassword", is(false)))
 				.andExpect(jsonPath("$.user.passwordHash").doesNotExist());
 	}
@@ -145,7 +146,7 @@ class AuthControllerIT {
 				.andExpect(jsonPath("$.id", notNullValue()))
 				.andExpect(jsonPath("$.email", is(EMAIL)))
 				.andExpect(jsonPath("$.displayName", is("Admin User")))
-				.andExpect(jsonPath("$.role", is("ADMIN")))
+				.andExpect(jsonPath("$.permissions", hasItem("USER_UPDATE")))
 				.andExpect(jsonPath("$.mustChangePassword", is(false)))
 				.andExpect(jsonPath("$.passwordHash").doesNotExist());
 	}

@@ -27,7 +27,7 @@ public class DashboardController {
 	}
 
 	@GetMapping("/summary")
-	@PreAuthorize("@permissions.canViewOperationalData(authentication)")
+	@PreAuthorize("@permissions.canReadDashboard(authentication)")
 	@Operation(
 			summary = "Get dashboard summary metrics",
 			responses = {

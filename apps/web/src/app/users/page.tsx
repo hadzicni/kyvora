@@ -1,35 +1,37 @@
-"use client";
+"use client"
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod"
 import {
   AlertTriangle,
   Check,
+  Circle,
   KeyRound,
   Pencil,
   Plus,
   RefreshCw,
+  ShieldCheck,
   UserCheck,
   UserX,
-} from "lucide-react";
-import { useSession } from "next-auth/react";
-import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
+} from "lucide-react"
+import { signOut, useSession } from "next-auth/react"
+import { useLocale, useTranslations } from "next-intl"
+import { useEffect, useMemo, useState } from "react"
+import { useForm, useWatch } from "react-hook-form"
+import { toast } from "sonner"
+import { z } from "zod"
 
-import { AppShell } from "@/components/app/app-shell";
-import { NotAuthorized } from "@/components/app/not-authorized";
-import { PageHeader } from "@/components/app/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { AppShell } from "@/components/app/app-shell"
+import { NotAuthorized } from "@/components/app/not-authorized"
+import { PageHeader } from "@/components/app/page-header"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -37,17 +39,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -55,9 +57,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { generateTemporaryPassword } from "@/features/users/temporary-password";
-import { TemporaryPasswordField } from "@/features/users/temporary-password-field";
+} from "@/components/ui/table"
+import { generateTemporaryPassword } from "@/features/users/temporary-password"
+import { TemporaryPasswordField } from "@/features/users/temporary-password-field"
 import {
   useCreateUser,
   useDisableUser,
@@ -65,37 +67,88 @@ import {
   useResetUserPassword,
   useUpdateUser,
   useUsers,
-} from "@/features/users/use-users";
-import { UsersApiError, type UserAccount, type UserRole } from "@/lib/api/users";
-import { canManageUsers } from "@/lib/permissions";
+} from "@/features/users/use-users"
+import {
+  UsersApiError,
+  type PermissionPreset,
+  type UserAccount,
+  type UserPermission,
+} from "@/lib/api/users"
+import {
+  canAccessUserManagement,
+  permissionPresets,
+  permissions,
+} from "@/lib/permissions"
 
 const userFormSchema = z.object({
   displayName: z.string().trim().min(1).max(120),
   email: z.email(),
-  role: z.enum(["ADMIN", "OPERATOR", "VIEWER"]),
+  permissionPreset: z.enum(["ADMIN", "OPERATOR", "VIEWER"]).optional(),
+  permissions: z.array(z.enum(permissions)).min(1),
   temporaryPassword: z.string().min(8),
   mustChangePassword: z.boolean(),
-});
+})
 
 const editUserSchema = userFormSchema.pick({
   displayName: true,
-  role: true,
-});
+  permissionPreset: true,
+  permissions: true,
+})
 
 const resetPasswordSchema = z.object({
   newTemporaryPassword: z.string().min(8),
-});
+})
 
-type CreateUserValues = z.output<typeof userFormSchema>;
-type EditUserValues = z.output<typeof editUserSchema>;
-type ResetPasswordValues = z.output<typeof resetPasswordSchema>;
+type CreateUserValues = z.output<typeof userFormSchema>
+type EditUserValues = z.output<typeof editUserSchema>
+type ResetPasswordValues = z.output<typeof resetPasswordSchema>
+
+const permissionGroups = [
+  {
+    key: "overview",
+    permissions: ["DASHBOARD_READ", "AUDIT_LOG_READ", "NETWORK_MAP_READ"],
+  },
+  {
+    key: "users",
+    permissions: [
+      "USER_READ",
+      "USER_CREATE",
+      "USER_UPDATE",
+      "USER_DISABLE",
+      "USER_ENABLE",
+      "USER_PASSWORD_RESET",
+    ],
+  },
+  {
+    key: "settings",
+    permissions: ["SETTINGS_READ", "SETTINGS_UPDATE"],
+  },
+  {
+    key: "servers",
+    permissions: ["SERVER_READ", "SERVER_CREATE", "SERVER_UPDATE", "SERVER_DELETE"],
+  },
+  {
+    key: "services",
+    permissions: ["SERVICE_READ", "SERVICE_CREATE", "SERVICE_UPDATE", "SERVICE_DELETE"],
+  },
+  {
+    key: "agents",
+    permissions: [
+      "AGENT_READ",
+      "AGENT_ENROLL",
+      "AGENT_CANCEL_ENROLLMENT",
+      "AGENT_ROTATE_TOKEN",
+      "AGENT_DECOMMISSION",
+    ],
+  },
+] satisfies Array<{ key: string; permissions: UserPermission[] }>
 
 function errorMessage(error: unknown) {
   if (error instanceof UsersApiError && error.details.length > 0) {
-    return `${error.message}: ${error.details.join(", ")}`;
+    return `${error.message}: ${error.details.join(", ")}`
   }
 
-  return error instanceof Error ? error.message : "User operation failed";
+  return error instanceof Error ? error.message : "User operation failed"
 }
 
 function UserTableSkeleton() {
@@ -105,158 +158,180 @@ function UserTableSkeleton() {
         <Skeleton className="h-14 w-full" key={index} />
       ))}
     </div>
-  );
+  )
 }
 
 export default function UsersPage() {
-  const t = useTranslations();
-  const locale = useLocale();
-  const { data: session, status } = useSession();
-  const mayManageUsers = canManageUsers(session?.user.role);
-  const usersQuery = useUsers(status === "authenticated" && mayManageUsers);
-  const createMutation = useCreateUser();
-  const updateMutation = useUpdateUser();
-  const disableMutation = useDisableUser();
-  const enableMutation = useEnableUser();
-  const resetPasswordMutation = useResetUserPassword();
+  const t = useTranslations()
+  const locale = useLocale()
+  const { data: session, status } = useSession()
+  const mayManageUsers = canAccessUserManagement(session?.user.permissions)
+  const usersQuery = useUsers(status === "authenticated" && mayManageUsers)
+  const createMutation = useCreateUser()
+  const updateMutation = useUpdateUser()
+  const disableMutation = useDisableUser()
+  const enableMutation = useEnableUser()
+  const resetPasswordMutation = useResetUserPassword()
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
-  const [toggleUser, setToggleUser] = useState<UserAccount | null>(null);
-  const [resetUser, setResetUser] = useState<UserAccount | null>(null);
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<UserAccount | null>(null)
+  const [toggleUser, setToggleUser] = useState<UserAccount | null>(null)
+  const [resetUser, setResetUser] = useState<UserAccount | null>(null)
 
-  const users = useMemo(() => usersQuery.data ?? [], [usersQuery.data]);
-  const enabledAdminCount = useMemo(
-    () => users.filter((user) => user.enabled && user.role === "ADMIN").length,
-    [users]
-  );
+  const users = useMemo(() => usersQuery.data ?? [], [usersQuery.data])
+  const enabledUserManagerCount = useMemo(
+    () =>
+      users.filter((user) => user.enabled && user.permissions.includes("USER_UPDATE"))
+        .length,
+    [users],
+  )
 
   const createForm = useForm<CreateUserValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
       displayName: "",
       email: "",
-      role: "VIEWER",
+      permissionPreset: "VIEWER",
+      permissions: permissionPresets.VIEWER,
       temporaryPassword: "",
       mustChangePassword: true,
     },
-  });
+  })
   const editForm = useForm<EditUserValues>({
     resolver: zodResolver(editUserSchema),
     defaultValues: {
       displayName: "",
-      role: "VIEWER",
+      permissionPreset: "VIEWER",
+      permissions: permissionPresets.VIEWER,
     },
-  });
+  })
   const resetForm = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
       newTemporaryPassword: "",
     },
-  });
-  const createRole = useWatch({
+  })
+  const createPermissions = useWatch({
     control: createForm.control,
-    name: "role",
-  });
+    name: "permissions",
+  })
   const createTemporaryPassword = useWatch({
     control: createForm.control,
     name: "temporaryPassword",
-  });
-  const editRole = useWatch({
+  })
+  const editPermissions = useWatch({
     control: editForm.control,
-    name: "role",
-  });
+    name: "permissions",
+  })
   const resetTemporaryPassword = useWatch({
     control: resetForm.control,
     name: "newTemporaryPassword",
-  });
+  })
 
   useEffect(() => {
     if (editingUser) {
       editForm.reset({
         displayName: editingUser.displayName,
-        role: editingUser.role,
-      });
+        permissionPreset: undefined,
+        permissions: editingUser.permissions,
+      })
     }
-  }, [editForm, editingUser]);
+  }, [editForm, editingUser])
 
   const loading =
     createMutation.isPending ||
     updateMutation.isPending ||
     disableMutation.isPending ||
     enableMutation.isPending ||
-    resetPasswordMutation.isPending;
+    resetPasswordMutation.isPending
 
   async function onCreate(values: CreateUserValues) {
     try {
-      await createMutation.mutateAsync(values);
-      toast.success(t("users.createdToast"));
-      setCreateOpen(false);
+      await createMutation.mutateAsync(values)
+      toast.success(t("users.createdToast"))
+      setCreateOpen(false)
       createForm.reset({
         displayName: "",
         email: "",
-        role: "VIEWER",
+        permissionPreset: "VIEWER",
+        permissions: permissionPresets.VIEWER,
         temporaryPassword: generateTemporaryPassword(),
         mustChangePassword: true,
-      });
+      })
     } catch (error) {
-      toast.error(errorMessage(error));
+      toast.error(errorMessage(error))
     }
   }
 
   async function onEdit(values: EditUserValues) {
     if (!editingUser) {
-      return;
+      return
     }
+
+    const isEditingSelf =
+      editingUser.id === session?.user.id || editingUser.email === session?.user.email
+
+    const permissionsChanged =
+      editingUser.permissions.length !== values.permissions.length ||
+      editingUser.permissions.some(
+        (permission) => !values.permissions.includes(permission),
+      )
 
     try {
       await updateMutation.mutateAsync({
         id: editingUser.id,
         input: values,
-      });
-      toast.success(t("users.updatedToast"));
-      setEditingUser(null);
+      })
+
+      toast.success(t("users.updatedToast"))
+      setEditingUser(null)
+
+      if (isEditingSelf && permissionsChanged) {
+        await signOut({
+          callbackUrl: "/login",
+        })
+      }
     } catch (error) {
-      toast.error(errorMessage(error));
+      toast.error(errorMessage(error))
     }
   }
 
   async function onToggleUser() {
     if (!toggleUser) {
-      return;
+      return
     }
 
     try {
       if (toggleUser.enabled) {
-        await disableMutation.mutateAsync(toggleUser.id);
-        toast.success(t("users.disabledToast"));
+        await disableMutation.mutateAsync(toggleUser.id)
+        toast.success(t("users.disabledToast"))
       } else {
-        await enableMutation.mutateAsync(toggleUser.id);
-        toast.success(t("users.enabledToast"));
+        await enableMutation.mutateAsync(toggleUser.id)
+        toast.success(t("users.enabledToast"))
       }
-      setToggleUser(null);
+      setToggleUser(null)
     } catch (error) {
-      toast.error(errorMessage(error));
+      toast.error(errorMessage(error))
     }
   }
 
   async function onResetPassword(values: ResetPasswordValues) {
     if (!resetUser) {
-      return;
+      return
     }
 
     try {
       await resetPasswordMutation.mutateAsync({
         id: resetUser.id,
         input: values,
-      });
-      toast.success(t("users.passwordResetToast"));
-      setResetUser(null);
+      })
+      toast.success(t("users.passwordResetToast"))
+      setResetUser(null)
       resetForm.reset({
         newTemporaryPassword: generateTemporaryPassword(),
-      });
+      })
     } catch (error) {
-      toast.error(errorMessage(error));
+      toast.error(errorMessage(error))
     }
   }
 
@@ -265,7 +340,7 @@ export default function UsersPage() {
       <AppShell>
         <NotAuthorized description={t("users.notAuthorized")} />
       </AppShell>
-    );
+    )
   }
 
   return (
@@ -282,30 +357,29 @@ export default function UsersPage() {
           subtitle={t("users.subtitle")}
           title={t("users.title")}
           actions={
-          <Button
-            onClick={() => {
-              createForm.reset({
-                displayName: "",
-                email: "",
-                role: "VIEWER",
-                temporaryPassword: generateTemporaryPassword(),
-                mustChangePassword: true,
-              });
-              setCreateOpen(true);
-            }}
-          >
-            <Plus className="size-4" />
-            {t("users.createUser")}
-          </Button>
+            <Button
+              onClick={() => {
+                createForm.reset({
+                  displayName: "",
+                  email: "",
+                  permissionPreset: "VIEWER",
+                  permissions: permissionPresets.VIEWER,
+                  temporaryPassword: generateTemporaryPassword(),
+                  mustChangePassword: true,
+                })
+                setCreateOpen(true)
+              }}
+            >
+              <Plus className="size-4" />
+              {t("users.createUser")}
+            </Button>
           }
         />
 
         <Card>
           <CardHeader className="border-b">
             <CardTitle>{t("users.accountsTitle")}</CardTitle>
-            <CardDescription>
-              {t("users.accountsDescription")}
-            </CardDescription>
+            <CardDescription>{t("users.accountsDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             {usersQuery.isLoading ? <UserTableSkeleton /> : null}
@@ -347,19 +421,21 @@ export default function UsersPage() {
                     <TableRow>
                       <TableHead>{t("forms.displayName")}</TableHead>
                       <TableHead>{t("users.email")}</TableHead>
-                      <TableHead>{t("forms.role")}</TableHead>
+                      <TableHead>{t("permissions.title")}</TableHead>
                       <TableHead>{t("forms.status")}</TableHead>
                       <TableHead>{t("users.lastLogin")}</TableHead>
                       <TableHead>{t("users.created")}</TableHead>
-                      <TableHead className="text-right">{t("servers.actionsHeader")}</TableHead>
+                      <TableHead className="text-right">
+                        {t("servers.actionsHeader")}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {users.map((user) => {
-                      const isLastEnabledAdmin =
+                      const isLastEnabledUserManager =
                         user.enabled &&
-                        user.role === "ADMIN" &&
-                        enabledAdminCount <= 1;
+                        user.permissions.includes("USER_UPDATE") &&
+                        enabledUserManagerCount <= 1
 
                       return (
                         <TableRow key={user.id}>
@@ -368,14 +444,23 @@ export default function UsersPage() {
                           </TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{t(`roles.${user.role}`)}</Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {user.permissions.map((permission) => (
+                                <Badge key={permission} variant="outline">
+                                  {t(`permissions.items.${permission}`)}
+                                </Badge>
+                              ))}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant={user.enabled ? "default" : "secondary"}>
                               {user.enabled ? t("common.enabled") : t("common.disabled")}
                             </Badge>
                             {user.mustChangePassword ? (
-                              <Badge className="ml-2 border-amber-500/30 text-amber-300" variant="outline">
+                              <Badge
+                                className="ml-2 border-amber-500/30 text-amber-300"
+                                variant="outline"
+                              >
                                 {t("users.passwordChangeRequired")}
                               </Badge>
                             ) : null}
@@ -409,8 +494,8 @@ export default function UsersPage() {
                                 onClick={() => {
                                   resetForm.reset({
                                     newTemporaryPassword: generateTemporaryPassword(),
-                                  });
-                                  setResetUser(user);
+                                  })
+                                  setResetUser(user)
                                 }}
                                 size="icon"
                                 variant="outline"
@@ -423,12 +508,12 @@ export default function UsersPage() {
                                     ? `Disable ${user.email}`
                                     : `Enable ${user.email}`
                                 }
-                                disabled={isLastEnabledAdmin}
+                                disabled={isLastEnabledUserManager}
                                 onClick={() => setToggleUser(user)}
                                 size="icon"
                                 title={
-                                  isLastEnabledAdmin
-                                    ? t("users.lastAdmin")
+                                  isLastEnabledUserManager
+                                    ? t("users.lastUserManager")
                                     : undefined
                                 }
                                 variant={user.enabled ? "destructive" : "outline"}
@@ -442,7 +527,7 @@ export default function UsersPage() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      );
+                      )
                     })}
                   </TableBody>
                 </Table>
@@ -453,20 +538,30 @@ export default function UsersPage() {
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{t("users.createUser")}</DialogTitle>
             <DialogDescription>{t("users.addLocalAccount")}</DialogDescription>
           </DialogHeader>
-          <form
-            className="space-y-4"
-            onSubmit={createForm.handleSubmit(onCreate)}
-          >
+          <form className="space-y-4" onSubmit={createForm.handleSubmit(onCreate)}>
             <UserFields
               disabled={loading}
               register={createForm.register}
-              role={createRole}
-              setRole={(role) => createForm.setValue("role", role)}
+              selectedPermissions={createPermissions}
+              setPermissionPreset={(preset) => {
+                createForm.setValue("permissionPreset", preset)
+                createForm.setValue("permissions", permissionPresets[preset], {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }}
+              setPermissions={(nextPermissions) => {
+                createForm.setValue("permissionPreset", undefined)
+                createForm.setValue("permissions", nextPermissions, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }}
             />
             <TemporaryPasswordField
               disabled={loading}
@@ -505,7 +600,7 @@ export default function UsersPage() {
         open={Boolean(editingUser)}
         onOpenChange={(open) => !open && setEditingUser(null)}
       >
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{t("users.editUser")}</DialogTitle>
             <DialogDescription>{editingUser?.email}</DialogDescription>
@@ -515,10 +610,23 @@ export default function UsersPage() {
               <Label htmlFor="editDisplayName">{t("forms.displayName")}</Label>
               <Input id="editDisplayName" {...editForm.register("displayName")} />
             </div>
-            <RoleField
+            <PermissionField
               disabled={loading}
-              role={editRole}
-              setRole={(role) => editForm.setValue("role", role)}
+              selectedPermissions={editPermissions}
+              setPermissionPreset={(preset) => {
+                editForm.setValue("permissionPreset", preset)
+                editForm.setValue("permissions", permissionPresets[preset], {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }}
+              setPermissions={(nextPermissions) => {
+                editForm.setValue("permissionPreset", undefined)
+                editForm.setValue("permissions", nextPermissions, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }}
             />
             <DialogFooter>
               <Button disabled={loading} type="submit">
@@ -566,10 +674,7 @@ export default function UsersPage() {
             <DialogTitle>{t("users.resetPassword")}</DialogTitle>
             <DialogDescription>{resetUser?.email}</DialogDescription>
           </DialogHeader>
-          <form
-            className="space-y-4"
-            onSubmit={resetForm.handleSubmit(onResetPassword)}
-          >
+          <form className="space-y-4" onSubmit={resetForm.handleSubmit(onResetPassword)}>
             <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
               {t("users.resetPasswordDescription")}
             </div>
@@ -595,21 +700,23 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
     </AppShell>
-  );
+  )
 }
 
 function UserFields({
   disabled,
   register,
-  role,
-  setRole,
+  selectedPermissions,
+  setPermissionPreset,
+  setPermissions,
 }: {
-  disabled: boolean;
-  register: ReturnType<typeof useForm<CreateUserValues>>["register"];
-  role: UserRole;
-  setRole: (role: UserRole) => void;
+  disabled: boolean
+  register: ReturnType<typeof useForm<CreateUserValues>>["register"]
+  selectedPermissions: UserPermission[]
+  setPermissionPreset: (preset: PermissionPreset) => void
+  setPermissions: (permissions: UserPermission[]) => void
 }) {
-  const t = useTranslations();
+  const t = useTranslations()
 
   return (
     <>
@@ -621,39 +728,192 @@ function UserFields({
         <Label htmlFor="email">{t("users.email")}</Label>
         <Input id="email" disabled={disabled} type="email" {...register("email")} />
       </div>
-      <RoleField disabled={disabled} role={role} setRole={setRole} />
+      <PermissionField
+        disabled={disabled}
+        selectedPermissions={selectedPermissions}
+        setPermissionPreset={setPermissionPreset}
+        setPermissions={setPermissions}
+      />
     </>
-  );
+  )
 }
 
-function RoleField({
+function PermissionField({
   disabled,
-  role,
-  setRole,
+  selectedPermissions,
+  setPermissionPreset,
+  setPermissions,
 }: {
-  disabled: boolean;
-  role: UserRole;
-  setRole: (role: UserRole) => void;
+  disabled: boolean
+  selectedPermissions: UserPermission[]
+  setPermissionPreset: (preset: PermissionPreset) => void
+  setPermissions: (permissions: UserPermission[]) => void
 }) {
-  const t = useTranslations();
+  const t = useTranslations()
+  const selectedSet = useMemo(
+    () => new Set<UserPermission>(selectedPermissions),
+    [selectedPermissions],
+  )
+  const selectedCount = selectedPermissions.length
+
+  function togglePermission(permission: UserPermission) {
+    const selected = new Set(selectedPermissions)
+    if (selected.has(permission)) {
+      selected.delete(permission)
+    } else {
+      selected.add(permission)
+    }
+    setPermissions(permissions.filter((item) => selected.has(item)))
+  }
+
+  function setGroupPermissions(groupPermissions: UserPermission[], checked: boolean) {
+    const selected = new Set(selectedPermissions)
+    groupPermissions.forEach((permission) => {
+      if (checked) {
+        selected.add(permission)
+      } else {
+        selected.delete(permission)
+      }
+    })
+    setPermissions(permissions.filter((item) => selected.has(item)))
+  }
 
   return (
-    <div className="space-y-2">
-      <Label>{t("forms.role")}</Label>
-      <Select
-        disabled={disabled}
-        onValueChange={(value) => setRole(value as UserRole)}
-        value={role}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="ADMIN">{t("roles.ADMIN")}</SelectItem>
-          <SelectItem value="OPERATOR">{t("roles.OPERATOR")}</SelectItem>
-          <SelectItem value="VIEWER">{t("roles.VIEWER")}</SelectItem>
-        </SelectContent>
-      </Select>
+    <div className="space-y-4">
+      <div className="grid gap-3 rounded-md border bg-muted/20 p-3 sm:grid-cols-[minmax(0,1fr)_14rem] sm:items-end">
+        <div className="space-y-1">
+          <Label>{t("permissions.title")}</Label>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <Badge variant="secondary">
+              {t("permissions.selected", {
+                count: selectedCount,
+                total: permissions.length,
+              })}
+            </Badge>
+            <span>{t("permissions.presetHint")}</span>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>{t("permissions.preset")}</Label>
+          <Select
+            disabled={disabled}
+            onValueChange={(value) => setPermissionPreset(value as PermissionPreset)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={t("permissions.choosePreset")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ADMIN">{t("permissionPresets.ADMIN")}</SelectItem>
+              <SelectItem value="OPERATOR">{t("permissionPresets.OPERATOR")}</SelectItem>
+              <SelectItem value="VIEWER">{t("permissionPresets.VIEWER")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid gap-3">
+        {permissionGroups.map((group) => (
+          <PermissionGroup
+            disabled={disabled}
+            groupKey={group.key}
+            groupPermissions={group.permissions}
+            key={group.key}
+            selectedPermissions={selectedSet}
+            setGroupPermissions={setGroupPermissions}
+            togglePermission={togglePermission}
+          />
+        ))}
+      </div>
     </div>
-  );
+  )
+}
+
+function PermissionGroup({
+  disabled,
+  groupKey,
+  groupPermissions,
+  selectedPermissions,
+  setGroupPermissions,
+  togglePermission,
+}: {
+  disabled: boolean
+  groupKey: string
+  groupPermissions: UserPermission[]
+  selectedPermissions: Set<UserPermission>
+  setGroupPermissions: (permissions: UserPermission[], checked: boolean) => void
+  togglePermission: (permission: UserPermission) => void
+}) {
+  const t = useTranslations()
+  const selectedCount = groupPermissions.filter((permission) =>
+    selectedPermissions.has(permission),
+  ).length
+  const allSelected = selectedCount === groupPermissions.length
+  const noneSelected = selectedCount === 0
+
+  return (
+    <section className="rounded-md border bg-background">
+      <div className="flex flex-col gap-3 border-b p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-muted-foreground" />
+            <div className="font-medium">{t(`permissions.groups.${groupKey}`)}</div>
+          </div>
+          <div className="mt-1 text-sm text-muted-foreground">
+            {t("permissions.groupSelected", {
+              count: selectedCount,
+              total: groupPermissions.length,
+            })}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            disabled={disabled || allSelected}
+            onClick={() => setGroupPermissions(groupPermissions, true)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {t("permissions.selectAll")}
+          </Button>
+          <Button
+            disabled={disabled || noneSelected}
+            onClick={() => setGroupPermissions(groupPermissions, false)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {t("permissions.clearGroup")}
+          </Button>
+        </div>
+      </div>
+      <div className="grid gap-2 p-3 sm:grid-cols-2">
+        {groupPermissions.map((permission) => {
+          const checked = selectedPermissions.has(permission)
+
+          return (
+            <label
+              className="flex min-h-11 items-center gap-3 rounded-md border bg-muted/10 px-3 py-2 text-sm transition-colors hover:bg-muted/30"
+              key={permission}
+            >
+              <input
+                checked={checked}
+                className="size-4 accent-primary"
+                disabled={disabled}
+                onChange={() => togglePermission(permission)}
+                type="checkbox"
+              />
+              <span className="flex min-w-0 flex-1 items-center gap-2">
+                {checked ? (
+                  <Check className="size-4 text-emerald-400" />
+                ) : (
+                  <Circle className="size-4 text-muted-foreground" />
+                )}
+                <span className="truncate">{t(`permissions.items.${permission}`)}</span>
+              </span>
+            </label>
+          )
+        })}
+      </div>
+    </section>
+  )
 }

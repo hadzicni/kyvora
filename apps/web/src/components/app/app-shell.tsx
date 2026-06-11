@@ -60,7 +60,16 @@ import { useServers } from "@/features/servers/use-servers";
 import { supportedLocales } from "@/i18n/config";
 import { useLocalePreference } from "@/i18n/locale-provider";
 import { getInstanceSettings } from "@/lib/api/settings";
-import { canManageSettings, canManageUsers } from "@/lib/permissions";
+import {
+  canAccessUserManagement,
+  canReadAgents,
+  canReadAuditLogs,
+  canReadDashboard,
+  canReadNetworkMap,
+  canReadServers,
+  canReadServices,
+  canReadSettings,
+} from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -77,7 +86,7 @@ type NavItem = {
     | "help"
     | "profile";
   icon: React.ComponentType<{ className?: string }>;
-  requiredPermission?: (role: string | undefined) => boolean;
+  requiredPermission?: (permissions: readonly string[] | undefined) => boolean;
 };
 
 const navItems: NavItem[] = [
@@ -85,43 +94,49 @@ const navItems: NavItem[] = [
     href: "/",
     labelKey: "overview",
     icon: LayoutDashboard,
+    requiredPermission: canReadDashboard,
   },
   {
     href: "/servers",
     labelKey: "servers",
     icon: Server,
+    requiredPermission: canReadServers,
   },
   {
     href: "/services",
     labelKey: "services",
     icon: Cable,
+    requiredPermission: canReadServices,
   },
   {
     href: "/network-map",
     labelKey: "networkMap",
     icon: Network,
+    requiredPermission: canReadNetworkMap,
   },
   {
     href: "/agents",
     labelKey: "agents",
     icon: Bot,
+    requiredPermission: canReadAgents,
   },
   {
     href: "/activity",
     labelKey: "activity",
     icon: Activity,
+    requiredPermission: canReadAuditLogs,
   },
   {
     href: "/users",
     labelKey: "users",
     icon: Users,
-    requiredPermission: canManageUsers,
+    requiredPermission: canAccessUserManagement,
   },
   {
     href: "/settings",
     labelKey: "settings",
     icon: Settings,
-    requiredPermission: canManageSettings,
+    requiredPermission: canReadSettings,
   },
   {
     href: "/help",
@@ -202,13 +217,13 @@ function SidebarContent({
   const t = useTranslations();
   const pathname = usePathname();
   const { data: session } = useSession();
-  const mayManageSettings = canManageSettings(session?.user.role);
-  const settingsQuery = useSettings(mayManageSettings);
+  const mayReadSettings = canReadSettings(session?.user.permissions);
+  const settingsQuery = useSettings(mayReadSettings);
   const instance = getInstanceSettings(settingsQuery.data);
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
   const visibleNavItems = navItems.filter(
     (item) =>
-      !item.requiredPermission || item.requiredPermission(session?.user.role)
+      !item.requiredPermission || item.requiredPermission(session?.user.permissions)
   );
   const toggleLabel = collapsed
     ? t("navigation.expandSidebar")
@@ -319,16 +334,19 @@ function CommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const serversQuery = useServers({ q: search, size: 8 });
-  const servicesQuery = useServices({ q: search, size: 8 });
-  const agentsQuery = useAgents({ size: 50 });
+  const { data: session } = useSession();
+  const mayReadServers = canReadServers(session?.user.permissions);
+  const mayReadServices = canReadServices(session?.user.permissions);
+  const mayReadAgents = canReadAgents(session?.user.permissions);
+  const serversQuery = useServers({ q: search, size: 8 }, mayReadServers);
+  const servicesQuery = useServices({ q: search, size: 8 }, mayReadServices);
+  const agentsQuery = useAgents({ size: 50 }, mayReadAgents);
   const servers = serversQuery.data?.content ?? [];
   const services = servicesQuery.data?.content ?? [];
   const agents = agentsQuery.data?.content ?? [];
-  const { data: session } = useSession();
   const visibleNavItems = navItems.filter(
     (item) =>
-      !item.requiredPermission || item.requiredPermission(session?.user.role)
+      !item.requiredPermission || item.requiredPermission(session?.user.permissions)
   );
 
   useEffect(() => {
@@ -378,7 +396,9 @@ function CommandPalette() {
           />
           <CommandList>
             <CommandEmpty>
-              {serversQuery.isLoading || servicesQuery.isLoading || agentsQuery.isLoading
+              {(mayReadServers && serversQuery.isLoading) ||
+              (mayReadServices && servicesQuery.isLoading) ||
+              (mayReadAgents && agentsQuery.isLoading)
                 ? `${t("common.loading")}...`
                 : "No results found."}
             </CommandEmpty>
@@ -402,8 +422,10 @@ function CommandPalette() {
                 );
               })}
             </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading={t("navigation.servers")}>
+            {mayReadServers ? (
+              <>
+                <CommandSeparator />
+                <CommandGroup heading={t("navigation.servers")}>
               {serversQuery.isLoading ? (
                 <CommandItem disabled value="loading servers">
                   {t("servers.loadingInventory")}
@@ -429,9 +451,13 @@ function CommandPalette() {
                   </span>
                 </CommandItem>
               ))}
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading={t("navigation.services")}>
+                </CommandGroup>
+              </>
+            ) : null}
+            {mayReadServices ? (
+              <>
+                <CommandSeparator />
+                <CommandGroup heading={t("navigation.services")}>
               {servicesQuery.isLoading ? (
                 <CommandItem disabled value="loading services">
                   Loading services
@@ -455,9 +481,13 @@ function CommandPalette() {
                   </span>
                 </CommandItem>
               ))}
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading={t("navigation.agents")}>
+                </CommandGroup>
+              </>
+            ) : null}
+            {mayReadAgents ? (
+              <>
+                <CommandSeparator />
+                <CommandGroup heading={t("navigation.agents")}>
               {agentsQuery.isLoading ? (
                 <CommandItem disabled value="loading agents">
                   {t("agents.loadingAgents")}
@@ -481,7 +511,9 @@ function CommandPalette() {
                   </span>
                 </CommandItem>
               ))}
-            </CommandGroup>
+                </CommandGroup>
+              </>
+            ) : null}
           </CommandList>
         </Command>
       </CommandDialog>
@@ -499,8 +531,8 @@ export function AppShell({
   const t = useTranslations();
   const { locale, setLocale } = useLocalePreference();
   const { data: session, status } = useSession();
-  const mayManageSettings = canManageSettings(session?.user.role);
-  const settingsQuery = useSettings(mayManageSettings);
+  const mayReadSettings = canReadSettings(session?.user.permissions);
+  const settingsQuery = useSettings(mayReadSettings);
   const instance = getInstanceSettings(settingsQuery.data);
   const initials = getInitials(session?.user.displayName, session?.user.email);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
@@ -578,8 +610,10 @@ export function AppShell({
                     t("common.signedIn")}
               </div>
               <div className="truncate">
-                {session?.user.role
-                  ? t(`roles.${session.user.role}`)
+                {session?.user.permissions?.length
+                  ? t("permissions.summary", {
+                      count: session.user.permissions.length,
+                    })
                   : t("common.authenticated")}
               </div>
             </div>

@@ -258,24 +258,23 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                     User Access
                   </CardTitle>
                   <CardDescription>
-                    Local accounts use Kyvora credentials and role-based access.
+                    Local accounts use Kyvora credentials and permission-based access.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <GuidanceItem icon={ShieldCheck}>
-                    ADMIN has full administration, including users, settings,
-                    servers, agents, and activity.
+                    Admin is a preset for full administration permissions,
+                    including users, settings, servers, agents, and activity.
                   </GuidanceItem>
                   <GuidanceItem icon={Terminal}>
-                    OPERATOR can manage servers and agents, and can view
-                    dashboard, activity, help, and profile.
+                    Operator is a preset for managing servers and agents, with
+                    access to dashboard, activity, help, and profile.
                   </GuidanceItem>
                   <GuidanceItem icon={BadgeCheck}>
-                    VIEWER has read-only access to dashboard, servers, agents,
-                    activity, help, and profile.
+                    Viewer is a preset for read-only operational access.
                   </GuidanceItem>
                   <GuidanceItem icon={BadgeCheck}>
-                    All roles can change their own password from Profile when
+                    Authenticated users can change their own password from Profile when
                     supported.
                   </GuidanceItem>
                 </CardContent>

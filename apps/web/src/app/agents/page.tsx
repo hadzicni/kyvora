@@ -20,13 +20,13 @@ import { AgentTable } from "@/features/agents/agent-table";
 import { AgentTableSkeleton } from "@/features/agents/agent-table-skeleton";
 import { RegisterAgentDialog } from "@/features/agents/register-agent-dialog";
 import { useAgents } from "@/features/agents/use-agents";
-import { canManageAgents } from "@/lib/permissions";
+import { canEnrollAgents } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 export default function AgentsPage() {
   const t = useTranslations();
   const { data: session } = useSession();
-  const mayManageAgents = canManageAgents(session?.user.role);
+  const mayEnrollAgents = canEnrollAgents(session?.user.permissions);
   const agentsQuery = useAgents({ size: 50 });
   const agents = agentsQuery.data?.content ?? [];
   const totalElements = agentsQuery.data?.totalElements ?? agents.length;
@@ -46,7 +46,7 @@ export default function AgentsPage() {
           title={t("agents.title")}
           actions={
             <>
-              {mayManageAgents ? <RegisterAgentDialog /> : null}
+              {mayEnrollAgents ? <RegisterAgentDialog /> : null}
             <Button
               disabled={agentsQuery.isFetching}
               onClick={() => void agentsQuery.refetch()}

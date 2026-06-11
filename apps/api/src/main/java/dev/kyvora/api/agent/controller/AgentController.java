@@ -49,7 +49,7 @@ public class AgentController {
 	}
 
 	@GetMapping
-	@PreAuthorize("@permissions.canViewOperationalData(authentication)")
+	@PreAuthorize("@permissions.canReadAgents(authentication)")
 	@Operation(
 			summary = "List agents",
 			description = "Returns a paginated list of registered agents.",
@@ -67,7 +67,7 @@ public class AgentController {
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("@permissions.canViewOperationalData(authentication)")
+	@PreAuthorize("@permissions.canReadAgents(authentication)")
 	@Operation(
 			summary = "Get an agent",
 			responses = {
@@ -84,7 +84,7 @@ public class AgentController {
 	}
 
 	@PostMapping
-	@PreAuthorize("@permissions.canManageAgents(authentication)")
+	@PreAuthorize("@permissions.canEnrollAgents(authentication)")
 	@Operation(
 			summary = "Enroll an agent",
 			description = "Creates an agent record and returns a one-time plaintext agent token. The token is never stored in plaintext and is shown only in this response.",
@@ -103,7 +103,7 @@ public class AgentController {
 	}
 
 	@DeleteMapping("/{id}")
-	@PreAuthorize("@permissions.canManageAgents(authentication)")
+	@PreAuthorize("@permissions.canCancelAgentEnrollments(authentication)")
 	@Operation(
 			summary = "Cancel a pending agent enrollment",
 			description = "Deletes a pending, never-connected agent and revokes its one-time token by removing the agent row. Connected agents cannot be deleted through this endpoint.",
@@ -124,7 +124,7 @@ public class AgentController {
 	}
 
 	@PostMapping("/{id}/rotate-token")
-	@PreAuthorize("@permissions.canManageAgents(authentication)")
+	@PreAuthorize("@permissions.canRotateAgentTokens(authentication)")
 	@Operation(
 			summary = "Rotate an agent token",
 			description = "Generates a new one-time plaintext agent token, stores only its SHA-256 hash, and invalidates the previous token immediately.",
@@ -142,7 +142,7 @@ public class AgentController {
 	}
 
 	@PostMapping("/{id}/decommission")
-	@PreAuthorize("@permissions.canManageAgents(authentication)")
+	@PreAuthorize("@permissions.canDecommissionAgents(authentication)")
 	@Operation(
 			summary = "Decommission a connected agent",
 			description = "Idempotently revokes the agent token, marks the agent DECOMMISSIONED, unlinks it from its server, and preserves agent history. Already decommissioned agents return the current agent representation.",

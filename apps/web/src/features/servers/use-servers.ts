@@ -22,10 +22,11 @@ import {
   type UpdateServerInput,
 } from "@/lib/api/servers";
 
-export function useServers(params: ListServersParams = {}) {
+export function useServers(params: ListServersParams = {}, enabled = true) {
   return useQuery({
     queryKey: serverKeys.list(params),
     queryFn: () => listServers(params),
+    enabled,
     placeholderData: keepPreviousData,
   });
 }

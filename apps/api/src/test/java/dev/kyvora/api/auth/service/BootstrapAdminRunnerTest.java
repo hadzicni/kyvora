@@ -16,7 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import dev.kyvora.api.auth.entity.User;
-import dev.kyvora.api.auth.entity.UserRole;
+import dev.kyvora.api.auth.entity.UserPermission;
 import dev.kyvora.api.auth.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,7 +49,7 @@ class BootstrapAdminRunnerTest {
 
 		assertThat(saved.getEmail()).isEqualTo("admin@kyvora.local");
 		assertThat(saved.getDisplayName()).isEqualTo("Kyvora Admin");
-		assertThat(saved.getRole()).isEqualTo(UserRole.ADMIN);
+		assertThat(saved.getPermissions()).contains(UserPermission.USER_UPDATE, UserPermission.SETTINGS_UPDATE);
 		assertThat(saved.isEnabled()).isTrue();
 		assertThat(saved.isMustChangePassword()).isTrue();
 		assertThat(saved.getPasswordHash()).isEqualTo(PASSWORD_HASH);

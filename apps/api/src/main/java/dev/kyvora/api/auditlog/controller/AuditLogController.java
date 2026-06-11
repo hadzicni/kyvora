@@ -41,7 +41,7 @@ public class AuditLogController {
 	}
 
 	@GetMapping
-	@PreAuthorize("@permissions.canViewOperationalData(authentication)")
+	@PreAuthorize("@permissions.canReadAuditLogs(authentication)")
 	@Operation(
 			summary = "List audit logs",
 			description = "Returns a paginated list of audit logs, optionally filtered by aggregate and event type.",

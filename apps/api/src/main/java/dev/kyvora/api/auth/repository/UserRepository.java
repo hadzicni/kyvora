@@ -4,9 +4,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import dev.kyvora.api.auth.entity.User;
-import dev.kyvora.api.auth.entity.UserRole;
+import dev.kyvora.api.auth.entity.UserPermission;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
 
@@ -14,5 +15,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
 	boolean existsByEmailIgnoreCase(String email);
 
-	long countByRoleAndEnabledTrue(UserRole role);
+	@Query("select count(u) from User u join u.permissions p where p = :permission and u.enabled = true")
+	long countEnabledUsersWithPermission(UserPermission permission);
 }

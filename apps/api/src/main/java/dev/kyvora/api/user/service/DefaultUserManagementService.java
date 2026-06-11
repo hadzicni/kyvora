@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.data.domain.Sort;
@@ -13,8 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import dev.kyvora.api.auditlog.entity.AuditEventType;
 import dev.kyvora.api.auditlog.service.AuditLogService;
+import dev.kyvora.api.auth.entity.PermissionPreset;
 import dev.kyvora.api.auth.entity.User;
-import dev.kyvora.api.auth.entity.UserRole;
+import dev.kyvora.api.auth.entity.UserPermission;
 import dev.kyvora.api.auth.exception.UserManagementException;
 import dev.kyvora.api.auth.exception.UserNotFoundException;
 import dev.kyvora.api.auth.repository.RefreshTokenRepository;
@@ -66,7 +68,7 @@ class DefaultUserManagementService implements UserManagementService {
 
 	@Override
 	public UserResponse create(CreateUserRequest request) {
-		requireAssignableRole(request.role());
+		Set<UserPermission> permissions = resolvePermissions(request.permissionPreset(), request.permissions());
 		String email = normalizeEmail(request.email());
 		if (userRepository.existsByEmailIgnoreCase(email)) {
 			throw new UserManagementException("Email is already in use");
@@ -76,7 +78,7 @@ class DefaultUserManagementService implements UserManagementService {
 				email,
 				passwordEncoder.encode(request.temporaryPassword()),
 				request.displayName().trim(),
-				request.role(),
+				permissions,
 				true));
 		saved.setMustChangePassword(request.mustChangePassword() == null || request.mustChangePassword());
 		auditLogService.recordUserEvent(AuditEventType.USER_CREATED, saved.getId(), currentUserActor(), "User created", metadata(saved));
@@ -85,28 +87,30 @@ class DefaultUserManagementService implements UserManagementService {
 
 	@Override
 	public UserResponse update(UUID id, UpdateUserRequest request) {
-		requireAssignableRole(request.role());
+		Set<UserPermission> permissions = resolvePermissions(request.permissionPreset(), request.permissions());
 		User user = findUser(id);
-		UserRole previousRole = user.getRole();
-		if (previousRole == UserRole.ADMIN && request.role() != UserRole.ADMIN && user.isEnabled()) {
-			ensureAnotherEnabledAdmin(user.getId(), "Cannot remove the last enabled admin");
+		Set<UserPermission> previousPermissions = user.getPermissions();
+		if (previousPermissions.contains(UserPermission.USER_UPDATE)
+				&& !permissions.contains(UserPermission.USER_UPDATE)
+				&& user.isEnabled()) {
+			ensureAnotherEnabledUserManager(user.getId(), "Cannot remove the last enabled user manager");
 		}
 
 		user.setDisplayName(request.displayName().trim());
-		user.setRole(request.role());
+		user.setPermissions(permissions);
 		auditLogService.recordUserEvent(AuditEventType.USER_UPDATED, user.getId(), currentUserActor(), "User updated", metadata(user,
-				Map.of("previousRole", previousRole.name())));
+				Map.of("previousPermissions", permissionNames(previousPermissions))));
 		return mapper.toResponse(user);
 	}
 
 	@Override
 	public UserResponse disable(UUID id, AuthenticatedUser actor) {
 		User user = findUser(id);
-		if (user.getRole() == UserRole.ADMIN && user.isEnabled()) {
-			ensureAnotherEnabledAdmin(user.getId(), "Cannot disable the last enabled admin");
+		if (user.getPermissions().contains(UserPermission.USER_UPDATE) && user.isEnabled()) {
+			ensureAnotherEnabledUserManager(user.getId(), "Cannot disable the last enabled user manager");
 		}
-		if (actor != null && actor.id().equals(user.getId()) && user.getRole() == UserRole.ADMIN) {
-			ensureAnotherEnabledAdmin(user.getId(), "Cannot disable yourself as the only enabled admin");
+		if (actor != null && actor.id().equals(user.getId()) && user.getPermissions().contains(UserPermission.USER_UPDATE)) {
+			ensureAnotherEnabledUserManager(user.getId(), "Cannot disable yourself as the only enabled user manager");
 		}
 
 		user.setEnabled(false);
@@ -153,16 +157,20 @@ class DefaultUserManagementService implements UserManagementService {
 				.orElseThrow(() -> new UserNotFoundException("User not found"));
 	}
 
-	private void requireAssignableRole(UserRole role) {
-		if (role != UserRole.ADMIN && role != UserRole.OPERATOR && role != UserRole.VIEWER) {
-			throw new UserManagementException("Role must be ADMIN, OPERATOR, or VIEWER");
+	private Set<UserPermission> resolvePermissions(PermissionPreset preset, Set<UserPermission> permissions) {
+		Set<UserPermission> resolved = permissions == null || permissions.isEmpty()
+				? (preset == null ? Set.of() : preset.permissions())
+				: Set.copyOf(permissions);
+		if (resolved.isEmpty()) {
+			throw new UserManagementException("At least one permission is required");
 		}
+		return resolved;
 	}
 
-	private void ensureAnotherEnabledAdmin(UUID userId, String message) {
-		long enabledAdmins = userRepository.countByRoleAndEnabledTrue(UserRole.ADMIN);
-		if (enabledAdmins <= 1 && userRepository.findById(userId)
-				.filter(user -> user.getRole() == UserRole.ADMIN && user.isEnabled())
+	private void ensureAnotherEnabledUserManager(UUID userId, String message) {
+		long enabledUserManagers = userRepository.countEnabledUsersWithPermission(UserPermission.USER_UPDATE);
+		if (enabledUserManagers <= 1 && userRepository.findById(userId)
+				.filter(user -> user.getPermissions().contains(UserPermission.USER_UPDATE) && user.isEnabled())
 				.isPresent()) {
 			throw new UserManagementException(message);
 		}
@@ -176,7 +184,7 @@ class DefaultUserManagementService implements UserManagementService {
 		Map<String, Object> metadata = new LinkedHashMap<>();
 		metadata.put("userId", user.getId().toString());
 		metadata.put("email", user.getEmail());
-		metadata.put("role", user.getRole().name());
+		metadata.put("permissions", permissionNames(user.getPermissions()));
 		metadata.put("enabled", user.isEnabled());
 		metadata.put("mustChangePassword", user.isMustChangePassword());
 		metadata.putAll(extra);
@@ -193,5 +201,9 @@ class DefaultUserManagementService implements UserManagementService {
 
 	private String normalizeEmail(String email) {
 		return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+	}
+
+	private List<String> permissionNames(Set<UserPermission> permissions) {
+		return permissions.stream().map(Enum::name).sorted().toList();
 	}
 }

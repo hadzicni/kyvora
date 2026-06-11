@@ -36,7 +36,7 @@ public class SettingsController {
 	}
 
 	@GetMapping
-	@PreAuthorize("@permissions.canManageSettings(authentication)")
+	@PreAuthorize("@permissions.canReadSettings(authentication)")
 	@Operation(
 			summary = "Get system settings",
 			responses = {
@@ -48,7 +48,7 @@ public class SettingsController {
 	}
 
 	@PutMapping
-	@PreAuthorize("@permissions.canManageSettings(authentication)")
+	@PreAuthorize("@permissions.canUpdateSettings(authentication)")
 	@Operation(
 			summary = "Update system settings",
 			description = "Updates supported operational settings. Secrets and agent tokens are not accepted here.",
@@ -57,7 +57,7 @@ public class SettingsController {
 					@ApiResponse(responseCode = "400", description = "Request body failed validation",
 							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
 					@ApiResponse(responseCode = "401", description = "Authentication is required", content = @Content),
-					@ApiResponse(responseCode = "403", description = "ADMIN role is required", content = @Content)
+					@ApiResponse(responseCode = "403", description = "SETTINGS_UPDATE permission is required", content = @Content)
 			})
 	public ResponseEntity<SettingsResponse> update(@Valid @RequestBody UpdateSettingsRequest request) {
 		return ResponseEntity.ok(service.update(request));
