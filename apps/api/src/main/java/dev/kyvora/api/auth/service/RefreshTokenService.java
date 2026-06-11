@@ -1,7 +1,5 @@
 package dev.kyvora.api.auth.service;
 
-import java.time.Instant;
-
 import dev.kyvora.api.auth.entity.RefreshToken;
 import dev.kyvora.api.auth.entity.User;
 

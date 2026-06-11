@@ -1,91 +1,75 @@
-"use client";
+"use client"
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  Search,
-  Server,
-  X,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useLocale, useTranslations } from "next-intl";
+import { ChevronLeft, ChevronRight, RefreshCw, Search, Server, X } from "lucide-react"
+import { useSession } from "next-auth/react"
+import { useLocale, useTranslations } from "next-intl"
+import { useEffect, useMemo, useState } from "react"
 
-import { AppShell } from "@/components/app/app-shell";
-import { PageHeader } from "@/components/app/page-header";
-import { Button } from "@/components/ui/button";
+import { AppShell } from "@/components/app/app-shell"
+import { PageHeader } from "@/components/app/page-header"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { CreateServerDialog } from "@/features/servers/create-server-dialog";
-import { formatNumber } from "@/features/servers/format";
-import { ServerEmptyState } from "@/features/servers/server-empty-state";
-import { ServerErrorState } from "@/features/servers/server-error-state";
-import { ServerTable } from "@/features/servers/server-table";
-import { ServerTableSkeleton } from "@/features/servers/server-table-skeleton";
-import { useServers } from "@/features/servers/use-servers";
-import type { ServerStatus } from "@/lib/api/servers";
-import {
-  canCreateServers,
-  canDeleteServers,
-  canUpdateServers,
-} from "@/lib/permissions";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/select"
+import { CreateServerDialog } from "@/features/servers/create-server-dialog"
+import { formatNumber } from "@/features/servers/format"
+import { ServerEmptyState } from "@/features/servers/server-empty-state"
+import { ServerErrorState } from "@/features/servers/server-error-state"
+import { ServerTable } from "@/features/servers/server-table"
+import { ServerTableSkeleton } from "@/features/servers/server-table-skeleton"
+import { useServers } from "@/features/servers/use-servers"
+import type { ServerStatus } from "@/lib/api/servers"
+import { canCreateServers, canDeleteServers, canUpdateServers } from "@/lib/permissions"
+import { cn } from "@/lib/utils"
 
-const serverStatuses = ["ONLINE", "OFFLINE", "UNKNOWN"] as const;
-const pageSizeOptions = [10, 20, 50] as const;
+const serverStatuses = ["ONLINE", "OFFLINE", "UNKNOWN"] as const
+const pageSizeOptions = [10, 20, 50] as const
 
 export default function ServerInventoryPage() {
-  const t = useTranslations();
-  const locale = useLocale();
-  const { data: session } = useSession();
-  const mayCreateServers = canCreateServers(session?.user.permissions);
-  const mayUpdateServers = canUpdateServers(session?.user.permissions);
-  const mayDeleteServers = canDeleteServers(session?.user.permissions);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<ServerStatus | "ALL">("ALL");
-  const [tags, setTags] = useState("");
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState<(typeof pageSizeOptions)[number]>(
-    20
-  );
-  const debouncedSearch = useDebouncedValue(search.trim(), 300);
-  const parsedTags = useMemo(() => parseTags(tags), [tags]);
+  const t = useTranslations()
+  const locale = useLocale()
+  const { data: session } = useSession()
+  const mayCreateServers = canCreateServers(session?.user.permissions)
+  const mayUpdateServers = canUpdateServers(session?.user.permissions)
+  const mayDeleteServers = canDeleteServers(session?.user.permissions)
+  const [search, setSearch] = useState("")
+  const [status, setStatus] = useState<ServerStatus | "ALL">("ALL")
+  const [tags, setTags] = useState("")
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState<(typeof pageSizeOptions)[number]>(20)
+  const debouncedSearch = useDebouncedValue(search.trim(), 300)
+  const parsedTags = useMemo(() => parseTags(tags), [tags])
   const hasActiveFilters =
-    debouncedSearch.length > 0 || status !== "ALL" || parsedTags.length > 0;
+    debouncedSearch.length > 0 || status !== "ALL" || parsedTags.length > 0
   const serversQuery = useServers({
     page,
     size: pageSize,
     q: debouncedSearch,
     status: status === "ALL" ? undefined : status,
     tags: parsedTags,
-  });
-  const servers = serversQuery.data?.content ?? [];
-  const totalElements = serversQuery.data?.totalElements ?? 0;
-  const totalPages = serversQuery.data?.totalPages ?? 0;
-  const displayedPage = serversQuery.data?.page ?? page;
-  const rangeStart = totalElements === 0 ? 0 : displayedPage * pageSize + 1;
+  })
+  const servers = serversQuery.data?.content ?? []
+  const totalElements = serversQuery.data?.totalElements ?? 0
+  const totalPages = serversQuery.data?.totalPages ?? 0
+  const displayedPage = serversQuery.data?.page ?? page
+  const rangeStart = totalElements === 0 ? 0 : displayedPage * pageSize + 1
   const rangeEnd =
-    totalElements === 0
-      ? 0
-      : Math.min(rangeStart + servers.length - 1, totalElements);
-  const canGoBack = page > 0 && !serversQuery.isFetching;
-  const canGoForward =
-    totalPages > 0 && page + 1 < totalPages && !serversQuery.isFetching;
+    totalElements === 0 ? 0 : Math.min(rangeStart + servers.length - 1, totalElements)
+  const canGoBack = page > 0 && !serversQuery.isFetching
+  const canGoForward = totalPages > 0 && page + 1 < totalPages && !serversQuery.isFetching
 
   return (
     <AppShell>
@@ -102,20 +86,17 @@ export default function ServerInventoryPage() {
           title={t("servers.title")}
           actions={
             <>
-            {mayCreateServers ? <CreateServerDialog /> : null}
-            <Button
-              disabled={serversQuery.isFetching}
-              onClick={() => void serversQuery.refetch()}
-              variant="outline"
-            >
-              <RefreshCw
-                className={cn(
-                  "size-4",
-                  serversQuery.isFetching && "animate-spin"
-                )}
-              />
-              {t("actions.refresh")}
-            </Button>
+              {mayCreateServers ? <CreateServerDialog /> : null}
+              <Button
+                disabled={serversQuery.isFetching}
+                onClick={() => void serversQuery.refetch()}
+                variant="outline"
+              >
+                <RefreshCw
+                  className={cn("size-4", serversQuery.isFetching && "animate-spin")}
+                />
+                {t("actions.refresh")}
+              </Button>
             </>
           }
         />
@@ -150,8 +131,8 @@ export default function ServerInventoryPage() {
                     placeholder={t("forms.nameHostnameIp")}
                     value={search}
                     onChange={(event) => {
-                      setSearch(event.target.value);
-                      setPage(0);
+                      setSearch(event.target.value)
+                      setPage(0)
                     }}
                   />
                 </div>
@@ -162,8 +143,8 @@ export default function ServerInventoryPage() {
                 <Select
                   value={status}
                   onValueChange={(value) => {
-                    setStatus(value as ServerStatus | "ALL");
-                    setPage(0);
+                    setStatus(value as ServerStatus | "ALL")
+                    setPage(0)
                   }}
                 >
                   <SelectTrigger id="server-status" className="w-full">
@@ -187,8 +168,8 @@ export default function ServerInventoryPage() {
                   placeholder="prod, api"
                   value={tags}
                   onChange={(event) => {
-                    setTags(event.target.value);
-                    setPage(0);
+                    setTags(event.target.value)
+                    setPage(0)
                   }}
                 />
               </div>
@@ -196,14 +177,12 @@ export default function ServerInventoryPage() {
               <Button
                 type="button"
                 variant="outline"
-                disabled={
-                  !hasActiveFilters && search.length === 0 && tags.length === 0
-                }
+                disabled={!hasActiveFilters && search.length === 0 && tags.length === 0}
                 onClick={() => {
-                  setSearch("");
-                  setStatus("ALL");
-                  setTags("");
-                  setPage(0);
+                  setSearch("")
+                  setStatus("ALL")
+                  setTags("")
+                  setPage(0)
                 }}
               >
                 <X className="size-4" />
@@ -222,9 +201,7 @@ export default function ServerInventoryPage() {
                 onRetry={() => void serversQuery.refetch()}
               />
             ) : null}
-            {serversQuery.isSuccess && servers.length === 0 ? (
-              <ServerEmptyState />
-            ) : null}
+            {serversQuery.isSuccess && servers.length === 0 ? <ServerEmptyState /> : null}
             {serversQuery.isSuccess && servers.length > 0 ? (
               <ServerTable
                 canDelete={mayDeleteServers}
@@ -259,16 +236,14 @@ export default function ServerInventoryPage() {
                     value={String(pageSize)}
                     disabled={serversQuery.isFetching}
                     onValueChange={(value) => {
-                      setPageSize(
-                        Number(value) as (typeof pageSizeOptions)[number]
-                      );
-                      setPage(0);
+                      setPageSize(Number(value) as (typeof pageSizeOptions)[number])
+                      setPage(0)
                     }}
                   >
                     <SelectTrigger
                       id="server-page-size"
                       aria-label={t("actions.rows")}
-                      className="w-[7.5rem]"
+                      className="w-30"
                     >
                       <SelectValue />
                     </SelectTrigger>
@@ -283,9 +258,7 @@ export default function ServerInventoryPage() {
                   <Button
                     aria-label={t("actions.previousPage")}
                     disabled={!canGoBack}
-                    onClick={() =>
-                      setPage((currentPage) => Math.max(0, currentPage - 1))
-                    }
+                    onClick={() => setPage((currentPage) => Math.max(0, currentPage - 1))}
                     size="icon"
                     variant="outline"
                   >
@@ -307,7 +280,7 @@ export default function ServerInventoryPage() {
         </Card>
       </div>
     </AppShell>
-  );
+  )
 }
 
 function parseTags(value: string) {
@@ -316,18 +289,18 @@ function parseTags(value: string) {
       value
         .split(",")
         .map((tag) => tag.trim())
-        .filter(Boolean)
-    )
-  );
+        .filter(Boolean),
+    ),
+  )
 }
 
 function useDebouncedValue<T>(value: T, delay: number) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
+  const [debouncedValue, setDebouncedValue] = useState(value)
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => setDebouncedValue(value), delay);
-    return () => window.clearTimeout(timeout);
-  }, [delay, value]);
+    const timeout = window.setTimeout(() => setDebouncedValue(value), delay)
+    return () => window.clearTimeout(timeout)
+  }, [delay, value])
 
-  return debouncedValue;
+  return debouncedValue
 }

@@ -11,7 +11,6 @@ import dev.kyvora.api.agent.repository.AgentRepository;
 import dev.kyvora.api.auditlog.service.AuditLogService;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryCreateRequest;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryFilter;
-import dev.kyvora.api.serverinventory.dto.ServerInventorySearchRequest;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryResponse;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryUpdateRequest;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;

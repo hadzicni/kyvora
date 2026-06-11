@@ -4,12 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,8 +30,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.kyvora.api.auditlog.entity.AuditEventType;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
-import dev.kyvora.api.auth.entity.User;
 import dev.kyvora.api.auth.entity.PermissionPreset;
+import dev.kyvora.api.auth.entity.User;
 import dev.kyvora.api.auth.repository.RefreshTokenRepository;
 import dev.kyvora.api.auth.repository.UserRepository;
 import dev.kyvora.api.auth.service.UserService;

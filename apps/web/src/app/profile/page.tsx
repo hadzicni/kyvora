@@ -1,41 +1,41 @@
-"use client";
+"use client"
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
   BadgeCheck,
-  GitBranch,
   Fingerprint,
+  GitBranch,
   LogOut,
   ShieldCheck,
   UserCircle,
-} from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { signIn, signOut, useSession } from "next-auth/react";
-import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
+} from "lucide-react"
+import { signIn, signOut, useSession } from "next-auth/react"
+import { useTranslations } from "next-intl"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { toast } from "sonner"
+import { z } from "zod"
 
-import { AppShell } from "@/components/app/app-shell";
-import { PageHeader } from "@/components/app/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { AppShell } from "@/components/app/app-shell"
+import { PageHeader } from "@/components/app/page-header"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useChangePassword } from "@/features/users/use-users";
-import { UsersApiError } from "@/lib/api/users";
-import { getStatus, statusKeys } from "@/lib/api/status";
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useChangePassword } from "@/features/users/use-users"
+import { getStatus, statusKeys } from "@/lib/api/status"
+import { UsersApiError } from "@/lib/api/users"
 
 const changePasswordSchema = z
   .object({
@@ -46,33 +46,25 @@ const changePasswordSchema = z
   .refine((values) => values.newPassword === values.confirmNewPassword, {
     message: "Passwords do not match",
     path: ["confirmNewPassword"],
-  });
+  })
 
-type ChangePasswordValues = z.output<typeof changePasswordSchema>;
+type ChangePasswordValues = z.output<typeof changePasswordSchema>
 
 async function logout() {
   await fetch("/api/session/logout", { method: "POST" }).catch(() => {
     // Auth.js session cleanup should continue even if backend revocation fails.
-  });
+  })
 
-  await signOut({ callbackUrl: "/login" });
+  await signOut({ callbackUrl: "/login" })
 }
 
-function ProfileField({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function ProfileField({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border bg-muted/20 p-3">
-      <div className="text-xs font-medium uppercase text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 break-words text-sm font-medium">{value}</div>
+      <div className="text-xs font-medium uppercase text-muted-foreground">{label}</div>
+      <div className="mt-1 wrap-break-word text-sm font-medium">{value}</div>
     </div>
-  );
+  )
 }
 
 function ProfileLoadingState() {
@@ -110,19 +102,19 @@ function ProfileLoadingState() {
         </div>
       </div>
     </AppShell>
-  );
+  )
 }
 
 export default function ProfilePage() {
-  const t = useTranslations();
-  const router = useRouter();
-  const { data: session, status, update } = useSession();
+  const t = useTranslations()
+  const router = useRouter()
+  const { data: session, status, update } = useSession()
   const statusQuery = useQuery({
     queryKey: statusKeys.status,
     queryFn: getStatus,
     enabled: status === "authenticated",
-  });
-  const changePasswordMutation = useChangePassword();
+  })
+  const changePasswordMutation = useChangePassword()
   const passwordForm = useForm<ChangePasswordValues>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: {
@@ -130,16 +122,16 @@ export default function ProfilePage() {
       newPassword: "",
       confirmNewPassword: "",
     },
-  });
+  })
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace("/login");
+      router.replace("/login")
     }
-  }, [router, status]);
+  }, [router, status])
 
   if (status === "loading") {
-    return <ProfileLoadingState />;
+    return <ProfileLoadingState />
   }
 
   if (status === "unauthenticated" || !session?.user) {
@@ -157,34 +149,34 @@ export default function ProfilePage() {
           </CardHeader>
         </Card>
       </AppShell>
-    );
+    )
   }
 
-  const { user } = session;
+  const { user } = session
 
   async function onChangePassword(values: ChangePasswordValues) {
     try {
       await changePasswordMutation.mutateAsync({
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
-      });
+      })
       if (user.email) {
         await signIn("credentials", {
           email: user.email,
           password: values.newPassword,
           redirect: false,
           callbackUrl: "/profile",
-        });
-        await update();
+        })
+        await update()
       }
-      passwordForm.reset();
-      toast.success("Password changed");
+      passwordForm.reset()
+      toast.success("Password changed")
     } catch (error) {
       if (error instanceof UsersApiError && error.details.length > 0) {
-        toast.error(`${error.message}: ${error.details.join(", ")}`);
-        return;
+        toast.error(`${error.message}: ${error.details.join(", ")}`)
+        return
       }
-      toast.error(error instanceof Error ? error.message : "Password change failed");
+      toast.error(error instanceof Error ? error.message : "Password change failed")
     }
   }
 
@@ -193,8 +185,8 @@ export default function ProfilePage() {
       <div className="space-y-6">
         <PageHeader
           badge={
-              <Badge className="w-fit" variant="outline">
-                <BadgeCheck className="size-3" />
+            <Badge className="w-fit" variant="outline">
+              <BadgeCheck className="size-3" />
               {user.permissions.length
                 ? t("permissions.summary", { count: user.permissions.length })
                 : t("common.authenticated")}
@@ -211,16 +203,17 @@ export default function ProfilePage() {
                 <UserCircle className="size-4" />
                 {t("profile.userInformation")}
               </CardTitle>
-              <CardDescription>
-                {t("profile.userInformationDescription")}
-              </CardDescription>
+              <CardDescription>{t("profile.userInformationDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <ProfileField
                 label={t("forms.displayName")}
                 value={user.displayName || t("common.notProvided")}
               />
-              <ProfileField label={t("users.email")} value={user.email || t("common.notProvided")} />
+              <ProfileField
+                label={t("users.email")}
+                value={user.email || t("common.notProvided")}
+              />
               <ProfileField
                 label={t("permissions.title")}
                 value={
@@ -242,15 +235,15 @@ export default function ProfilePage() {
                   <ShieldCheck className="size-4" />
                   {t("profile.security")}
                 </CardTitle>
-                <CardDescription>
-                  {t("profile.securityDescription")}
-                </CardDescription>
+                <CardDescription>{t("profile.securityDescription")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-3 rounded-md border bg-muted/20 p-3">
                   <BadgeCheck className="mt-0.5 size-4 text-emerald-400" />
                   <div>
-                    <div className="text-sm font-medium">{t("profile.sessionStatus")}</div>
+                    <div className="text-sm font-medium">
+                      {t("profile.sessionStatus")}
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {t("common.authenticated")}
                     </div>
@@ -259,9 +252,7 @@ export default function ProfilePage() {
                 <div className="flex items-start gap-3 rounded-md border bg-muted/20 p-3">
                   <Fingerprint className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
-                    <div className="text-sm font-medium">
-                      {t("profile.authProvider")}
-                    </div>
+                    <div className="text-sm font-medium">{t("profile.authProvider")}</div>
                     <div className="text-sm text-muted-foreground">
                       {t("profile.credentials")}
                     </div>
@@ -328,7 +319,9 @@ export default function ProfilePage() {
                     ) : null}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmNewPassword">{t("auth.confirmPassword")}</Label>
+                    <Label htmlFor="confirmNewPassword">
+                      {t("auth.confirmPassword")}
+                    </Label>
                     <Input
                       id="confirmNewPassword"
                       type="password"
@@ -365,8 +358,8 @@ export default function ProfilePage() {
                 <Button
                   className="w-full justify-center"
                   onClick={() => {
-                    toast.info(t("auth.signingOut"));
-                    void logout();
+                    toast.info(t("auth.signingOut"))
+                    void logout()
                   }}
                   variant="destructive"
                 >
@@ -379,5 +372,5 @@ export default function ProfilePage() {
         </div>
       </div>
     </AppShell>
-  );
+  )
 }

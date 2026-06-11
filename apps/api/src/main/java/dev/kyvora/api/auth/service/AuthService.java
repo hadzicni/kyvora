@@ -7,7 +7,6 @@ import dev.kyvora.api.auth.dto.LoginRequest;
 import dev.kyvora.api.auth.dto.LoginResponse;
 import dev.kyvora.api.auth.dto.RefreshRequest;
 import dev.kyvora.api.auth.dto.RefreshResponse;
-import dev.kyvora.api.auth.entity.User;
 
 public interface AuthService {
 
