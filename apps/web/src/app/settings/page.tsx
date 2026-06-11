@@ -37,8 +37,8 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useSettings, useUpdateSettings } from "@/features/settings/use-settings";
-import { getStatus, statusKeys } from "@/lib/api/status";
 import { SettingsApiError, type SettingsResponse } from "@/lib/api/settings";
+import { getStatus, statusKeys } from "@/lib/api/status";
 import { canReadSettings, canUpdateSettings } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -132,7 +132,9 @@ function Toggle({
     <button
       aria-checked={checked}
       className={cn(
-        "relative h-6 w-11 rounded-full border transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
+        "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+        "disabled:pointer-events-none disabled:opacity-50",
         checked
           ? "border-emerald-500/50 bg-emerald-500/80"
           : "border-border bg-muted"
@@ -144,7 +146,7 @@ function Toggle({
     >
       <span
         className={cn(
-          "absolute top-0.5 size-5 rounded-full bg-background shadow-sm transition-transform",
+          "pointer-events-none block size-5 rounded-full bg-background shadow-sm ring-0 transition-transform",
           checked ? "translate-x-5" : "translate-x-0.5"
         )}
       />
