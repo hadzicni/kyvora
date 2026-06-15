@@ -122,3 +122,21 @@
 ### Fixed
 
 - Removed the language picker from the login page.
+
+## [0.5.0] - 2026-06-15
+
+### Added
+
+- Added a notification center for centralized user notifications.
+- Added global search to the web application.
+- Added service detail pages for viewing individual service information.
+
+### Changed
+
+- Replaced the previous push-based agent communication model with a pull-based agent API.
+- Consolidated shared utility usage across the codebase.
+- Improved service-related navigation and discovery in the web interface.
+
+### Fixed
+
+- Added missing `next-intl` integration to additional web pages.
