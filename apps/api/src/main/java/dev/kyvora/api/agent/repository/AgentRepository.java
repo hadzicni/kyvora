@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -38,4 +39,14 @@ public interface AgentRepository extends JpaRepository<Agent, UUID> {
 				and agent.lastSeenAt < :staleBefore
 			""")
 	List<Agent> findStaleOnlineAgents(@Param("staleBefore") Instant staleBefore);
+
+	@Query("""
+			select agent
+			from Agent agent
+			left join fetch agent.server
+			where lower(agent.name) like lower(concat('%', :query, '%'))
+				or lower(agent.hostname) like lower(concat('%', :query, '%'))
+				or lower(agent.version) like lower(concat('%', :query, '%'))
+			""")
+	List<Agent> search(@Param("query") String query, Pageable pageable);
 }

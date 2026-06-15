@@ -42,10 +42,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { useAgents } from "@/features/agents/use-agents"
-import { useServers } from "@/features/servers/use-servers"
-import { useServices } from "@/features/services/use-services"
+import { useGlobalSearch } from "@/features/search/use-global-search"
 import { useSettings } from "@/features/settings/use-settings"
+import type { SearchResult, SearchResultType } from "@/lib/api/search"
 import { getInstanceSettings } from "@/lib/api/settings"
 import {
   canAccessUserManagement,
@@ -334,19 +333,13 @@ function CommandPalette({ collapsed = false }: { collapsed?: boolean }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const { data: session } = useSession()
-  const mayReadServers = canReadServers(session?.user.permissions)
-  const mayReadServices = canReadServices(session?.user.permissions)
-  const mayReadAgents = canReadAgents(session?.user.permissions)
-  const serversQuery = useServers({ q: search, size: 8 }, mayReadServers)
-  const servicesQuery = useServices({ q: search, size: 8 }, mayReadServices)
-  const agentsQuery = useAgents({ size: 50 }, mayReadAgents)
-  const servers = serversQuery.data?.content ?? []
-  const services = servicesQuery.data?.content ?? []
-  const agents = agentsQuery.data?.content ?? []
+  const searchQuery = useGlobalSearch(search, open)
+  const searchResults = searchQuery.data?.results ?? []
   const visibleNavItems = navItems.filter(
     (item) =>
       !item.requiredPermission || item.requiredPermission(session?.user.permissions),
   )
+  const groupedResults = groupSearchResults(searchResults)
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -403,11 +396,11 @@ function CommandPalette({ collapsed = false }: { collapsed?: boolean }) {
           />
           <CommandList>
             <CommandEmpty>
-              {(mayReadServers && serversQuery.isLoading) ||
-              (mayReadServices && servicesQuery.isLoading) ||
-              (mayReadAgents && agentsQuery.isLoading)
-                ? `${t("common.loading")}...`
-                : "No results found."}
+              {search.trim().length > 0 && search.trim().length < 2
+                ? "Type at least 2 characters to search resources."
+                : searchQuery.isLoading
+                  ? `${t("common.loading")}...`
+                  : "No results found."}
             </CommandEmpty>
             <CommandGroup heading={t("navigation.navigation")}>
               {visibleNavItems.map((item) => {
@@ -428,101 +421,120 @@ function CommandPalette({ collapsed = false }: { collapsed?: boolean }) {
                 )
               })}
             </CommandGroup>
-            {mayReadServers && (
+            {searchQuery.isError ? (
               <>
                 <CommandSeparator />
-                <CommandGroup heading={t("navigation.servers")}>
-                  {serversQuery.isLoading && (
-                    <CommandItem disabled value="loading servers">
-                      {t("servers.loadingInventory")}
-                    </CommandItem>
-                  )}
-                  {serversQuery.isError && (
-                    <CommandItem disabled value="unable to load servers">
-                      {t("servers.errorTitle")}
-                    </CommandItem>
-                  )}
-                  {servers.map((server) => (
-                    <CommandItem
-                      key={server.id}
-                      onSelect={() =>
-                        navigateTo(`/servers/${encodeURIComponent(server.id)}`)
-                      }
-                      value={`${server.name} ${server.hostname} ${server.ipAddress} ${server.operatingSystem} ${server.tags.join(" ")}`}
-                    >
-                      <Server className="size-4" />
-                      <span className="min-w-0 flex-1 truncate">{server.name}</span>
-                      <span className="truncate font-mono text-xs text-muted-foreground">
-                        {server.hostname}
-                      </span>
-                    </CommandItem>
-                  ))}
+                <CommandGroup heading="Search">
+                  <CommandItem disabled value="unable to load search">
+                    Unable to load search results
+                  </CommandItem>
                 </CommandGroup>
               </>
-            )}
-            {mayReadServices && (
-              <>
-                <CommandSeparator />
-                <CommandGroup heading={t("navigation.services")}>
-                  {servicesQuery.isLoading && (
-                    <CommandItem disabled value="loading services">
-                      Loading services
-                    </CommandItem>
-                  )}
-                  {servicesQuery.isError && (
-                    <CommandItem disabled value="unable to load services">
-                      Unable to load services
-                    </CommandItem>
-                  )}
-                  {services.map((service) => (
-                    <CommandItem
-                      key={service.id}
-                      onSelect={() => navigateTo("/services")}
-                      value={`${service.name} ${service.url ?? ""} ${service.hostname ?? ""} ${service.ipAddress ?? ""} ${service.category} ${service.tags.join(" ")}`}
-                    >
-                      <Cable className="size-4" />
-                      <span className="min-w-0 flex-1 truncate">{service.name}</span>
-                      <span className="truncate font-mono text-xs text-muted-foreground">
-                        {service.hostname ?? service.url ?? service.protocol}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </>
-            )}
-            {mayReadAgents && (
-              <>
-                <CommandSeparator />
-                <CommandGroup heading={t("navigation.agents")}>
-                  {agentsQuery.isLoading && (
-                    <CommandItem disabled value="loading agents">
-                      {t("agents.loadingAgents")}
-                    </CommandItem>
-                  )}
-                  {agentsQuery.isError && (
-                    <CommandItem disabled value="unable to load agents">
-                      {t("agents.errorTitle")}
-                    </CommandItem>
-                  )}
-                  {agents.map((agent) => (
-                    <CommandItem
-                      key={agent.id}
-                      onSelect={() => navigateTo("/agents")}
-                      value={`${agent.name} ${agent.hostname} ${agent.version} ${agent.status}`}
-                    >
-                      <Bot className="size-4" />
-                      <span className="min-w-0 flex-1 truncate">{agent.name}</span>
-                      <span className="truncate font-mono text-xs text-muted-foreground">
-                        {agent.hostname}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </>
-            )}
+            ) : null}
+            {search.trim().length >= 2
+              ? searchResultTypes.map((type) => {
+                  const results = groupedResults[type] ?? []
+                  if (results.length === 0) return null
+                  return (
+                    <SearchResultGroup
+                      heading={searchResultHeading(type, t)}
+                      key={type}
+                      navigateTo={navigateTo}
+                      results={results}
+                    />
+                  )
+                })
+              : null}
           </CommandList>
         </Command>
       </CommandDialog>
+    </>
+  )
+}
+
+const searchResultTypes: SearchResultType[] = [
+  "SERVER",
+  "SERVICE",
+  "AGENT",
+  "USER",
+  "ACTIVITY",
+]
+
+function groupSearchResults(results: SearchResult[]) {
+  return results.reduce<Partial<Record<SearchResultType, SearchResult[]>>>(
+    (groups, result) => {
+      const group = groups[result.type] ?? []
+      group.push(result)
+      groups[result.type] = group
+      return groups
+    },
+    {},
+  )
+}
+
+function searchResultHeading(
+  type: SearchResultType,
+  t: ReturnType<typeof useTranslations>,
+) {
+  switch (type) {
+    case "SERVER":
+      return t("navigation.servers")
+    case "SERVICE":
+      return t("navigation.services")
+    case "AGENT":
+      return t("navigation.agents")
+    case "USER":
+      return t("navigation.users")
+    case "ACTIVITY":
+      return t("navigation.activity")
+  }
+}
+
+function searchResultIcon(type: SearchResultType) {
+  switch (type) {
+    case "SERVER":
+      return Server
+    case "SERVICE":
+      return Cable
+    case "AGENT":
+      return Bot
+    case "USER":
+      return Users
+    case "ACTIVITY":
+      return Activity
+  }
+}
+
+function SearchResultGroup({
+  heading,
+  navigateTo,
+  results,
+}: {
+  heading: string
+  navigateTo: (href: string) => void
+  results: SearchResult[]
+}) {
+  return (
+    <>
+      <CommandSeparator />
+      <CommandGroup heading={heading}>
+        {results.map((result) => {
+          const Icon = searchResultIcon(result.type)
+          return (
+            <CommandItem
+              key={`${result.type}-${result.id}`}
+              onSelect={() => navigateTo(result.url)}
+              value={`${result.title} ${result.subtitle} ${result.description ?? ""}`}
+            >
+              <Icon className="size-4" />
+              <span className="min-w-0 flex-1 truncate">{result.title}</span>
+              <span className="truncate text-xs text-muted-foreground">
+                {result.subtitle}
+              </span>
+            </CommandItem>
+          )
+        })}
+      </CommandGroup>
     </>
   )
 }
