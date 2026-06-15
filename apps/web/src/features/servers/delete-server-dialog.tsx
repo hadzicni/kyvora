@@ -3,6 +3,7 @@
 import { Loader2, Trash2 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export function DeleteServerDialog({
   triggerSize = triggerLabel ? "default" : "icon-sm",
   triggerVariant = triggerLabel ? "destructive" : "ghost",
 }: DeleteServerDialogProps) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const deleteServer = useDeleteServer();
@@ -43,24 +45,23 @@ export function DeleteServerDialog({
     try {
       await deleteServer.mutateAsync(server.id);
       setOpen(false);
-      toast.success("Server deleted.", {
+      toast.success(t("servers.deletedToast"), {
         description: server.hostname,
       });
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
-        const message = "This server no longer exists. Refresh the inventory.";
+        const message = t("servers.noLongerExists");
         setErrorMessage(message);
-        toast.error("Unable to delete server.", {
+        toast.error(t("servers.deleteFailedToast"), {
           description: message,
         });
         return;
       }
 
       if (error instanceof ApiError && error.status === 409) {
-        const message =
-          "This server cannot be deleted because it is still referenced elsewhere.";
+        const message = t("servers.deleteReferenced");
         setErrorMessage(message);
-        toast.error("Unable to delete server.", {
+        toast.error(t("servers.deleteFailedToast"), {
           description: message,
         });
         return;
@@ -69,10 +70,10 @@ export function DeleteServerDialog({
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to delete the server right now.";
+          : t("servers.deleteFailedDescription");
 
       setErrorMessage(message);
-      toast.error("Unable to delete server.", {
+      toast.error(t("servers.deleteFailedToast"), {
         description: message,
       });
     }
@@ -93,7 +94,11 @@ export function DeleteServerDialog({
           variant={triggerVariant}
           size={triggerSize}
           className={triggerClassName}
-          aria-label={triggerLabel ? undefined : `Delete ${server.name}`}
+          aria-label={
+            triggerLabel
+              ? undefined
+              : t("servers.deleteAria", { name: server.name })
+          }
         >
           <Trash2 className={triggerLabel ? "size-4" : "size-4 text-destructive"} />
           {triggerLabel}
@@ -101,10 +106,9 @@ export function DeleteServerDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete server</DialogTitle>
+          <DialogTitle>{t("servers.deleteServer")}</DialogTitle>
           <DialogDescription>
-            Delete {server.name} from the inventory. This action cannot be
-            undone.
+            {t("servers.deleteNamedConfirmation", { name: server.name })}
           </DialogDescription>
         </DialogHeader>
 
@@ -127,7 +131,7 @@ export function DeleteServerDialog({
             variant="outline"
             onClick={() => handleOpenChange(false)}
           >
-            Cancel
+            {t("actions.cancel")}
           </Button>
           <Button
             type="button"
@@ -140,7 +144,7 @@ export function DeleteServerDialog({
             ) : (
               <Trash2 className="size-4" />
             )}
-            Delete server
+            {t("servers.deleteServer")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,6 +2,7 @@
 
 import { ShieldAlert } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,22 +14,26 @@ import {
 } from "@/components/ui/card";
 
 export function NotAuthorized({
-  description = "Your permissions do not allow access to this area.",
+  description,
 }: {
   description?: string;
 }) {
+  const t = useTranslations();
+
   return (
     <Card>
       <CardHeader className="border-b">
         <CardTitle className="flex items-center gap-2">
           <ShieldAlert className="size-4 text-amber-300" />
-          Not authorized
+          {t("authz.notAuthorized")}
         </CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription>
+          {description ?? t("authz.defaultDescription")}
+        </CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
         <Button asChild variant="outline">
-          <Link href="/">Back to Overview</Link>
+          <Link href="/">{t("authz.backToOverview")}</Link>
         </Button>
       </CardContent>
     </Card>

@@ -1,6 +1,7 @@
 "use client";
 
 import { CirclePlus, History, Pencil, Radio, Trash2, WifiOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { SectionState } from "@/components/app/section-state";
 import {
@@ -38,6 +39,7 @@ const eventIcons = {
 >;
 
 export function RecentActivityWidget() {
+  const t = useTranslations();
   const auditLogsQuery = useAuditLogs({
     aggregateType: "SERVER",
     size: 5,
@@ -49,9 +51,9 @@ export function RecentActivityWidget() {
       <CardHeader className="border-b">
         <CardTitle className="flex items-center gap-2">
           <History className="size-4" />
-          Recent activity
+          {t("dashboard.recentActivity")}
         </CardTitle>
-        <CardDescription>Latest inventory and agent lifecycle events.</CardDescription>
+        <CardDescription>{t("dashboard.recentActivityDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
         {auditLogsQuery.isLoading ? (
@@ -67,7 +69,7 @@ export function RecentActivityWidget() {
             message={
               auditLogsQuery.error instanceof Error
                 ? auditLogsQuery.error.message
-                : "The audit log API returned an unexpected error."
+                : t("activity.unexpectedError")
             }
             onRetry={() => void auditLogsQuery.refetch()}
           />
@@ -75,9 +77,9 @@ export function RecentActivityWidget() {
 
         {auditLogsQuery.isSuccess && auditLogs.length === 0 ? (
           <SectionState
-            description="Audit events will appear here after server or agent lifecycle changes are recorded."
+            description={t("dashboard.noRecentActivityDescription")}
             icon={<History className="size-5" />}
-            title="No activity yet"
+            title={t("dashboard.noRecentActivity")}
           />
         ) : null}
 

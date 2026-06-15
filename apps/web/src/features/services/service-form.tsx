@@ -3,6 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -194,6 +195,7 @@ export function ServiceForm({
   submitIcon: ReactNode;
   submitLabel: string;
 }) {
+  const t = useTranslations();
   const {
     formState: { errors },
     register,
@@ -247,11 +249,11 @@ export function ServiceForm({
         <FormField
           error={errors.name?.message}
           htmlFor={`${idPrefix}-name`}
-          label="Name"
+          label={t("forms.name")}
         >
           <Input
             id={`${idPrefix}-name`}
-            placeholder="Grafana"
+            placeholder={t("services.placeholders.name")}
             aria-invalid={Boolean(errors.name)}
             {...register("name")}
           />
@@ -260,11 +262,11 @@ export function ServiceForm({
         <FormField
           error={errors.url?.message}
           htmlFor={`${idPrefix}-url`}
-          label="URL"
+          label={t("services.url")}
         >
           <Input
             id={`${idPrefix}-url`}
-            placeholder="https://grafana.lab.example.com"
+            placeholder={t("services.placeholders.url")}
             aria-invalid={Boolean(errors.url)}
             {...register("url")}
           />
@@ -273,11 +275,11 @@ export function ServiceForm({
         <FormField
           error={errors.hostname?.message}
           htmlFor={`${idPrefix}-hostname`}
-          label="Hostname"
+          label={t("forms.hostname")}
         >
           <Input
             id={`${idPrefix}-hostname`}
-            placeholder="grafana.lab.example.com"
+            placeholder={t("services.placeholders.hostname")}
             aria-invalid={Boolean(errors.hostname)}
             {...register("hostname")}
           />
@@ -286,7 +288,7 @@ export function ServiceForm({
         <FormField
           error={errors.ipAddress?.message}
           htmlFor={`${idPrefix}-ipAddress`}
-          label="IP address"
+          label={t("forms.ipAddress")}
         >
           <Input
             id={`${idPrefix}-ipAddress`}
@@ -300,7 +302,7 @@ export function ServiceForm({
         <FormField
           error={errors.port?.message}
           htmlFor={`${idPrefix}-port`}
-          label="Port"
+          label={t("services.port")}
         >
           <Input
             id={`${idPrefix}-port`}
@@ -314,7 +316,7 @@ export function ServiceForm({
         <FormField
           error={errors.protocol?.message}
           htmlFor={`${idPrefix}-protocol`}
-          label="Protocol"
+          label={t("services.protocol")}
         >
           <Select
             value={selectedProtocol}
@@ -346,7 +348,7 @@ export function ServiceForm({
         <FormField
           error={errors.category?.message}
           htmlFor={`${idPrefix}-category`}
-          label="Category"
+          label={t("services.category")}
         >
           <Select
             value={selectedCategory}
@@ -368,7 +370,7 @@ export function ServiceForm({
             <SelectContent position="popper">
               {serviceCategories.map((category) => (
                 <SelectItem key={category} value={category}>
-                  {formatCategory(category)}
+                  {t(`serviceCategories.${category}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -378,7 +380,7 @@ export function ServiceForm({
         <FormField
           error={errors.linkedServerId?.message}
           htmlFor={`${idPrefix}-linkedServerId`}
-          label="Linked server"
+          label={t("services.linkedServer")}
         >
           <Select
             value={selectedServerId}
@@ -394,7 +396,7 @@ export function ServiceForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent position="popper">
-              <SelectItem value="NONE">Unassigned</SelectItem>
+              <SelectItem value="NONE">{t("common.unassigned")}</SelectItem>
               {servers.map((server) => (
                 <SelectItem key={server.id} value={server.id}>
                   {server.name}
@@ -407,11 +409,11 @@ export function ServiceForm({
         <FormField
           error={errors.tags?.message}
           htmlFor={`${idPrefix}-tags`}
-          label="Tags"
+          label={t("forms.tags")}
         >
           <Input
             id={`${idPrefix}-tags`}
-            placeholder="monitoring, internal"
+            placeholder={t("services.placeholders.tags")}
             aria-invalid={Boolean(errors.tags)}
             {...register("tags")}
           />
@@ -421,11 +423,11 @@ export function ServiceForm({
       <FormField
         error={errors.description?.message}
         htmlFor={`${idPrefix}-description`}
-        label="Description"
+        label={t("forms.description")}
       >
         <Textarea
           id={`${idPrefix}-description`}
-          placeholder="Dashboards for metrics and logs"
+          placeholder={t("services.placeholders.description")}
           aria-invalid={Boolean(errors.description)}
           {...register("description")}
         />
@@ -434,11 +436,11 @@ export function ServiceForm({
       <FormField
         error={errors.notes?.message}
         htmlFor={`${idPrefix}-notes`}
-        label="Notes"
+        label={t("services.notes")}
       >
         <Textarea
           id={`${idPrefix}-notes`}
-          placeholder="Runbook notes, owner, backup details"
+          placeholder={t("services.placeholders.notes")}
           aria-invalid={Boolean(errors.notes)}
           {...register("notes")}
         />

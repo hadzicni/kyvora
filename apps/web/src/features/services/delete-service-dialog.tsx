@@ -2,6 +2,7 @@
 
 import { Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -24,23 +25,24 @@ export function DeleteServiceDialog({
   onDeleted?: () => void;
   service: ManagedServiceItem;
 }) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const deleteService = useDeleteService();
 
   async function confirmDelete() {
     try {
       await deleteService.mutateAsync(service.id);
-      toast.success("Service deleted.", {
+      toast.success(t("services.deletedToast"), {
         description: service.name,
       });
       setOpen(false);
       onDeleted?.();
     } catch (error) {
-      toast.error("Unable to delete service.", {
+      toast.error(t("services.deleteFailedToast"), {
         description:
           error instanceof Error
             ? error.message
-            : "The service could not be deleted right now.",
+            : t("services.deleteFailedDescription"),
       });
     }
   }
@@ -49,7 +51,7 @@ export function DeleteServiceDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
-          aria-label={`Delete ${service.name}`}
+          aria-label={t("services.deleteAria", { name: service.name })}
           size="icon"
           variant="ghost"
         >
@@ -58,9 +60,9 @@ export function DeleteServiceDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete service</DialogTitle>
+          <DialogTitle>{t("services.deleteService")}</DialogTitle>
           <DialogDescription>
-            This permanently removes {service.name} from the service registry.
+            {t("services.deleteConfirmation", { name: service.name })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -70,7 +72,7 @@ export function DeleteServiceDialog({
             type="button"
             variant="outline"
           >
-            Cancel
+            {t("actions.cancel")}
           </Button>
           <Button
             disabled={deleteService.isPending}
@@ -83,7 +85,7 @@ export function DeleteServiceDialog({
             ) : (
               <Trash2 className="size-4" />
             )}
-            Delete
+            {t("actions.delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

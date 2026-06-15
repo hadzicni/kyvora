@@ -2,6 +2,7 @@
 
 import { RefreshCw, Unplug } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ export function DecommissionAgentDialog({
   agent: Agent;
   trigger?: ReactNode;
 }) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const decommissionAgent = useDecommissionAgent();
 
@@ -32,15 +34,15 @@ export function DecommissionAgentDialog({
     try {
       await decommissionAgent.mutateAsync(agent.id);
       setOpen(false);
-      toast.success("Agent decommissioned.", {
+      toast.success(t("agents.decommissionedToast"), {
         description: agent.name,
       });
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to decommission the agent right now.";
-      toast.error("Unable to decommission agent.", {
+          : t("agents.decommissionFailedDescription");
+      toast.error(t("agents.decommissionFailedToast"), {
         description: message,
       });
     }
@@ -56,17 +58,15 @@ export function DecommissionAgentDialog({
         {trigger ?? (
           <Button type="button" variant="outline">
             <Unplug className="size-4" />
-            Decommission agent
+            {t("agents.decommissionAgent")}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Decommission agent?</DialogTitle>
+          <DialogTitle>{t("agents.decommissionTitle")}</DialogTitle>
           <DialogDescription>
-            This revokes the agent token and unlinks the agent from this server.
-            The server will remain in inventory and you can enroll a new agent
-            later.
+            {t("agents.decommissionDescription")}
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-md border bg-muted/20 p-3 text-sm">
@@ -81,7 +81,7 @@ export function DecommissionAgentDialog({
             variant="outline"
             onClick={() => setOpen(false)}
           >
-            Cancel
+            {t("actions.cancel")}
           </Button>
           <Button
             type="button"
@@ -94,7 +94,7 @@ export function DecommissionAgentDialog({
             ) : (
               <Unplug className="size-4" />
             )}
-            Decommission agent
+            {t("agents.decommissionAgent")}
           </Button>
         </DialogFooter>
       </DialogContent>

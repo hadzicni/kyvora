@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -33,7 +34,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteServiceDialog } from "@/features/services/delete-service-dialog";
 import { EditServiceDialog } from "@/features/services/edit-service-dialog";
 import { ServiceErrorState } from "@/features/services/service-error-state";
-import { formatCategory } from "@/features/services/service-form";
 import { useService } from "@/features/services/use-services";
 import { formatDateTime } from "@/features/servers/format";
 import { useServers } from "@/features/servers/use-servers";
@@ -105,8 +105,10 @@ function DetailSection({
 }
 
 function ServiceUrl({ service }: { service: ManagedServiceItem }) {
+  const t = useTranslations();
+
   if (!service.url) {
-    return <span className="text-muted-foreground">None</span>;
+    return <span className="text-muted-foreground">{t("common.none")}</span>;
   }
 
   return (
@@ -119,16 +121,21 @@ function ServiceUrl({ service }: { service: ManagedServiceItem }) {
       >
         {service.url}
       </a>
-      <Button aria-label={`Open ${service.name}`} asChild size="icon" variant="ghost">
+      <Button
+        aria-label={t("services.openAria", { name: service.name })}
+        asChild
+        size="icon"
+        variant="ghost"
+      >
         <a href={service.url} rel="noreferrer" target="_blank">
           <ExternalLink className="size-4" />
         </a>
       </Button>
       <Button
-        aria-label={`Copy URL for ${service.name}`}
+        aria-label={t("services.copyUrlAria", { name: service.name })}
         onClick={() => {
           void navigator.clipboard.writeText(service.url ?? "");
-          toast.success("URL copied.");
+          toast.success(t("services.urlCopiedToast"));
         }}
         size="icon"
         variant="ghost"
@@ -140,8 +147,10 @@ function ServiceUrl({ service }: { service: ManagedServiceItem }) {
 }
 
 function Tags({ service }: { service: ManagedServiceItem }) {
+  const t = useTranslations();
+
   if (service.tags.length === 0) {
-    return <span className="text-muted-foreground">None</span>;
+    return <span className="text-muted-foreground">{t("common.none")}</span>;
   }
 
   return (
@@ -155,11 +164,11 @@ function Tags({ service }: { service: ManagedServiceItem }) {
   );
 }
 
-function hostEndpoint(service: ManagedServiceItem) {
+function hostEndpoint(service: ManagedServiceItem, fallback: string) {
   const host = service.hostname || service.ipAddress;
 
   if (!host) {
-    return "Unassigned";
+    return fallback;
   }
 
   return service.port ? `${host}:${service.port}` : host;
@@ -206,17 +215,19 @@ function ServiceDetailSkeleton() {
 }
 
 function NotFoundState() {
+  const t = useTranslations("services");
+
   return (
     <div className="flex min-h-72 flex-col items-center justify-center rounded-md border border-dashed bg-muted/20 p-8 text-center">
       <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-muted">
         <Cable className="size-5 text-muted-foreground" />
       </div>
-      <h2 className="text-base font-medium">Service not found</h2>
+      <h2 className="text-base font-medium">{t("notFoundTitle")}</h2>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        This service does not exist or has already been removed from the registry.
+        {t("notFoundDescription")}
       </p>
       <Button asChild className="mt-5" variant="outline">
-        <Link href="/services">Back to Services</Link>
+        <Link href="/services">{t("backToServices")}</Link>
       </Button>
     </div>
   );
@@ -233,6 +244,7 @@ function ServiceDetail({
   service: ManagedServiceItem;
   servers: Parameters<typeof EditServiceDialog>[0]["servers"];
 }) {
+  const t = useTranslations();
   const router = useRouter();
 
   return (
@@ -243,17 +255,19 @@ function ServiceDetail({
             <div className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <Cable className="size-4" />
-                Managed service
+                {t("services.managedService")}
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="break-words text-3xl font-semibold tracking-tight">
                   {service.name}
                 </h1>
-                <Badge variant="secondary">{formatCategory(service.category)}</Badge>
+                <Badge variant="secondary">
+                  {t(`serviceCategories.${service.category}`)}
+                </Badge>
                 <Badge variant="outline">{service.protocol}</Badge>
               </div>
               <CardDescription className="break-words">
-                {service.description || "No description provided."}
+                {service.description || t("services.noDescriptionProvided")}
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -261,7 +275,7 @@ function ServiceDetail({
                 <Button asChild variant="outline">
                   <a href={service.url} rel="noreferrer" target="_blank">
                     <ExternalLink className="size-4" />
-                    Open
+                    {t("actions.open")}
                   </a>
                 </Button>
               ) : null}
@@ -277,78 +291,81 @@ function ServiceDetail({
         </CardHeader>
         <CardContent className="pt-4">
           <p className="text-sm leading-6 text-muted-foreground">
-            Service metadata for routing, ownership, and homelab inventory.
+            {t("services.detailIntro")}
           </p>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <DetailSection
-          description="Identity, category, and lifecycle timestamps."
+          description={t("services.identityDescription")}
           icon={<Fingerprint className="size-4 text-muted-foreground" />}
-          title="Service identity"
+          title={t("services.identity")}
         >
-          <Field label="Service ID" value={service.id} mono />
-          <Field label="Name" value={service.name} />
-          <Field label="Category" value={formatCategory(service.category)} />
-          <Field label="Protocol" value={<Badge variant="secondary">{service.protocol}</Badge>} />
-          <Field label="Created" value={formatDateTime(service.createdAt)} />
-          <Field label="Updated" value={formatDateTime(service.updatedAt)} />
+          <Field label={t("services.serviceId")} value={service.id} mono />
+          <Field label={t("forms.name")} value={service.name} />
+          <Field
+            label={t("services.category")}
+            value={t(`serviceCategories.${service.category}`)}
+          />
+          <Field label={t("services.protocol")} value={<Badge variant="secondary">{service.protocol}</Badge>} />
+          <Field label={t("activity.created")} value={formatDateTime(service.createdAt)} />
+          <Field label={t("services.updated")} value={formatDateTime(service.updatedAt)} />
         </DetailSection>
 
         <DetailSection
-          description="How operators reach this service."
+          description={t("services.endpointDescription")}
           icon={<Network className="size-4 text-muted-foreground" />}
-          title="Endpoint"
+          title={t("services.endpoint")}
         >
-          <Field label="URL" value={<ServiceUrl service={service} />} muted={!service.url} />
-          <Field label="Host endpoint" value={hostEndpoint(service)} mono muted={!service.hostname && !service.ipAddress} />
-          <Field label="Hostname" value={service.hostname ?? "Unassigned"} mono muted={!service.hostname} />
-          <Field label="IP address" value={service.ipAddress ?? "Unassigned"} mono muted={!service.ipAddress} />
-          <Field label="Port" value={service.port ?? "Unassigned"} mono muted={!service.port} />
+          <Field label={t("services.url")} value={<ServiceUrl service={service} />} muted={!service.url} />
+          <Field label={t("services.hostEndpoint")} value={hostEndpoint(service, t("common.unassigned"))} mono muted={!service.hostname && !service.ipAddress} />
+          <Field label={t("forms.hostname")} value={service.hostname ?? t("common.unassigned")} mono muted={!service.hostname} />
+          <Field label={t("forms.ipAddress")} value={service.ipAddress ?? t("common.unassigned")} mono muted={!service.ipAddress} />
+          <Field label={t("services.port")} value={service.port ?? t("common.unassigned")} mono muted={!service.port} />
         </DetailSection>
 
         <DetailSection
-          description="Inventory relationship to the server registry."
+          description={t("services.linkedServerDescription")}
           icon={<Server className="size-4 text-muted-foreground" />}
-          title="Linked server"
+          title={t("services.linkedServer")}
         >
           {service.linkedServer ? (
             <>
-              <Field label="Server name" value={service.linkedServer.name} />
-              <Field label="Hostname" value={service.linkedServer.hostname} mono />
-              <Field label="IP address" value={service.linkedServer.ipAddress} mono />
+              <Field label={t("services.serverName")} value={service.linkedServer.name} />
+              <Field label={t("forms.hostname")} value={service.linkedServer.hostname} mono />
+              <Field label={t("forms.ipAddress")} value={service.linkedServer.ipAddress} mono />
               <Field
-                label="Server link"
+                label={t("services.serverLink")}
                 value={
                   <Link
                     className="inline-flex items-center gap-2 underline-offset-4 hover:text-foreground hover:underline"
                     href={`/servers/${service.linkedServer.id}`}
                   >
                     <LinkIcon className="size-4" />
-                    View linked server
+                    {t("services.viewLinkedServer")}
                   </Link>
                 }
               />
             </>
           ) : (
-            <Field label="Assignment" value="No linked server" muted />
+            <Field label={t("services.assignment")} value={t("services.noLinkedServer")} muted />
           )}
         </DetailSection>
 
         <DetailSection
-          description="Labels and operator notes for this service."
+          description={t("services.metadataDescription")}
           icon={<TagsIcon className="size-4 text-muted-foreground" />}
-          title="Metadata"
+          title={t("services.metadata")}
         >
-          <Field label="Tags" value={<Tags service={service} />} />
+          <Field label={t("forms.tags")} value={<Tags service={service} />} />
           <Field
-            label="Notes"
+            label={t("services.notes")}
             value={
               service.notes ? (
                 <span className="whitespace-pre-wrap">{service.notes}</span>
               ) : (
-                "None"
+                t("common.none")
               )
             }
             muted={!service.notes}
@@ -356,12 +373,12 @@ function ServiceDetail({
         </DetailSection>
 
         <DetailSection
-          description="Current status model for this manually registered service."
+          description={t("services.operationsDescription")}
           icon={<CalendarClock className="size-4 text-muted-foreground" />}
-          title="Operations"
+          title={t("services.operations")}
         >
-          <Field label="Health checks" value="Not configured" muted />
-          <Field label="Last check" value="Never" muted />
+          <Field label={t("services.healthChecks")} value={t("services.notConfigured")} muted />
+          <Field label={t("services.lastCheck")} value={t("common.never")} muted />
         </DetailSection>
       </div>
     </div>
@@ -369,6 +386,7 @@ function ServiceDetail({
 }
 
 export default function ServiceDetailPage() {
+  const t = useTranslations();
   const { data: session } = useSession();
   const params = useParams<{ id?: string | string[] }>();
   const id = getParamId(params.id);
@@ -386,14 +404,14 @@ export default function ServiceDetailPage() {
             <Button asChild className="-ml-2 mb-2" size="sm" variant="ghost">
               <Link href="/services">
                 <ArrowLeft className="size-4" />
-                Services
+                {t("services.title")}
               </Link>
             </Button>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Service detail
+              {t("services.detailTitle")}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Full service record from /api/v1/services/{id || "[id]"}.
+              {t("services.detailSubtitle", { id: id || "[id]" })}
             </p>
           </div>
           <Button
@@ -404,7 +422,7 @@ export default function ServiceDetailPage() {
             <RefreshCw
               className={cn("size-4", serviceQuery.isFetching && "animate-spin")}
             />
-            Refresh
+            {t("actions.refresh")}
           </Button>
         </div>
 
@@ -415,7 +433,7 @@ export default function ServiceDetailPage() {
             message={
               serviceQuery.error instanceof Error
                 ? serviceQuery.error.message
-                : "The services API returned an unexpected error."
+                : t("services.unexpectedError")
             }
             onRetry={() => void serviceQuery.refetch()}
           />

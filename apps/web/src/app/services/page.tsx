@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
@@ -33,7 +34,7 @@ import {
 import { CreateServiceDialog } from "@/features/services/create-service-dialog";
 import { ServiceEmptyState } from "@/features/services/service-empty-state";
 import { ServiceErrorState } from "@/features/services/service-error-state";
-import { formatCategory, serviceCategories } from "@/features/services/service-form";
+import { serviceCategories } from "@/features/services/service-form";
 import { ServiceTable } from "@/features/services/service-table";
 import { ServiceTableSkeleton } from "@/features/services/service-table-skeleton";
 import { useServices } from "@/features/services/use-services";
@@ -48,11 +49,12 @@ import { cn } from "@/lib/utils";
 
 const pageSizeOptions = [10, 20, 50] as const;
 const sortOptions = [
-  { label: "Name", value: "name,asc" },
-  { label: "Category", value: "category,asc" },
+  { labelKey: "forms.name", value: "name,asc" },
+  { labelKey: "services.category", value: "category,asc" },
 ] as const;
 
 export default function ServicesPage() {
+  const t = useTranslations();
   const { data: session } = useSession();
   const mayCreateServices = canCreateServices(session?.user.permissions);
   const mayUpdateServices = canUpdateServices(session?.user.permissions);
@@ -96,12 +98,12 @@ export default function ServicesPage() {
           badge={
             servicesQuery.data ? (
               <span className="text-sm text-muted-foreground">
-                {totalElements} services
+                {t("services.count", { count: totalElements })}
               </span>
             ) : null
           }
-          subtitle="Manually register and manage the services running across your homelab."
-          title="Services"
+          subtitle={t("services.subtitle")}
+          title={t("services.title")}
           actions={
             <>
               {mayCreateServices ? (
@@ -118,7 +120,7 @@ export default function ServicesPage() {
                     servicesQuery.isFetching && "animate-spin"
                   )}
                 />
-                Refresh
+                {t("actions.refresh")}
               </Button>
             </>
           }
@@ -127,13 +129,13 @@ export default function ServicesPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardDescription>Total services</CardDescription>
+              <CardDescription>{t("services.totalServices")}</CardDescription>
               <CardTitle>{totalElements}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader>
-              <CardDescription>Shown on this page</CardDescription>
+              <CardDescription>{t("services.shownOnPage")}</CardDescription>
               <CardTitle>{services.length}</CardTitle>
             </CardHeader>
           </Card>
@@ -143,26 +145,26 @@ export default function ServicesPage() {
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <SlidersHorizontal className="size-4" />
-              Service registry
+              {t("services.registry")}
             </CardTitle>
             <CardDescription>
               {servicesQuery.data
                 ? hasActiveFilters
-                  ? `${totalElements} matching services`
-                  : `${totalElements} registered services`
-                : "Loading services"}
+                  ? t("services.matchingServices", { count: totalElements })
+                  : t("services.registeredServices", { count: totalElements })
+                : t("services.loadingServices")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-3 rounded-md border bg-muted/10 p-3 lg:grid-cols-[minmax(16rem,1fr)_12rem_12rem_auto] lg:items-end">
               <div className="grid gap-2">
-                <Label htmlFor="service-search">Search</Label>
+                <Label htmlFor="service-search">{t("forms.search")}</Label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="service-search"
                     className="pl-8"
-                    placeholder="Name, URL, hostname, IP, or notes"
+                    placeholder={t("services.searchPlaceholder")}
                     value={search}
                     onChange={(event) => {
                       setSearch(event.target.value);
@@ -173,7 +175,7 @@ export default function ServicesPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="service-category">Category</Label>
+                <Label htmlFor="service-category">{t("services.category")}</Label>
                 <Select
                   value={category}
                   onValueChange={(value) => {
@@ -185,10 +187,12 @@ export default function ServicesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent position="popper">
-                    <SelectItem value="ALL">All categories</SelectItem>
+                    <SelectItem value="ALL">
+                      {t("services.allCategories")}
+                    </SelectItem>
                     {serviceCategories.map((serviceCategory) => (
                       <SelectItem key={serviceCategory} value={serviceCategory}>
-                        {formatCategory(serviceCategory)}
+                        {t(`serviceCategories.${serviceCategory}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -196,7 +200,7 @@ export default function ServicesPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="service-sort">Sort</Label>
+                <Label htmlFor="service-sort">{t("services.sort")}</Label>
                 <Select
                   value={sort}
                   onValueChange={(value) => {
@@ -210,7 +214,7 @@ export default function ServicesPage() {
                   <SelectContent position="popper">
                     {sortOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {t(option.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -228,7 +232,7 @@ export default function ServicesPage() {
                 }}
               >
                 <X className="size-4" />
-                Clear
+                {t("actions.clear")}
               </Button>
             </div>
 
@@ -238,7 +242,7 @@ export default function ServicesPage() {
                 message={
                   servicesQuery.error instanceof Error
                     ? servicesQuery.error.message
-                    : "The services API returned an unexpected error."
+                    : t("services.unexpectedError")
                 }
                 onRetry={() => void servicesQuery.refetch()}
               />
@@ -257,11 +261,19 @@ export default function ServicesPage() {
             {servicesQuery.isSuccess ? (
               <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Showing {rangeStart}-{rangeEnd} of {totalElements}
+                  {t("actions.showingRange", {
+                    start: rangeStart,
+                    end: rangeEnd,
+                    total: totalElements,
+                  })}
                   <span className="ml-2 text-xs">
-                    Page {totalPages === 0 ? 0 : displayedPage + 1} of{" "}
-                    {totalPages}
-                    {servicesQuery.isFetching ? " - Updating" : ""}
+                    {t("actions.pageOf", {
+                      page: totalPages === 0 ? 0 : displayedPage + 1,
+                      total: totalPages,
+                    })}
+                    {servicesQuery.isFetching
+                      ? ` - ${t("actions.updating")}`
+                      : ""}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -269,7 +281,7 @@ export default function ServicesPage() {
                     className="text-xs font-medium text-muted-foreground"
                     htmlFor="service-page-size"
                   >
-                    Rows
+                    {t("actions.rows")}
                   </Label>
                   <Select
                     value={String(pageSize)}
@@ -283,7 +295,7 @@ export default function ServicesPage() {
                   >
                     <SelectTrigger
                       id="service-page-size"
-                      aria-label="Rows"
+                      aria-label={t("actions.rows")}
                       className="w-[7.5rem]"
                     >
                       <SelectValue />
@@ -291,13 +303,13 @@ export default function ServicesPage() {
                     <SelectContent position="popper">
                       {pageSizeOptions.map((size) => (
                         <SelectItem key={size} value={String(size)}>
-                          {size} rows
+                          {t("actions.rowsCount", { count: size })}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <Button
-                    aria-label="Previous page"
+                    aria-label={t("actions.previousPage")}
                     disabled={!canGoBack}
                     onClick={() =>
                       setPage((currentPage) => Math.max(0, currentPage - 1))
@@ -308,7 +320,7 @@ export default function ServicesPage() {
                     <ChevronLeft className="size-4" />
                   </Button>
                   <Button
-                    aria-label="Next page"
+                    aria-label={t("actions.nextPage")}
                     disabled={!canGoForward}
                     onClick={() => setPage((currentPage) => currentPage + 1)}
                     size="icon"

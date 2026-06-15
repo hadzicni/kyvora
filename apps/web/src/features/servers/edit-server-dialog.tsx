@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ export function EditServerDialog({
   triggerSize = triggerLabel ? "default" : "icon-sm",
   triggerVariant = triggerLabel ? "default" : "ghost",
 }: EditServerDialogProps) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const updateServer = useUpdateServer();
@@ -60,14 +62,14 @@ export function EditServerDialog({
         input: toServerInput(values),
       });
       setOpen(false);
-      toast.success("Server updated.", {
+      toast.success(t("servers.updatedToast"), {
         description: server.hostname,
       });
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
-        const message = "This server no longer exists. Refresh the inventory.";
+        const message = t("servers.noLongerExists");
         setFormError(message);
-        toast.error("Unable to update server.", {
+        toast.error(t("servers.updateFailedToast"), {
           description: message,
         });
         return;
@@ -77,13 +79,13 @@ export function EditServerDialog({
         const field = getConflictField(error);
         const message =
           field === "hostname"
-            ? "Another server already uses this hostname."
+            ? t("servers.hostnameConflict")
             : field === "ipAddress"
-              ? "Another server already uses this IP address."
-              : "Another server has matching unique inventory data.";
+              ? t("servers.ipAddressConflict")
+              : t("servers.uniqueConflict");
 
         setFormError(message);
-        toast.error("Unable to update server.", {
+        toast.error(t("servers.updateFailedToast"), {
           description: message,
         });
 
@@ -96,10 +98,10 @@ export function EditServerDialog({
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to update the server right now.";
+          : t("servers.updateFailedDescription");
 
       setFormError(message);
-      toast.error("Unable to update server.", {
+      toast.error(t("servers.updateFailedToast"), {
         description: message,
       });
     }
@@ -118,7 +120,9 @@ export function EditServerDialog({
           variant={triggerVariant}
           size={triggerSize}
           className={triggerClassName}
-          aria-label={triggerLabel ? undefined : `Edit ${server.name}`}
+          aria-label={
+            triggerLabel ? undefined : t("servers.editAria", { name: server.name })
+          }
         >
           <Pencil className="size-4" />
           {triggerLabel}
@@ -126,16 +130,16 @@ export function EditServerDialog({
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Edit server</DialogTitle>
+          <DialogTitle>{t("servers.editServer")}</DialogTitle>
           <DialogDescription>
-            Update inventory details for {server.name}.
+            {t("servers.editDescription", { name: server.name })}
           </DialogDescription>
         </DialogHeader>
 
         <ServerForm
           childrenBeforeFooter={
             <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-              Status is managed by the linked agent.
+              {t("servers.statusManagedByAgent")}
             </div>
           }
           form={form}
@@ -146,7 +150,7 @@ export function EditServerDialog({
           onSubmit={onSubmit}
           showStatusField={false}
           submitIcon={<Pencil className="size-4" />}
-          submitLabel="Save changes"
+          submitLabel={t("actions.save")}
         />
       </DialogContent>
     </Dialog>

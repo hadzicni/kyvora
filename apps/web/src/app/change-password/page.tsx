@@ -6,7 +6,7 @@ import { signIn, useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -70,21 +70,16 @@ function ParticleCanvas() {
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
-const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8),
-  confirmNewPassword: z.string().min(8),
-}).refine((v) => v.newPassword === v.confirmNewPassword, {
-  message: "Passwords do not match",
-  path: ["confirmNewPassword"],
-});
-
-type ChangePasswordValues = z.output<typeof changePasswordSchema>;
+type ChangePasswordValues = {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+};
 
 function errorMessage(error: unknown) {
   if (error instanceof UsersApiError && error.details.length > 0)
     return `${error.message}: ${error.details.join(", ")}`;
-  return error instanceof Error ? error.message : "Password change failed";
+  return error instanceof Error ? error.message : null;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -97,6 +92,20 @@ export default function ForcedPasswordChangePage() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const changePasswordSchema = useMemo(
+    () =>
+      z
+        .object({
+          currentPassword: z.string().min(1, t("auth.currentPasswordRequired")),
+          newPassword: z.string().min(8, t("auth.newPasswordMin")),
+          confirmNewPassword: z.string().min(8, t("auth.newPasswordMin")),
+        })
+        .refine((value) => value.newPassword === value.confirmNewPassword, {
+          message: t("auth.passwordsDoNotMatch"),
+          path: ["confirmNewPassword"],
+        }),
+    [t]
+  );
 
   const form = useForm<ChangePasswordValues>({
     resolver: zodResolver(changePasswordSchema),
@@ -116,15 +125,15 @@ export default function ForcedPasswordChangePage() {
         callbackUrl: "/",
       });
       if (!result || result.error) {
-        toast.success("Password changed. Sign in again to continue.");
+        toast.success(t("auth.passwordChangedSignInAgain"));
         router.replace("/login");
         return;
       }
       await update();
-      toast.success("Password changed");
+      toast.success(t("auth.passwordChanged"));
       router.replace("/"); router.refresh();
     } catch (error) {
-      toast.error(errorMessage(error));
+      toast.error(errorMessage(error) ?? t("auth.passwordChangeFailed"));
     }
   }
 
@@ -206,7 +215,7 @@ export default function ForcedPasswordChangePage() {
             {t("auth.changePassword")}
           </h1>
           <p className="mt-1.5 text-sm leading-6 text-white/38">
-            A temporary password was issued. Choose a new one to continue.
+            {t("auth.temporaryPasswordIssued")}
           </p>
         </div>
 
@@ -225,7 +234,7 @@ export default function ForcedPasswordChangePage() {
                 className="h-11 rounded-xl border-white/8 bg-white/[0.045] pl-10 pr-10 text-white placeholder:text-white/18 focus-visible:border-violet-400/50 focus-visible:bg-indigo-500/[0.07] focus-visible:ring-[3px] focus-visible:ring-indigo-500/12"
                 {...form.register("currentPassword")}
               />
-              <button type="button" onClick={() => setShowCurrent((v) => !v)} aria-label={showCurrent ? "Hide" : "Show"}
+              <button type="button" onClick={() => setShowCurrent((v) => !v)} aria-label={showCurrent ? t("auth.hidePassword") : t("auth.showPassword")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-white/25 transition-colors hover:text-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
                 {showCurrent ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
               </button>
@@ -241,11 +250,11 @@ export default function ForcedPasswordChangePage() {
               <KeyRound className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/25 pointer-events-none" aria-hidden="true" />
               <Input
                 id="newPassword" type={showNew ? "text" : "password"} autoComplete="new-password"
-                placeholder="Min. 8 characters"
+                placeholder={t("auth.minCharacters")}
                 className="h-11 rounded-xl border-white/8 bg-white/[0.045] pl-10 pr-10 text-white placeholder:text-white/18 focus-visible:border-violet-400/50 focus-visible:bg-indigo-500/[0.07] focus-visible:ring-[3px] focus-visible:ring-indigo-500/12"
                 {...form.register("newPassword")}
               />
-              <button type="button" onClick={() => setShowNew((v) => !v)} aria-label={showNew ? "Hide" : "Show"}
+              <button type="button" onClick={() => setShowNew((v) => !v)} aria-label={showNew ? t("auth.hidePassword") : t("auth.showPassword")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-white/25 transition-colors hover:text-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
                 {showNew ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
               </button>
@@ -261,11 +270,11 @@ export default function ForcedPasswordChangePage() {
               <KeyRound className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/25 pointer-events-none" aria-hidden="true" />
               <Input
                 id="confirmNewPassword" type={showConfirm ? "text" : "password"} autoComplete="new-password"
-                placeholder="Repeat new password"
+                placeholder={t("auth.repeatNewPassword")}
                 className="h-11 rounded-xl border-white/8 bg-white/[0.045] pl-10 pr-10 text-white placeholder:text-white/18 focus-visible:border-violet-400/50 focus-visible:bg-indigo-500/[0.07] focus-visible:ring-[3px] focus-visible:ring-indigo-500/12"
                 {...form.register("confirmNewPassword")}
               />
-              <button type="button" onClick={() => setShowConfirm((v) => !v)} aria-label={showConfirm ? "Hide" : "Show"}
+              <button type="button" onClick={() => setShowConfirm((v) => !v)} aria-label={showConfirm ? t("auth.hidePassword") : t("auth.showPassword")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-white/25 transition-colors hover:text-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
                 {showConfirm ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
               </button>
@@ -278,9 +287,9 @@ export default function ForcedPasswordChangePage() {
               style={{ background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.25)", animation: "shake 0.4s ease" }}>
               <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               <div className="space-y-0.5">
-                <p className="font-medium">Password error</p>
+                <p className="font-medium">{t("auth.passwordError")}</p>
                 <p className="text-red-200/80">
-                  {form.formState.errors.confirmNewPassword?.message ?? "New password must be at least 8 characters."}
+                  {form.formState.errors.confirmNewPassword?.message ?? t("auth.newPasswordMin")}
                 </p>
               </div>
             </div>
@@ -309,7 +318,7 @@ export default function ForcedPasswordChangePage() {
         {/* Footer */}
         <div className="mt-5 flex items-center gap-3">
           <div className="h-px flex-1 bg-white/[0.06]" />
-          <span className="text-[11px] text-white/25">secured with end-to-end encryption</span>
+          <span className="text-[11px] text-white/25">{t("auth.encryptionFooter")}</span>
           <div className="h-px flex-1 bg-white/[0.06]" />
         </div>
       </div>

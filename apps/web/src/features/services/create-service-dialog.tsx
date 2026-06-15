@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export function CreateServiceDialog({
 }: {
   servers: ServerInventoryItem[];
 }) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const createService = useCreateService();
@@ -45,7 +47,7 @@ export function CreateServiceDialog({
 
     try {
       const service = await createService.mutateAsync(toServiceInput(values));
-      toast.success("Service created.", {
+      toast.success(t("services.createdToast"), {
         description: service.name,
       });
       form.reset(emptyServiceFormValues);
@@ -54,10 +56,10 @@ export function CreateServiceDialog({
       const message =
         error instanceof ServiceApiError || error instanceof Error
           ? error.message
-          : "Unable to create the service right now.";
+          : t("services.createFailedDescription");
 
       setFormError(message);
-      toast.error("Unable to create service.", {
+      toast.error(t("services.createFailedToast"), {
         description: message,
       });
     }
@@ -76,14 +78,14 @@ export function CreateServiceDialog({
       <DialogTrigger asChild>
         <Button>
           <Plus className="size-4" />
-          Create service
+          {t("services.createService")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Create service</DialogTitle>
+          <DialogTitle>{t("services.createService")}</DialogTitle>
           <DialogDescription>
-            Register a service entry that Kyvora should track.
+            {t("services.createDescription")}
           </DialogDescription>
         </DialogHeader>
         <ServiceForm
@@ -96,7 +98,7 @@ export function CreateServiceDialog({
           prefillUrlFromProtocol
           servers={servers}
           submitIcon={<Plus className="size-4" />}
-          submitLabel="Create service"
+          submitLabel={t("services.createService")}
         />
       </DialogContent>
     </Dialog>

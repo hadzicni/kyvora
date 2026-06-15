@@ -2,6 +2,7 @@
 
 import { Copy, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,6 @@ import type { ServerInventoryItem } from "@/lib/api/servers";
 import type { ManagedServiceItem } from "@/lib/api/services";
 import { DeleteServiceDialog } from "./delete-service-dialog";
 import { EditServiceDialog } from "./edit-service-dialog";
-import { formatCategory } from "./service-form";
 
 export function ServiceTable({
   canDelete = true,
@@ -30,6 +30,7 @@ export function ServiceTable({
   services: ManagedServiceItem[];
   servers: ServerInventoryItem[];
 }) {
+  const t = useTranslations();
   const router = useRouter();
 
   function openService(service: ManagedServiceItem) {
@@ -40,13 +41,15 @@ export function ServiceTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead>URL</TableHead>
-          <TableHead>Host</TableHead>
-          <TableHead>Tags</TableHead>
-          <TableHead>Server</TableHead>
-          <TableHead className="w-28 text-right">Actions</TableHead>
+          <TableHead>{t("forms.name")}</TableHead>
+          <TableHead>{t("services.category")}</TableHead>
+          <TableHead>{t("services.url")}</TableHead>
+          <TableHead>{t("services.host")}</TableHead>
+          <TableHead>{t("forms.tags")}</TableHead>
+          <TableHead>{t("agents.server")}</TableHead>
+          <TableHead className="w-28 text-right">
+            {t("servers.actionsHeader")}
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -67,17 +70,17 @@ export function ServiceTable({
             <TableCell className="min-w-56">
               <div className="font-medium">{service.name}</div>
               <div className="max-w-56 truncate text-xs text-muted-foreground">
-                {service.description || "No description"}
+                {service.description || t("servers.noDescription")}
               </div>
             </TableCell>
-            <TableCell>{formatCategory(service.category)}</TableCell>
+            <TableCell>{t(`serviceCategories.${service.category}`)}</TableCell>
             <TableCell>
               <ServiceUrl service={service} />
             </TableCell>
             <TableCell>
               <div className="grid gap-1 text-xs">
                 <span className="font-mono">
-                  {service.hostname || service.ipAddress || "Unassigned"}
+                  {service.hostname || service.ipAddress || t("common.unassigned")}
                 </span>
                 <span className="text-muted-foreground">
                   {service.protocol}
@@ -97,7 +100,9 @@ export function ServiceTable({
                     </span>
                   ))
                 ) : (
-                  <span className="text-xs text-muted-foreground">None</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t("common.none")}
+                  </span>
                 )}
               </div>
             </TableCell>
@@ -110,7 +115,9 @@ export function ServiceTable({
                   </span>
                 </div>
               ) : (
-                <span className="text-muted-foreground">Unassigned</span>
+                <span className="text-muted-foreground">
+                  {t("common.unassigned")}
+                </span>
               )}
             </TableCell>
             <TableCell
@@ -130,8 +137,10 @@ export function ServiceTable({
 }
 
 function ServiceUrl({ service }: { service: ManagedServiceItem }) {
+  const t = useTranslations();
+
   if (!service.url) {
-    return <span className="text-muted-foreground">None</span>;
+    return <span className="text-muted-foreground">{t("common.none")}</span>;
   }
 
   return (
@@ -149,7 +158,7 @@ function ServiceUrl({ service }: { service: ManagedServiceItem }) {
         {service.url}
       </a>
       <Button
-        aria-label={`Open ${service.name}`}
+        aria-label={t("services.openAria", { name: service.name })}
         asChild
         size="icon"
         variant="ghost"
@@ -159,10 +168,10 @@ function ServiceUrl({ service }: { service: ManagedServiceItem }) {
         </a>
       </Button>
       <Button
-        aria-label={`Copy URL for ${service.name}`}
+        aria-label={t("services.copyUrlAria", { name: service.name })}
         onClick={() => {
           void navigator.clipboard.writeText(service.url ?? "");
-          toast.success("URL copied.");
+          toast.success(t("services.urlCopiedToast"));
         }}
         size="icon"
         variant="ghost"

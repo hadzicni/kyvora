@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { useCallback, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -98,12 +99,14 @@ function Field({
 }
 
 function TimestampValue({ value }: { value: string | null | undefined }) {
+  const t = useTranslations();
+
   return (
     <span className="grid gap-1">
       <span>{formatDetailDateTime(value)}</span>
       {value ? (
         <span className="text-xs text-muted-foreground">
-          {formatRelativeLastSeen(value)}
+          {formatRelativeLastSeen(value, t)}
         </span>
       ) : null}
     </span>
@@ -179,19 +182,21 @@ function ServerDetailSkeleton() {
 }
 
 function NotFoundState() {
+  const t = useTranslations("servers");
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Server not found</CardTitle>
+        <CardTitle>{t("notFoundTitle")}</CardTitle>
         <CardDescription>
-          This inventory entry does not exist or has already been deleted.
+          {t("notFoundDescription")}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Button asChild variant="outline">
           <Link href="/servers">
             <ArrowLeft className="size-4" />
-            Back to Servers
+            {t("backToServers")}
           </Link>
         </Button>
       </CardContent>
@@ -200,8 +205,10 @@ function NotFoundState() {
 }
 
 function Tags({ server }: { server: ServerInventoryItem }) {
+  const t = useTranslations();
+
   if (server.tags.length === 0) {
-    return <span className="text-muted-foreground">None</span>;
+    return <span className="text-muted-foreground">{t("common.none")}</span>;
   }
 
   return (
@@ -226,31 +233,35 @@ function formatDetailDateTime(value: string | null | undefined) {
   }).format(new Date(value));
 }
 
-function formatRelativeLastSeen(value: string | null | undefined) {
+function formatRelativeLastSeen(
+  value: string | null | undefined,
+  t: ReturnType<typeof useTranslations>
+) {
   if (!value) {
-    return "Never";
+    return t("common.never");
   }
 
   const elapsedMs = Date.now() - new Date(value).getTime();
   const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60_000));
 
   if (elapsedMinutes < 1) {
-    return "Just now";
+    return t("common.justNow");
   }
   if (elapsedMinutes < 60) {
-    return `${elapsedMinutes} min ago`;
+    return t("time.minutesAgo", { count: elapsedMinutes });
   }
 
   const elapsedHours = Math.round(elapsedMinutes / 60);
   if (elapsedHours < 24) {
-    return `${elapsedHours} hr ago`;
+    return t("time.hoursAgo", { count: elapsedHours });
   }
 
   const elapsedDays = Math.round(elapsedHours / 24);
-  return `${elapsedDays} d ago`;
+  return t("time.daysAgo", { count: elapsedDays });
 }
 
 function HostFactsSection({ server }: { server: ServerInventoryItem }) {
+  const t = useTranslations();
   const facts = server.hostFacts;
 
   if (!facts) {
@@ -259,15 +270,15 @@ function HostFactsSection({ server }: { server: ServerInventoryItem }) {
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             <HardDrive className="size-4" />
-            Host Facts
+            {t("hostFacts.title")}
           </CardTitle>
           <CardDescription>
-            Latest inventory snapshot reported by the linked agent.
+            {t("hostFacts.description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="rounded-lg border bg-muted/20 p-4 text-sm leading-6 text-muted-foreground">
-            Host facts will appear after the agent sends its first heartbeat.
+            {t("hostFacts.emptyDescription")}
           </div>
         </CardContent>
       </Card>
@@ -276,23 +287,23 @@ function HostFactsSection({ server }: { server: ServerInventoryItem }) {
 
   return (
     <DetailSection
-      title="Host Facts"
-      description="Latest inventory snapshot reported by the linked agent."
+      title={t("hostFacts.title")}
+      description={t("hostFacts.description")}
       icon={<HardDrive className="size-4 text-muted-foreground" />}
     >
       <Field
-        label="Operating system"
-        value={facts.operatingSystem ?? "Unknown"}
+        label={t("forms.operatingSystem")}
+        value={facts.operatingSystem ?? t("common.unknown")}
         muted={!facts.operatingSystem}
       />
       <Field
-        label="Platform"
+        label={t("hostFacts.platform")}
         value={
           <div className="grid gap-1">
-            <span>{facts.platform ?? "Unknown"}</span>
+            <span>{facts.platform ?? t("common.unknown")}</span>
             {facts.kernelVersion ? (
               <span className="font-mono text-xs text-muted-foreground">
-                kernel {facts.kernelVersion}
+                {t("hostFacts.kernelVersion", { version: facts.kernelVersion })}
               </span>
             ) : null}
           </div>
@@ -300,41 +311,43 @@ function HostFactsSection({ server }: { server: ServerInventoryItem }) {
         muted={!facts.platform}
       />
       <Field
-        label="Architecture"
-        value={facts.architecture ?? "Unknown"}
+        label={t("hostFacts.architecture")}
+        value={facts.architecture ?? t("common.unknown")}
         muted={!facts.architecture}
       />
       <Field
-        label="CPU"
+        label={t("hostFacts.cpu")}
         value={
-          facts.cpuCount ? `${facts.cpuCount} logical CPUs` : "Unknown"
+          facts.cpuCount
+            ? t("hostFacts.logicalCpus", { count: facts.cpuCount })
+            : t("common.unknown")
         }
         muted={!facts.cpuCount}
       />
       <Field
-        label="Memory total"
+        label={t("hostFacts.memoryTotal")}
         value={formatBytes(facts.memoryTotalBytes)}
         muted={facts.memoryTotalBytes === null}
       />
       <Field
-        label="Disk"
+        label={t("hostFacts.disk")}
         value={
           <div className="grid gap-1">
-            <span>{formatBytes(facts.diskTotalBytes)} total</span>
+            <span>{t("hostFacts.diskTotal", { value: formatBytes(facts.diskTotalBytes) })}</span>
             <span className="text-xs text-muted-foreground">
-              {formatBytes(facts.diskFreeBytes)} free
+              {t("hostFacts.diskFree", { value: formatBytes(facts.diskFreeBytes) })}
             </span>
           </div>
         }
         muted={facts.diskTotalBytes === null}
       />
       <Field
-        label="Uptime"
+        label={t("hostFacts.uptime")}
         value={formatUptime(facts.uptimeSeconds)}
         muted={facts.uptimeSeconds === null}
       />
       <Field
-        label="IP addresses"
+        label={t("networkMap.ipAddresses")}
         value={
           facts.ipAddresses.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
@@ -345,18 +358,18 @@ function HostFactsSection({ server }: { server: ServerInventoryItem }) {
               ))}
             </div>
           ) : (
-            "Unknown"
+            t("common.unknown")
           )
         }
         muted={facts.ipAddresses.length === 0}
       />
       <Field
-        label="Agent version"
-        value={facts.agentVersion ?? "Unknown"}
+        label={t("hostFacts.agentVersion")}
+        value={facts.agentVersion ?? t("common.unknown")}
         muted={!facts.agentVersion}
       />
       <Field
-        label="Collected at"
+        label={t("hostFacts.collectedAt")}
         value={formatDetailDateTime(facts.collectedAt)}
         muted={!facts.collectedAt}
       />
@@ -380,6 +393,7 @@ function AgentSection({
   isLoading: boolean;
   server: ServerInventoryItem;
 }) {
+  const t = useTranslations();
   const [enrollment, setEnrollment] = useState<AgentEnrollment | null>(null);
   const [agentConnected, setAgentConnected] = useState(false);
   const rotateAgentToken = useRotateAgentToken();
@@ -401,15 +415,15 @@ function AgentSection({
       const rotated = await rotateAgentToken.mutateAsync(agent.id);
       setAgentConnected(false);
       setEnrollment(rotated);
-      toast.success("Agent token rotated.", {
+      toast.success(t("agents.tokenRotatedToast"), {
         description: rotated.agent.name,
       });
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to rotate the agent token right now.";
-      toast.error("Unable to rotate token.", {
+          : t("agents.rotateTokenFailedDescription");
+      toast.error(t("agents.rotateTokenFailedToast"), {
         description: message,
       });
     }
@@ -421,7 +435,7 @@ function AgentSection({
     }
 
     const confirmed = window.confirm(
-      "This will revoke the token and remove the pending agent. You can enroll a new agent later."
+      t("agents.cancelEnrollmentConfirm")
     );
     if (!confirmed) {
       return;
@@ -429,15 +443,15 @@ function AgentSection({
 
     try {
       await cancelAgentEnrollment.mutateAsync(agent.id);
-      toast.success("Enrollment canceled.", {
+      toast.success(t("agents.enrollmentCanceledToast"), {
         description: agent.name,
       });
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to cancel enrollment right now.";
-      toast.error("Unable to cancel enrollment.", {
+          : t("agents.cancelEnrollmentFailedDescription");
+      toast.error(t("agents.cancelEnrollmentFailedToast"), {
         description: message,
       });
     }
@@ -453,10 +467,10 @@ function AgentSection({
       <CardHeader className="border-b">
         <CardTitle className="flex items-center gap-2">
           <Bot className="size-4" />
-          Agent Setup
+          {t("help.agentSetup")}
         </CardTitle>
         <CardDescription>
-          Install and operate the Kyvora Agent for live server status.
+          {t("agents.setupDescription")}
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
@@ -476,19 +490,17 @@ function AgentSection({
                 </div>
                 {pending ? (
                   <p className="text-sm leading-6 text-muted-foreground">
-                    The one-time token is no longer visible. Rotate token to
-                    generate a new setup command.
+                    {t("agents.pendingTokenDescription")}
                   </p>
                 ) : null}
                 {offline ? (
                   <p className="text-sm leading-6 text-muted-foreground">
-                    No heartbeat has been received recently. Check whether the
-                    agent process and server are running.
+                    {t("agents.offlineDescription")}
                   </p>
                 ) : null}
                 {agent.status === "ONLINE" ? (
                   <p className="text-sm leading-6 text-muted-foreground">
-                    The linked agent is reporting live status for this server.
+                    {t("agents.onlineDescription")}
                   </p>
                 ) : null}
               </div>
@@ -505,7 +517,9 @@ function AgentSection({
                     ) : (
                       <Terminal className="size-4" />
                     )}
-                    {pending ? "Generate setup token" : "Rotate token"}
+                    {pending
+                      ? t("agents.generateSetupToken")
+                      : t("agents.rotateToken")}
                   </Button>
                 ) : null}
                 {actions.canCancelEnrollment && pending ? (
@@ -518,44 +532,45 @@ function AgentSection({
                     {cancelAgentEnrollment.isPending ? (
                       <RefreshCw className="size-4 animate-spin" />
                     ) : null}
-                    Cancel enrollment
+                    {t("agents.cancelEnrollment")}
                   </Button>
                 ) : null}
                 {actions.canDecommission && agent && canDecommission ? (
                   <DecommissionAgentDialog agent={agent} />
                 ) : null}
                 <Button asChild type="button" variant="outline">
-                  <Link href={`/agents/${agent.id}`}>View agent</Link>
+                  <Link href={`/agents/${agent.id}`}>
+                    {t("agents.viewAgent")}
+                  </Link>
                 </Button>
               </div>
             </div>
 
             <dl className="grid gap-3 sm:grid-cols-2">
-              <Field label="Agent hostname" value={agent.hostname} mono />
-              <Field label="Version" value={agent.version} mono />
+              <Field label={t("agents.agentHostname")} value={agent.hostname} mono />
+              <Field label={t("agents.version")} value={agent.version} mono />
               <Field
-                label="Last heartbeat"
+                label={t("agents.lastHeartbeat")}
                 value={<TimestampValue value={agent.lastSeenAt} />}
                 muted={!agent.lastSeenAt}
               />
               <Field
-                label="Linked server"
+                label={t("services.linkedServer")}
                 value={`${server.name} / ${server.hostname}`}
               />
-              <Field label="Agent ID" value={agent.id} mono />
+              <Field label={t("agents.agentId")} value={agent.id} mono />
             </dl>
           </div>
         ) : null}
         {!isLoading && !agent ? (
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm leading-6 text-muted-foreground">
-              Install a Kyvora Agent on this server to report live status and
-              heartbeats.
+              {t("agents.installDescription")}
             </p>
             {actions.canEnroll ? (
               <RegisterAgentDialog
                 initialServer={server}
-                triggerLabel="Enroll Agent"
+                triggerLabel={t("agents.enrollAgent")}
               />
             ) : null}
           </div>
@@ -587,8 +602,8 @@ function AgentSection({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Agent token</DialogTitle>
-            <DialogDescription>This token is shown only once.</DialogDescription>
+            <DialogTitle>{t("agents.agentToken")}</DialogTitle>
+            <DialogDescription>{t("servers.tokenShownOnce")}</DialogDescription>
           </DialogHeader>
           {enrollment ? (
             <AgentEnrollmentToken
@@ -627,6 +642,7 @@ function ServerDetails({
   linkedAgentLoading: boolean;
   server: ServerInventoryItem;
 }) {
+  const t = useTranslations();
   const description = server.description.trim();
 
   return (
@@ -637,7 +653,7 @@ function ServerDetails({
             <div className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <Server className="size-4" />
-                Server inventory record
+                {t("servers.inventoryRecord")}
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="break-words text-3xl font-semibold tracking-tight">
@@ -651,15 +667,15 @@ function ServerDetails({
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               {canUpdateServer ? (
-                <EditServerDialog server={server} triggerLabel="Edit" />
+                <EditServerDialog server={server} triggerLabel={t("actions.edit")} />
               ) : null}
               {canDelete ? (
-                <DeleteServerDialog server={server} triggerLabel="Delete" />
+                <DeleteServerDialog server={server} triggerLabel={t("actions.delete")} />
               ) : null}
               <Button asChild variant="outline">
                 <Link href="/servers">
                   <ArrowLeft className="size-4" />
-                  Back to Servers
+                  {t("servers.backToServers")}
                 </Link>
               </Button>
             </div>
@@ -667,53 +683,53 @@ function ServerDetails({
         </CardHeader>
         <CardContent className="pt-4">
           <p className="text-sm leading-6 text-muted-foreground">
-            {description || "No description has been added for this server."}
+            {description || t("servers.noDescriptionProvided")}
           </p>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <DetailSection
-          title="Identity"
-          description="Inventory identity and descriptive metadata."
+          title={t("servers.identity")}
+          description={t("servers.identityDescription")}
           icon={<Fingerprint className="size-4 text-muted-foreground" />}
         >
-          <Field label="Name" value={server.name} />
+          <Field label={t("forms.name")} value={server.name} />
           <Field
-            label="Status"
+            label={t("forms.status")}
             value={
               <div className="grid gap-2">
                 <ServerStatusBadge status={server.status} />
                 <span className="text-xs text-muted-foreground">
-                  Status is managed by the linked agent.
+                  {t("servers.statusManagedByAgent")}
                 </span>
               </div>
             }
           />
           <Field
-            label="Description"
-            value={description || "No description"}
+            label={t("forms.description")}
+            value={description || t("servers.noDescription")}
             muted={!description}
           />
         </DetailSection>
 
         <DetailSection
-          title="Network"
-          description="Addressing details used to reach this server."
+          title={t("servers.network")}
+          description={t("servers.networkDescription")}
           icon={<Network className="size-4 text-muted-foreground" />}
         >
-          <Field label="Hostname" value={server.hostname} mono />
-          <Field label="IP address" value={server.ipAddress} mono />
+          <Field label={t("forms.hostname")} value={server.hostname} mono />
+          <Field label={t("forms.ipAddress")} value={server.ipAddress} mono />
         </DetailSection>
 
         <DetailSection
-          title="Operating system"
-          description="Reported platform information."
+          title={t("forms.operatingSystem")}
+          description={t("servers.operatingSystemDescription")}
           icon={<Cpu className="size-4 text-muted-foreground" />}
         >
           <Field
-            label="Operating system"
-            value={server.operatingSystem || "Unknown"}
+            label={t("forms.operatingSystem")}
+            value={server.operatingSystem || t("common.unknown")}
             muted={!server.operatingSystem}
           />
         </DetailSection>
@@ -728,33 +744,33 @@ function ServerDetails({
         <HostFactsSection server={server} />
 
         <DetailSection
-          title="Tags"
-          description="Labels used for filtering and organization."
+          title={t("forms.tags")}
+          description={t("servers.tagsDescription")}
           icon={<TagsIcon className="size-4 text-muted-foreground" />}
         >
-          <Field label="Tags" value={<Tags server={server} />} />
+          <Field label={t("forms.tags")} value={<Tags server={server} />} />
         </DetailSection>
 
         <div className="xl:col-span-2">
           <DetailSection
-            title="Timestamps"
-            description="Lifecycle and agent visibility timestamps."
+            title={t("servers.timestamps")}
+            description={t("servers.timestampsDescription")}
             icon={<CalendarClock className="size-4 text-muted-foreground" />}
           >
             <Field
-              label="Last seen"
+              label={t("servers.lastSeenHeader")}
               value={<TimestampValue value={server.lastSeenAt} />}
               muted={!server.lastSeenAt}
             />
             <Field
-              label="Created"
+              label={t("activity.created")}
               value={formatDetailDateTime(server.createdAt)}
             />
             <Field
-              label="Updated"
+              label={t("services.updated")}
               value={formatDetailDateTime(server.updatedAt)}
             />
-            <Field label="Record ID" value={server.id} mono />
+            <Field label={t("servers.recordId")} value={server.id} mono />
           </DetailSection>
         </div>
       </div>
@@ -763,6 +779,7 @@ function ServerDetails({
 }
 
 export default function ServerDetailPage() {
+  const t = useTranslations();
   const { data: session } = useSession();
   const params = useParams<{ id?: string | string[] }>();
   const id = getParamId(params.id);
@@ -782,14 +799,14 @@ export default function ServerDetailPage() {
             <Button asChild className="-ml-2 mb-2" size="sm" variant="ghost">
               <Link href="/servers">
                 <ArrowLeft className="size-4" />
-                Servers
+                {t("navigation.servers")}
               </Link>
             </Button>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Server detail
+              {t("servers.detailTitle")}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Full inventory record from /api/v1/servers/{id || "[id]"}.
+              {t("servers.detailSubtitle", { id: id || "[id]" })}
             </p>
           </div>
           <Button
@@ -800,7 +817,7 @@ export default function ServerDetailPage() {
             <RefreshCw
               className={cn("size-4", serverQuery.isFetching && "animate-spin")}
             />
-            Refresh
+            {t("actions.refresh")}
           </Button>
         </div>
 
@@ -811,7 +828,7 @@ export default function ServerDetailPage() {
             message={
               serverQuery.error instanceof Error
                 ? serverQuery.error.message
-                : "The inventory API returned an unexpected error."
+                : t("servers.unexpectedError")
             }
             onRetry={() => void serverQuery.refetch()}
           />

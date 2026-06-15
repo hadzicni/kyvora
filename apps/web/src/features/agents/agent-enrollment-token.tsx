@@ -2,6 +2,7 @@
 
 import { Check, Copy, Loader2, Terminal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export function AgentEnrollmentToken({
   onConnectionChange?: (connected: boolean) => void;
   onClose: (mode: "connected" | "canceled") => void;
 }) {
+  const t = useTranslations();
   const [copied, setCopied] = useState<"token" | "command" | null>(null);
   const cancelEnrollment = useCancelAgentEnrollment();
   const agentQuery = useAgent(enrollment.agent.id, {
@@ -73,9 +75,7 @@ npm run dev:agent`,
   }
 
   async function confirmCancelEnrollment() {
-    const confirmed = window.confirm(
-      "This will revoke the token and remove the pending agent. You can enroll a new agent later."
-    );
+    const confirmed = window.confirm(t("agents.cancelEnrollmentConfirm"));
 
     if (!confirmed) {
       return;
@@ -83,7 +83,7 @@ npm run dev:agent`,
 
     try {
       await cancelEnrollment.mutateAsync(enrollment.agent.id);
-      toast.success("Enrollment canceled.", {
+      toast.success(t("agents.enrollmentCanceledToast"), {
         description: enrollment.agent.name,
       });
       onClose("canceled");
@@ -91,8 +91,8 @@ npm run dev:agent`,
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to cancel enrollment right now.";
-      toast.error("Unable to cancel enrollment.", {
+          : t("agents.cancelEnrollmentFailedDescription");
+      toast.error(t("agents.cancelEnrollmentFailedToast"), {
         description: message,
       });
     }
@@ -101,21 +101,20 @@ npm run dev:agent`,
   return (
     <div className="grid gap-4">
       <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-        This token is shown only once. Store it securely before closing this
-        dialog.
+        {t("agents.tokenShownOnceDescription")}
       </div>
 
-      <TokenDetail label="Agent ID" value={enrollment.agent.id} />
-      <TokenDetail label="API Server URL" value={defaultAgentApiUrl} />
+      <TokenDetail label={t("agents.agentId")} value={enrollment.agent.id} />
+      <TokenDetail label={t("agents.apiServerUrl")} value={defaultAgentApiUrl} />
 
       <div className="grid gap-2">
-        <Label>Agent Token</Label>
+        <Label>{t("agents.agentToken")}</Label>
         <div className="flex min-w-0 gap-2">
           <code className="min-w-0 flex-1 overflow-x-auto rounded-md border bg-muted px-3 py-2 font-mono text-xs">
             {enrollment.agentToken}
           </code>
           <Button
-            aria-label="Copy agent token"
+            aria-label={t("agents.copyAgentToken")}
             size="icon"
             type="button"
             variant="outline"
@@ -131,7 +130,7 @@ npm run dev:agent`,
       </div>
 
       <div className="grid gap-2">
-        <Label>Run command</Label>
+        <Label>{t("agents.runCommand")}</Label>
         <div className="rounded-md border bg-muted">
           <div className="flex items-center justify-between border-b px-3 py-2">
             <Terminal className="size-4 text-muted-foreground" />
@@ -146,7 +145,7 @@ npm run dev:agent`,
               ) : (
                 <Copy className="size-4" />
               )}
-              Copy command
+              {t("agents.copyCommand")}
             </Button>
           </div>
           <pre className="overflow-x-auto p-3 text-xs">
@@ -159,21 +158,20 @@ npm run dev:agent`,
         <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
           <div className="flex items-center gap-2 font-medium">
             <Check className="size-4" />
-            Agent connected
+            {t("agents.connected")}
           </div>
           <div className="mt-1 text-xs text-emerald-100/80">
-            Last seen {formatDateTime(lastSeenAt)}
+            {t("agents.lastSeenAt", { date: formatDateTime(lastSeenAt) })}
           </div>
         </div>
       ) : (
         <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
           <div className="flex items-center gap-2 font-medium">
             <Loader2 className="size-4 animate-spin text-muted-foreground" />
-            Waiting for agent to connect...
+            {t("agents.waitingForConnection")}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Run the copied command with the one-time token. This dialog will
-            unlock after the first successful heartbeat.
+            {t("agents.runCommandHint")}
           </p>
         </div>
       )}
@@ -189,7 +187,7 @@ npm run dev:agent`,
             {cancelEnrollment.isPending ? (
               <Loader2 className="size-4 animate-spin" />
             ) : null}
-            Cancel enrollment
+            {t("agents.cancelEnrollment")}
           </Button>
         ) : (
           <div />
@@ -199,7 +197,7 @@ npm run dev:agent`,
           disabled={!connected}
           onClick={() => onClose("connected")}
         >
-          Done
+          {t("actions.close")}
         </Button>
       </DialogFooter>
     </div>

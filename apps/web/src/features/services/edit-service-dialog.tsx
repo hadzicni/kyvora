@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ export function EditServiceDialog({
   service: ManagedServiceItem;
   servers: ServerInventoryItem[];
 }) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const updateService = useUpdateService();
@@ -51,7 +53,7 @@ export function EditServiceDialog({
         id: service.id,
         input: toServiceInput(values),
       });
-      toast.success("Service updated.", {
+      toast.success(t("services.updatedToast"), {
         description: updated.name,
       });
       setOpen(false);
@@ -59,10 +61,10 @@ export function EditServiceDialog({
       const message =
         error instanceof ServiceApiError || error instanceof Error
           ? error.message
-          : "Unable to update the service right now.";
+          : t("services.updateFailedDescription");
 
       setFormError(message);
-      toast.error("Unable to update service.", {
+      toast.error(t("services.updateFailedToast"), {
         description: message,
       });
     }
@@ -79,15 +81,19 @@ export function EditServiceDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button aria-label={`Edit ${service.name}`} size="icon" variant="ghost">
+        <Button
+          aria-label={t("services.editAria", { name: service.name })}
+          size="icon"
+          variant="ghost"
+        >
           <Pencil className="size-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Edit service</DialogTitle>
+          <DialogTitle>{t("services.editService")}</DialogTitle>
           <DialogDescription>
-            Update metadata for {service.name}.
+            {t("services.editDescription", { name: service.name })}
           </DialogDescription>
         </DialogHeader>
         <ServiceForm
@@ -99,7 +105,7 @@ export function EditServiceDialog({
           onSubmit={onSubmit}
           servers={servers}
           submitIcon={<Pencil className="size-4" />}
-          submitLabel="Save changes"
+          submitLabel={t("actions.save")}
         />
       </DialogContent>
     </Dialog>
