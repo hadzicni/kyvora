@@ -1,3 +1,5 @@
+import { apiRequest, appendSearchParam, ApiRequestError } from "@/lib/api/client";
+
 export type SearchResultType =
   | "SERVER"
   | "SERVICE"
@@ -27,23 +29,15 @@ export type SearchParams = {
   limit?: number;
 };
 
-export class SearchApiError extends Error {
+export class SearchApiError extends ApiRequestError {
   constructor(
     message: string,
     readonly status: number,
     readonly details: string[] = []
   ) {
-    super(message);
+    super(message, status, details);
     this.name = "SearchApiError";
   }
-}
-
-function appendParam(searchParams: URLSearchParams, key: string, value: unknown) {
-  if (value === undefined || value === null || value === "") {
-    return;
-  }
-
-  searchParams.append(key, String(value));
 }
 
 export async function searchKyvora(
@@ -51,34 +45,14 @@ export async function searchKyvora(
 ): Promise<SearchResponse> {
   const searchParams = new URLSearchParams();
 
-  appendParam(searchParams, "q", params.q?.trim());
-  appendParam(searchParams, "limit", params.limit ?? 12);
+  appendSearchParam(searchParams, "q", params.q?.trim());
+  appendSearchParam(searchParams, "limit", params.limit ?? 12);
 
-  const response = await fetch(`/api/search?${searchParams.toString()}`, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    let message = `Request failed with status ${response.status}`;
-    let details: string[] = [];
-
-    try {
-      const body = (await response.json()) as {
-        message?: string;
-        details?: string[];
-      };
-      message = body.message ?? message;
-      details = Array.isArray(body.details) ? body.details : [];
-    } catch {
-      // Keep the status-derived fallback if the response is not JSON.
-    }
-
-    throw new SearchApiError(message, response.status, details);
-  }
-
-  return (await response.json()) as SearchResponse;
+  return apiRequest<SearchResponse>(
+    `/api/search?${searchParams.toString()}`,
+    undefined,
+    (message, status, details) => new SearchApiError(message, status, details)
+  );
 }
 
 export const searchKeys = {

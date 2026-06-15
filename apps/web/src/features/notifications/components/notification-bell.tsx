@@ -3,7 +3,7 @@
 import { Bell, CheckCheck, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +23,7 @@ import {
 } from "@/features/notifications/hooks/use-notifications";
 import { NotificationList } from "@/features/notifications/components/notification-list";
 import { NotificationUnreadBadge } from "@/features/notifications/components/notification-unread-badge";
-import { ApiError } from "@/lib/api/servers";
+import { errorMessage } from "@/lib/api/client";
 
 export function NotificationBell() {
   const { status } = useSession();
@@ -131,14 +131,4 @@ export function NotificationBell() {
       </SheetContent>
     </Sheet>
   );
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Try again in a moment.";
 }

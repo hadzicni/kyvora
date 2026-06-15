@@ -3,6 +3,7 @@ import type {
   NotificationPage,
   UnreadNotificationCount,
 } from "@/features/notifications/types/notification";
+import { apiRequest, appendSearchParam } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/servers";
 
 export type ListNotificationsParams = {
@@ -11,53 +12,20 @@ export type ListNotificationsParams = {
   sort?: string;
 };
 
-function appendParam(searchParams: URLSearchParams, key: string, value: unknown) {
-  if (value === undefined || value === null || value === "") {
-    return;
-  }
-  searchParams.append(key, String(value));
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...init?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    let message = `Request failed with status ${response.status}`;
-    let details: string[] = [];
-
-    try {
-      const body = (await response.json()) as {
-        message?: string;
-        details?: string[];
-      };
-      message = body.message ?? message;
-      details = Array.isArray(body.details) ? body.details : [];
-    } catch {}
-
-    throw new ApiError(message, response.status, details);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const body = await response.text();
-  return body ? (JSON.parse(body) as T) : (undefined as T);
-}
+const request = <T>(path: string, init?: RequestInit) =>
+  apiRequest<T>(
+    path,
+    init,
+    (message, status, details) => new ApiError(message, status, details)
+  );
 
 export async function listNotifications(
   params: ListNotificationsParams = {}
 ): Promise<NotificationPage> {
   const searchParams = new URLSearchParams();
-  appendParam(searchParams, "page", params.page ?? 0);
-  appendParam(searchParams, "size", params.size ?? 20);
-  appendParam(searchParams, "sort", params.sort ?? "createdAt,desc");
+  appendSearchParam(searchParams, "page", params.page ?? 0);
+  appendSearchParam(searchParams, "size", params.size ?? 20);
+  appendSearchParam(searchParams, "sort", params.sort ?? "createdAt,desc");
 
   return request<NotificationPage>(`/api/notifications?${searchParams.toString()}`);
 }

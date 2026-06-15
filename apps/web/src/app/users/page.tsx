@@ -17,7 +17,7 @@ import { signOut, useSession } from "next-auth/react"
 import { useLocale, useTranslations } from "next-intl"
 import { useEffect, useMemo, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { z } from "zod"
 
 import { AppShell } from "@/components/app/app-shell"
@@ -69,13 +69,14 @@ import {
   useUsers,
 } from "@/features/users/use-users"
 import {
-  UsersApiError,
   type PermissionPreset,
   type UserAccount,
   type UserPermission,
 } from "@/lib/api/users"
+import { errorMessage } from "@/lib/api/client"
 import {
   canAccessUserManagement,
+  canUpdateUsers,
   permissionPresets,
   permissions,
 } from "@/lib/permissions"
@@ -143,14 +144,6 @@ const permissionGroups = [
   },
 ] satisfies Array<{ key: string; permissions: UserPermission[] }>
 
-function errorMessage(error: unknown) {
-  if (error instanceof UsersApiError && error.details.length > 0) {
-    return `${error.message}: ${error.details.join(", ")}`
-  }
-
-  return error instanceof Error ? error.message : "User operation failed"
-}
-
 function UserTableSkeleton() {
   return (
     <div className="space-y-2">
@@ -181,7 +174,7 @@ export default function UsersPage() {
   const users = useMemo(() => usersQuery.data ?? [], [usersQuery.data])
   const enabledUserManagerCount = useMemo(
     () =>
-      users.filter((user) => user.enabled && user.permissions.includes("USER_UPDATE"))
+      users.filter((user) => user.enabled && canUpdateUsers(user.permissions))
         .length,
     [users],
   )
@@ -434,7 +427,7 @@ export default function UsersPage() {
                     {users.map((user) => {
                       const isLastEnabledUserManager =
                         user.enabled &&
-                        user.permissions.includes("USER_UPDATE") &&
+                        canUpdateUsers(user.permissions) &&
                         enabledUserManagerCount <= 1
 
                       return (

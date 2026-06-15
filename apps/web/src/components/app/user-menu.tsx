@@ -4,7 +4,7 @@ import { LogOut, UserCircle } from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 import {
   DropdownMenu,

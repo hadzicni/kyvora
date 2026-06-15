@@ -3,7 +3,7 @@
 import { Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import {

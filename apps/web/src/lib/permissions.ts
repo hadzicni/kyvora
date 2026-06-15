@@ -91,6 +91,10 @@ export function canAccessUserManagement(
   );
 }
 
+export function canUpdateUsers(assigned: readonly string[] | null | undefined) {
+  return can(assigned, "USER_UPDATE");
+}
+
 export function canReadDashboard(assigned: readonly string[] | null | undefined) {
   return can(assigned, "DASHBOARD_READ");
 }

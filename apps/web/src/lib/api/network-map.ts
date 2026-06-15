@@ -1,3 +1,4 @@
+import { apiRequest, ApiRequestError } from "@/lib/api/client";
 import type { ServerStatus } from "./servers";
 
 export type NetworkMapNodeType = "SERVER" | "GATEWAY";
@@ -55,52 +56,23 @@ export type NetworkMap = {
   generatedAt: string;
 };
 
-export class NetworkMapApiError extends Error {
+export class NetworkMapApiError extends ApiRequestError {
   constructor(
     message: string,
     readonly status: number,
     readonly details: string[] = []
   ) {
-    super(message);
+    super(message, status, details);
     this.name = "NetworkMapApiError";
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...init?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    let message = `Request failed with status ${response.status}`;
-    let details: string[] = [];
-
-    try {
-      const body = (await response.json()) as {
-        message?: string;
-        details?: string[];
-      };
-      message = body.message ?? message;
-      details = Array.isArray(body.details) ? body.details : [];
-    } catch {
-      // Keep the status-derived fallback if the response is not JSON.
-    }
-
-    throw new NetworkMapApiError(message, response.status, details);
-  }
-
-  const body = await response.text();
-
-  if (!body) {
-    return undefined as T;
-  }
-
-  return JSON.parse(body) as T;
-}
+const request = <T>(path: string, init?: RequestInit) =>
+  apiRequest<T>(
+    path,
+    init,
+    (message, status, details) => new NetworkMapApiError(message, status, details)
+  );
 
 export async function getNetworkMap(): Promise<NetworkMap> {
   return request<NetworkMap>("/api/network-map");

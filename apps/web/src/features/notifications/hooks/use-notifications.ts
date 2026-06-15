@@ -6,7 +6,6 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 import {
   dismissNotification,
@@ -69,21 +68,6 @@ export function useDismissNotification() {
       await invalidateNotifications(queryClient);
     },
   });
-}
-
-export function useToastNotification() {
-  return {
-    info: (title: string, description?: string) =>
-      toast.info(title, { description }),
-    success: (title: string, description?: string) =>
-      toast.success(title, { description }),
-    warning: (title: string, description?: string) =>
-      toast.warning(title, { description }),
-    error: (title: string, description?: string) =>
-      toast.error(title, { description }),
-    critical: (title: string, description?: string) =>
-      toast.error(title, { description }),
-  };
 }
 
 async function invalidateNotifications(queryClient: QueryClient) {

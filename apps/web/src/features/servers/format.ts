@@ -1,3 +1,5 @@
+import type { useFormatter, useTranslations } from "next-intl";
+
 export function formatDateTime(
   value: string | null | undefined,
   locale = "en"
@@ -16,6 +18,25 @@ export function formatDateTime(
 
 export function formatNumber(value: number, locale = "en") {
   return new Intl.NumberFormat(locale).format(value);
+}
+
+export function formatRelativeLastSeen(
+  value: string | null,
+  format: ReturnType<typeof useFormatter>,
+  t: ReturnType<typeof useTranslations>
+) {
+  if (!value) {
+    return t("common.never");
+  }
+
+  const elapsedMs = Date.now() - new Date(value).getTime();
+  const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60_000));
+
+  if (elapsedMinutes < 1) {
+    return t("common.justNow");
+  }
+
+  return format.relativeTime(new Date(value), new Date());
 }
 
 export function formatBytes(value: number | null | undefined) {

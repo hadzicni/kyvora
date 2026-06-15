@@ -8,8 +8,6 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +20,7 @@ import dev.kyvora.api.auditlog.repository.AuditLogRepository;
 import dev.kyvora.api.auditlog.repository.AuditLogSpecifications;
 import dev.kyvora.api.agent.event.AgentChangedEvent;
 import dev.kyvora.api.agent.event.AgentEventType;
-import dev.kyvora.api.auth.security.AuthenticatedUser;
+import dev.kyvora.api.auth.security.CurrentUserProvider;
 import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
 
 @Service
@@ -34,15 +32,19 @@ public class DefaultAuditLogService implements AuditLogService {
 	private static final String AUTH_AGGREGATE_TYPE = "AUTH";
 	private static final String USER_AGGREGATE_TYPE = "USER";
 	private static final String SETTINGS_AGGREGATE_TYPE = "SETTINGS";
-	private static final String SYSTEM_ACTOR = "system";
 	private static final UUID EMPTY_AGGREGATE_ID = new UUID(0, 0);
 
 	private final AuditLogRepository repository;
 	private final AuditLogMapper mapper;
+	private final CurrentUserProvider currentUserProvider;
 
-	public DefaultAuditLogService(AuditLogRepository repository, AuditLogMapper mapper) {
+	public DefaultAuditLogService(
+			AuditLogRepository repository,
+			AuditLogMapper mapper,
+			CurrentUserProvider currentUserProvider) {
 		this.repository = repository;
 		this.mapper = mapper;
+		this.currentUserProvider = currentUserProvider;
 	}
 
 	@Override
@@ -109,14 +111,7 @@ public class DefaultAuditLogService implements AuditLogService {
 	}
 
 	private String currentActor() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
-			return SYSTEM_ACTOR;
-		}
-		if (authentication.getPrincipal() instanceof AuthenticatedUser user) {
-			return user.email();
-		}
-		return authentication.getName();
+		return currentUserProvider.currentActor();
 	}
 
 	private String actorFor(AgentChangedEvent event) {

@@ -11,29 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateTime } from "@/features/servers/format";
+import {
+  formatDateTime,
+  formatRelativeLastSeen,
+} from "@/features/servers/format";
 import type { Agent } from "@/lib/api/agents";
 
 import { AgentStatusBadge } from "./agent-status-badge";
-
-function formatRelativeLastSeen(
-  value: string | null,
-  format: ReturnType<typeof useFormatter>,
-  t: ReturnType<typeof useTranslations>
-) {
-  if (!value) {
-    return t("common.never");
-  }
-
-  const elapsedMs = Date.now() - new Date(value).getTime();
-  const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60_000));
-
-  if (elapsedMinutes < 1) {
-    return t("common.justNow");
-  }
-
-  return format.relativeTime(new Date(value), new Date());
-}
 
 export function AgentTable({
   agents,

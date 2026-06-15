@@ -31,9 +31,9 @@ import {
   type AgentEnrollment,
 } from "@/lib/api/agents";
 import { AgentEnrollmentToken } from "@/features/agents/agent-enrollment-token";
-import { useToastNotification } from "@/features/notifications/hooks/use-notifications";
 import { useCreateServer } from "@/features/servers/use-servers";
 import { ApiError } from "@/lib/api/servers";
+import { toast } from "@/lib/toast";
 
 export function getConflictField(error: ApiError): "hostname" | "ipAddress" | null {
   const duplicateDetail = error.details.find(
@@ -71,7 +71,6 @@ export function CreateServerDialog() {
   const [agentConnected, setAgentConnected] = useState(false);
   const createServer = useCreateServer();
   const registerAgent = useRegisterAgent();
-  const toast = useToastNotification();
   const form = useForm<ServerFormValues, unknown, ServerFormPayload>({
     resolver: zodResolver(serverFormSchema),
     defaultValues: emptyServerFormValues,
@@ -89,7 +88,7 @@ export function CreateServerDialog() {
         ...toServerInput(values),
         status: "UNKNOWN",
       });
-      toast.success(t("servers.serverCreated"), server.hostname);
+      toast.success(t("servers.serverCreated"), { description: server.hostname });
 
       if (!enrollAgent) {
         form.reset(emptyServerFormValues);
@@ -102,7 +101,7 @@ export function CreateServerDialog() {
         const message =
           "Server was created, but the agent name must be at least 2 characters.";
         setFormError(message);
-        toast.warning(t("servers.createdAgentSkipped"), message);
+        toast.warning(t("servers.createdAgentSkipped"), { description: message });
         return;
       }
 
@@ -113,7 +112,9 @@ export function CreateServerDialog() {
         });
         form.reset(emptyServerFormValues);
         setEnrollment(enrolled);
-        toast.success(t("servers.agentEnrolled"), enrolled.agent.name);
+        toast.success(t("servers.agentEnrolled"), {
+          description: enrolled.agent.name,
+        });
       } catch (agentError) {
         const message =
           agentError instanceof AgentApiError && agentError.status === 409
@@ -123,7 +124,9 @@ export function CreateServerDialog() {
               : "Server was created, but agent enrollment failed.";
 
         setFormError(message);
-        toast.warning(t("servers.createdAgentFailed"), message);
+        toast.warning(t("servers.createdAgentFailed"), {
+          description: message,
+        });
       }
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
@@ -136,7 +139,7 @@ export function CreateServerDialog() {
               : "A server with matching unique inventory data already exists.";
 
         setFormError(message);
-        toast.error(t("servers.unableToCreate"), message);
+        toast.error(t("servers.unableToCreate"), { description: message });
 
         if (field) {
           form.setError(field, { type: "server", message });
@@ -150,7 +153,7 @@ export function CreateServerDialog() {
           : "Unable to create the server right now.";
 
       setFormError(message);
-      toast.error(t("servers.unableToCreate"), message);
+      toast.error(t("servers.unableToCreate"), { description: message });
     }
   }
 

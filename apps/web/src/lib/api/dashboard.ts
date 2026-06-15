@@ -1,3 +1,5 @@
+import { apiRequest, ApiRequestError } from "@/lib/api/client";
+
 export type DashboardSummary = {
   totalServers: number;
   onlineServers: number;
@@ -6,46 +8,23 @@ export type DashboardSummary = {
   generatedAt: string;
 };
 
-export class DashboardApiError extends Error {
+export class DashboardApiError extends ApiRequestError {
   constructor(
     message: string,
     readonly status: number,
     readonly details: string[] = []
   ) {
-    super(message);
+    super(message, status, details);
     this.name = "DashboardApiError";
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...init?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    let message = `Request failed with status ${response.status}`;
-    let details: string[] = [];
-
-    try {
-      const body = (await response.json()) as {
-        message?: string;
-        details?: string[];
-      };
-      message = body.message ?? message;
-      details = Array.isArray(body.details) ? body.details : [];
-    } catch {
-      // Keep the status-derived fallback if the response is not JSON.
-    }
-
-    throw new DashboardApiError(message, response.status, details);
-  }
-
-  return (await response.json()) as T;
-}
+const request = <T>(path: string, init?: RequestInit) =>
+  apiRequest<T>(
+    path,
+    init,
+    (message, status, details) => new DashboardApiError(message, status, details)
+  );
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   return request<DashboardSummary>("/api/dashboard/summary");

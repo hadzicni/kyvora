@@ -18,7 +18,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useCallback, useState, type ReactNode } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { AppShell } from "@/components/app/app-shell";
 import { Badge } from "@/components/ui/badge";

@@ -16,7 +16,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useState, type ReactNode } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { AppShell } from "@/components/app/app-shell";
 import { Button } from "@/components/ui/button";

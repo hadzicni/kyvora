@@ -8,13 +8,13 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { z } from "zod";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useChangePassword } from "@/features/users/use-users";
-import { UsersApiError } from "@/lib/api/users";
+import { errorMessage } from "@/lib/api/client";
 
 // ─── Particle canvas (identical to login) ─────────────────────────────────────
 
@@ -75,12 +75,6 @@ type ChangePasswordValues = {
   newPassword: string;
   confirmNewPassword: string;
 };
-
-function errorMessage(error: unknown) {
-  if (error instanceof UsersApiError && error.details.length > 0)
-    return `${error.message}: ${error.details.join(", ")}`;
-  return error instanceof Error ? error.message : null;
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 

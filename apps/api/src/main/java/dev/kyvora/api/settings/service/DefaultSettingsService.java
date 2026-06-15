@@ -8,13 +8,11 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.dao.DataAccessException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import dev.kyvora.api.auditlog.service.AuditLogService;
-import dev.kyvora.api.auth.security.AuthenticatedUser;
+import dev.kyvora.api.auth.security.CurrentUserProvider;
 import dev.kyvora.api.settings.dto.SettingItemResponse;
 import dev.kyvora.api.settings.dto.SettingsResponse;
 import dev.kyvora.api.settings.dto.UpdateSettingsRequest;
@@ -33,8 +31,6 @@ public class DefaultSettingsService implements SettingsService {
 	public static final String AGENTS_OFFLINE_CHECK_INTERVAL_SECONDS = "agents.offline_check_interval_seconds";
 	public static final String UI_SHOW_DEV_HINTS = "ui.show_dev_hints";
 
-	private static final String SYSTEM_ACTOR = "system";
-
 	private static final Map<String, SettingDefinition> DEFINITIONS = Map.of(
 			INSTANCE_NAME, new SettingDefinition(INSTANCE_NAME, "Kyvora", SettingValueType.STRING, "Display name for this Kyvora instance."),
 			INSTANCE_DESCRIPTION, new SettingDefinition(INSTANCE_DESCRIPTION, "Homelab Control Plane", SettingValueType.STRING, "Short description shown in the UI."),
@@ -44,10 +40,15 @@ public class DefaultSettingsService implements SettingsService {
 
 	private final SystemSettingRepository repository;
 	private final AuditLogService auditLogService;
+	private final CurrentUserProvider currentUserProvider;
 
-	public DefaultSettingsService(SystemSettingRepository repository, AuditLogService auditLogService) {
+	public DefaultSettingsService(
+			SystemSettingRepository repository,
+			AuditLogService auditLogService,
+			CurrentUserProvider currentUserProvider) {
 		this.repository = repository;
 		this.auditLogService = auditLogService;
+		this.currentUserProvider = currentUserProvider;
 	}
 
 	@Override
@@ -212,14 +213,7 @@ public class DefaultSettingsService implements SettingsService {
 	}
 
 	private String currentActor() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
-			return SYSTEM_ACTOR;
-		}
-		if (authentication.getPrincipal() instanceof AuthenticatedUser user) {
-			return user.email();
-		}
-		return authentication.getName();
+		return currentUserProvider.currentActor();
 	}
 
 	private String stringValue(Object value) {

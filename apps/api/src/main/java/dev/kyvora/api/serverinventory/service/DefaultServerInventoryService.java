@@ -4,13 +4,13 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import dev.kyvora.api.agent.repository.AgentRepository;
 import dev.kyvora.api.auditlog.service.AuditLogService;
 import dev.kyvora.api.auth.security.AuthenticatedUser;
+import dev.kyvora.api.auth.security.CurrentUserProvider;
 import dev.kyvora.api.notification.dto.CreateNotificationCommand;
 import dev.kyvora.api.notification.entity.NotificationSeverity;
 import dev.kyvora.api.notification.service.NotificationService;
@@ -36,18 +36,21 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 	private final ServerInventoryMapper mapper;
 	private final AuditLogService auditLogService;
 	private final NotificationService notificationService;
+	private final CurrentUserProvider currentUserProvider;
 
 	public DefaultServerInventoryService(
 			ServerInventoryRepository repository,
 			AgentRepository agentRepository,
 			ServerInventoryMapper mapper,
 			AuditLogService auditLogService,
-			NotificationService notificationService) {
+			NotificationService notificationService,
+			CurrentUserProvider currentUserProvider) {
 		this.repository = repository;
 		this.agentRepository = agentRepository;
 		this.mapper = mapper;
 		this.auditLogService = auditLogService;
 		this.notificationService = notificationService;
+		this.currentUserProvider = currentUserProvider;
 	}
 
 	@Override
@@ -130,11 +133,7 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 	}
 
 	private AuthenticatedUser currentPrincipal() {
-		var authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser principal)) {
-			return null;
-		}
-		return principal;
+		return currentUserProvider.currentPrincipal();
 	}
 
 	private void validateUniqueFields(String hostname, String ipAddress, UUID id) {

@@ -1,4 +1,5 @@
 import type { PermissionPreset, UserPermission } from "@/lib/permissions";
+import { apiRequest, ApiRequestError } from "@/lib/api/client";
 
 export type { PermissionPreset, UserPermission };
 
@@ -38,51 +39,23 @@ export type ChangePasswordInput = {
   newPassword: string;
 };
 
-export class UsersApiError extends Error {
+export class UsersApiError extends ApiRequestError {
   constructor(
     message: string,
     readonly status: number,
     readonly details: string[] = []
   ) {
-    super(message);
+    super(message, status, details);
     this.name = "UsersApiError";
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...init?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    let message = `Request failed with status ${response.status}`;
-    let details: string[] = [];
-
-    try {
-      const body = (await response.json()) as {
-        message?: string;
-        details?: string[];
-      };
-      message = body.message ?? message;
-      details = Array.isArray(body.details) ? body.details : [];
-    } catch {
-      // Use the status-derived fallback for non-JSON responses.
-    }
-
-    throw new UsersApiError(message, response.status, details);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const body = await response.text();
-  return body ? (JSON.parse(body) as T) : (undefined as T);
-}
+const request = <T>(path: string, init?: RequestInit) =>
+  apiRequest<T>(
+    path,
+    init,
+    (message, status, details) => new UsersApiError(message, status, details)
+  );
 
 export function listUsers(): Promise<UserAccount[]> {
   return request<UserAccount[]>("/api/users");

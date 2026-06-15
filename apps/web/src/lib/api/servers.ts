@@ -1,3 +1,5 @@
+import { apiRequest, appendSearchParam, ApiRequestError } from "@/lib/api/client";
+
 export type ServerStatus = "ONLINE" | "OFFLINE" | "UNKNOWN";
 
 export type ServerHostFacts = {
@@ -67,84 +69,38 @@ export type CreateServerInput = {
 
 export type UpdateServerInput = CreateServerInput;
 
-export class ApiError extends Error {
+export class ApiError extends ApiRequestError {
   constructor(
     message: string,
     readonly status: number,
     readonly details: string[] = []
   ) {
-    super(message);
+    super(message, status, details);
     this.name = "ApiError";
   }
 }
 
-function appendParam(searchParams: URLSearchParams, key: string, value: unknown) {
-  if (value === undefined || value === null || value === "") {
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    value.forEach((entry) => appendParam(searchParams, key, entry));
-    return;
-  }
-
-  searchParams.append(key, String(value));
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...init?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    let message = `Request failed with status ${response.status}`;
-    let details: string[] = [];
-
-    try {
-      const body = (await response.json()) as {
-        message?: string;
-        details?: string[];
-      };
-      message = body.message ?? message;
-      details = Array.isArray(body.details) ? body.details : [];
-    } catch {
-      // Keep the status-derived fallback if the response is not JSON.
-    }
-
-    throw new ApiError(message, response.status, details);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const body = await response.text();
-
-  if (!body) {
-    return undefined as T;
-  }
-
-  return JSON.parse(body) as T;
-}
+const request = <T>(path: string, init?: RequestInit) =>
+  apiRequest<T>(
+    path,
+    init,
+    (message, status, details) => new ApiError(message, status, details)
+  );
 
 export async function listServers(
   params: ListServersParams = {}
 ): Promise<ServerInventoryPage> {
   const searchParams = new URLSearchParams();
 
-  appendParam(searchParams, "page", params.page ?? 0);
-  appendParam(searchParams, "size", params.size ?? 20);
-  appendParam(searchParams, "q", params.q);
-  appendParam(searchParams, "status", params.status);
-  appendParam(searchParams, "name", params.name);
-  appendParam(searchParams, "hostname", params.hostname);
-  appendParam(searchParams, "ipAddress", params.ipAddress);
-  appendParam(searchParams, "tags", params.tags);
-  appendParam(searchParams, "sort", params.sort);
+  appendSearchParam(searchParams, "page", params.page ?? 0);
+  appendSearchParam(searchParams, "size", params.size ?? 20);
+  appendSearchParam(searchParams, "q", params.q);
+  appendSearchParam(searchParams, "status", params.status);
+  appendSearchParam(searchParams, "name", params.name);
+  appendSearchParam(searchParams, "hostname", params.hostname);
+  appendSearchParam(searchParams, "ipAddress", params.ipAddress);
+  appendSearchParam(searchParams, "tags", params.tags);
+  appendSearchParam(searchParams, "sort", params.sort);
 
   return request<ServerInventoryPage>(
     `/api/server-inventory?${searchParams.toString()}`

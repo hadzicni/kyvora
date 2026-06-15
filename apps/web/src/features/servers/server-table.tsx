@@ -14,27 +14,8 @@ import {
 import type { ServerInventoryItem } from "@/lib/api/servers";
 import { DeleteServerDialog } from "./delete-server-dialog";
 import { EditServerDialog } from "./edit-server-dialog";
-import { formatDateTime } from "./format";
+import { formatDateTime, formatRelativeLastSeen } from "./format";
 import { ServerStatusBadge } from "./server-status-badge";
-
-function formatRelativeLastSeen(
-  value: string | null,
-  format: ReturnType<typeof useFormatter>,
-  t: ReturnType<typeof useTranslations>
-) {
-  if (!value) {
-    return t("common.never");
-  }
-
-  const elapsedMs = Date.now() - new Date(value).getTime();
-  const elapsedMinutes = Math.max(0, Math.round(elapsedMs / 60_000));
-
-  if (elapsedMinutes < 1) {
-    return t("common.justNow");
-  }
-
-  return format.relativeTime(new Date(value), new Date());
-}
 
 export function ServerTable({
   canDelete = true,

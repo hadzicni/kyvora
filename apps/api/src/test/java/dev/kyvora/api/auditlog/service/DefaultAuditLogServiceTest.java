@@ -1,6 +1,7 @@
 package dev.kyvora.api.auditlog.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
 import java.time.Instant;
@@ -15,12 +16,14 @@ import dev.kyvora.api.agent.event.AgentEventType;
 import dev.kyvora.api.auditlog.entity.AuditLog;
 import dev.kyvora.api.auditlog.mapper.AuditLogMapper;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
+import dev.kyvora.api.auth.security.CurrentUserProvider;
 
 class DefaultAuditLogServiceTest {
 
 	private final AuditLogRepository repository = org.mockito.Mockito.mock(AuditLogRepository.class);
 	private final AuditLogMapper mapper = org.mockito.Mockito.mock(AuditLogMapper.class);
-	private final DefaultAuditLogService service = new DefaultAuditLogService(repository, mapper);
+	private final CurrentUserProvider currentUserProvider = org.mockito.Mockito.mock(CurrentUserProvider.class);
+	private final DefaultAuditLogService service = new DefaultAuditLogService(repository, mapper, currentUserProvider);
 
 	@Test
 	void heartbeatActorFallsBackToAgentIdWhenHostnameIsUnknown() {
@@ -47,6 +50,7 @@ class DefaultAuditLogServiceTest {
 
 	@Test
 	void nonHeartbeatAgentEventsKeepCurrentActor() {
+		when(currentUserProvider.currentActor()).thenReturn("system");
 		AgentChangedEvent event = new AgentChangedEvent(
 				AgentEventType.AGENT_REGISTERED,
 				UUID.randomUUID(),
