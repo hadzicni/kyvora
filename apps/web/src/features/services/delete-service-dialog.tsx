@@ -18,8 +18,10 @@ import type { ManagedServiceItem } from "@/lib/api/services";
 import { useDeleteService } from "./use-services";
 
 export function DeleteServiceDialog({
+  onDeleted,
   service,
 }: {
+  onDeleted?: () => void;
   service: ManagedServiceItem;
 }) {
   const [open, setOpen] = useState(false);
@@ -32,6 +34,7 @@ export function DeleteServiceDialog({
         description: service.name,
       });
       setOpen(false);
+      onDeleted?.();
     } catch (error) {
       toast.error("Unable to delete service.", {
         description:
