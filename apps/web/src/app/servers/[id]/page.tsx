@@ -11,13 +11,12 @@ import {
   RefreshCw,
   Server,
   TagsIcon,
-  Terminal,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { useCallback, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { toast } from "@/lib/toast";
 
 import { AppShell } from "@/components/app/app-shell";
@@ -31,39 +30,26 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AgentEnrollmentToken } from "@/features/agents/agent-enrollment-token";
 import { AgentStatusBadge } from "@/features/agents/agent-status-badge";
 import { DecommissionAgentDialog } from "@/features/agents/decommission-agent-dialog";
 import { RegisterAgentDialog } from "@/features/agents/register-agent-dialog";
-import {
-  useAgents,
-  useCancelAgentEnrollment,
-  useRotateAgentToken,
-} from "@/features/agents/use-agents";
+import { useAgents, usePullAgent } from "@/features/agents/use-agents";
 import { DeleteServerDialog } from "@/features/servers/delete-server-dialog";
 import { EditServerDialog } from "@/features/servers/edit-server-dialog";
 import { ServerErrorState } from "@/features/servers/server-error-state";
 import { ServerStatusBadge } from "@/features/servers/server-status-badge";
 import { useServer } from "@/features/servers/use-servers";
-import type { Agent, AgentEnrollment } from "@/lib/api/agents";
+import type { Agent } from "@/lib/api/agents";
 import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
 import {
   canDeleteServers,
-  canCancelAgentEnrollments,
   canDecommissionAgents,
   canEnrollAgents,
-  canRotateAgentTokens,
+  canPullAgents,
   canUpdateServers,
 } from "@/lib/permissions";
 import { formatBytes, formatUptime } from "@/features/servers/format";
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 function getParamId(id: string | string[] | undefined) {
   return Array.isArray(id) ? id[0] : (id ?? "");
@@ -384,82 +370,43 @@ function AgentSection({
   server,
 }: {
   actions: {
-    canCancelEnrollment: boolean;
     canDecommission: boolean;
     canEnroll: boolean;
-    canRotateToken: boolean;
+    canPull: boolean;
   };
   agent?: Agent;
   isLoading: boolean;
   server: ServerInventoryItem;
 }) {
   const t = useTranslations();
-  const [enrollment, setEnrollment] = useState<AgentEnrollment | null>(null);
-  const [agentConnected, setAgentConnected] = useState(false);
-  const rotateAgentToken = useRotateAgentToken();
-  const cancelAgentEnrollment = useCancelAgentEnrollment();
-  const handleAgentConnectionChange = useCallback((connected: boolean) => {
-    setAgentConnected(connected);
-  }, []);
-  const pending = agent?.status === "PENDING" && agent.lastSeenAt === null;
+  const pullAgent = usePullAgent();
   const offline = agent?.status === "OFFLINE";
-  const canDecommission =
-    agent?.status === "ONLINE" || agent?.status === "OFFLINE";
 
-  async function rotateToken() {
+  async function pullNow() {
     if (!agent) {
       return;
     }
 
     try {
-      const rotated = await rotateAgentToken.mutateAsync(agent.id);
-      setAgentConnected(false);
-      setEnrollment(rotated);
-      toast.success(t("agents.tokenRotatedToast"), {
-        description: rotated.agent.name,
+      const result = await pullAgent.mutateAsync(agent.id);
+      if (result.error) {
+        toast.warning(t("agents.pullFailedToast"), {
+          description: result.error,
+        });
+        return;
+      }
+      toast.success(t("agents.pullSucceededToast"), {
+        description: result.agent.name,
       });
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : t("agents.rotateTokenFailedDescription");
-      toast.error(t("agents.rotateTokenFailedToast"), {
+          : t("agents.pullFailedDescription");
+      toast.error(t("agents.pullFailedToast"), {
         description: message,
       });
     }
-  }
-
-  async function cancelEnrollment() {
-    if (!agent) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      t("agents.cancelEnrollmentConfirm")
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await cancelAgentEnrollment.mutateAsync(agent.id);
-      toast.success(t("agents.enrollmentCanceledToast"), {
-        description: agent.name,
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : t("agents.cancelEnrollmentFailedDescription");
-      toast.error(t("agents.cancelEnrollmentFailedToast"), {
-        description: message,
-      });
-    }
-  }
-
-  function closeTokenDialog() {
-    setEnrollment(null);
-    setAgentConnected(false);
   }
 
   return (
@@ -488,11 +435,6 @@ function AgentSection({
                   <AgentStatusBadge status={agent.status} />
                   <span className="text-sm font-medium">{agent.name}</span>
                 </div>
-                {pending ? (
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    {t("agents.pendingTokenDescription")}
-                  </p>
-                ) : null}
                 {offline ? (
                   <p className="text-sm leading-6 text-muted-foreground">
                     {t("agents.offlineDescription")}
@@ -505,37 +447,22 @@ function AgentSection({
                 ) : null}
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
-                {actions.canRotateToken && agent.status !== "DECOMMISSIONED" ? (
-                  <Button
-                    type="button"
-                    variant={pending ? "default" : "outline"}
-                    disabled={rotateAgentToken.isPending}
-                    onClick={() => void rotateToken()}
-                  >
-                    {rotateAgentToken.isPending ? (
-                      <RefreshCw className="size-4 animate-spin" />
-                    ) : (
-                      <Terminal className="size-4" />
-                    )}
-                    {pending
-                      ? t("agents.generateSetupToken")
-                      : t("agents.rotateToken")}
-                  </Button>
-                ) : null}
-                {actions.canCancelEnrollment && pending ? (
+                {actions.canPull ? (
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={cancelAgentEnrollment.isPending}
-                    onClick={() => void cancelEnrollment()}
+                    disabled={pullAgent.isPending}
+                    onClick={() => void pullNow()}
                   >
-                    {cancelAgentEnrollment.isPending ? (
+                    {pullAgent.isPending ? (
                       <RefreshCw className="size-4 animate-spin" />
-                    ) : null}
-                    {t("agents.cancelEnrollment")}
+                    ) : (
+                      <RefreshCw className="size-4" />
+                    )}
+                    {t("agents.pullNow")}
                   </Button>
                 ) : null}
-                {actions.canDecommission && agent && canDecommission ? (
+                {actions.canDecommission && agent ? (
                   <DecommissionAgentDialog agent={agent} />
                 ) : null}
                 <Button asChild type="button" variant="outline">
@@ -549,10 +476,21 @@ function AgentSection({
             <dl className="grid gap-3 sm:grid-cols-2">
               <Field label={t("agents.agentHostname")} value={agent.hostname} mono />
               <Field label={t("agents.version")} value={agent.version} mono />
+              <Field label={t("agents.baseUrl")} value={agent.baseUrl} mono />
               <Field
-                label={t("agents.lastHeartbeat")}
-                value={<TimestampValue value={agent.lastSeenAt} />}
-                muted={!agent.lastSeenAt}
+                label={t("agents.lastPull")}
+                value={<TimestampValue value={agent.lastPullAt} />}
+                muted={!agent.lastPullAt}
+              />
+              <Field
+                label={t("agents.lastSuccessfulPull")}
+                value={<TimestampValue value={agent.lastSuccessfulPullAt} />}
+                muted={!agent.lastSuccessfulPullAt}
+              />
+              <Field
+                label={t("agents.lastPullError")}
+                value={agent.lastPullError ?? t("common.none")}
+                muted={!agent.lastPullError}
               />
               <Field
                 label={t("services.linkedServer")}
@@ -576,48 +514,6 @@ function AgentSection({
           </div>
         ) : null}
       </CardContent>
-      <Dialog
-        open={Boolean(enrollment)}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen && enrollment && !agentConnected) {
-            return;
-          }
-          if (!nextOpen) {
-            closeTokenDialog();
-          }
-        }}
-      >
-        <DialogContent
-          className="sm:max-w-2xl"
-          showCloseButton={!enrollment || agentConnected}
-          onEscapeKeyDown={(event) => {
-            if (enrollment && !agentConnected) {
-              event.preventDefault();
-            }
-          }}
-          onPointerDownOutside={(event) => {
-            if (enrollment && !agentConnected) {
-              event.preventDefault();
-            }
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>{t("agents.agentToken")}</DialogTitle>
-            <DialogDescription>{t("servers.tokenShownOnce")}</DialogDescription>
-          </DialogHeader>
-          {enrollment ? (
-            <AgentEnrollmentToken
-              allowCancelEnrollment={
-                enrollment.agent.status === "PENDING" &&
-                enrollment.agent.lastSeenAt === null
-              }
-              enrollment={enrollment}
-              onClose={closeTokenDialog}
-              onConnectionChange={handleAgentConnectionChange}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }
@@ -632,10 +528,9 @@ function ServerDetails({
 }: {
   canDelete: boolean;
   agentActions: {
-    canCancelEnrollment: boolean;
     canDecommission: boolean;
     canEnroll: boolean;
-    canRotateToken: boolean;
+    canPull: boolean;
   };
   canUpdateServer: boolean;
   linkedAgent?: Agent;
@@ -837,10 +732,9 @@ export default function ServerDetailPage() {
           <ServerDetails
             canDelete={canDeleteServers(session?.user.permissions)}
             agentActions={{
-              canCancelEnrollment: canCancelAgentEnrollments(session?.user.permissions),
               canDecommission: canDecommissionAgents(session?.user.permissions),
               canEnroll: canEnrollAgents(session?.user.permissions),
-              canRotateToken: canRotateAgentTokens(session?.user.permissions),
+              canPull: canPullAgents(session?.user.permissions),
             }}
             canUpdateServer={canUpdateServers(session?.user.permissions)}
             linkedAgent={linkedAgent}

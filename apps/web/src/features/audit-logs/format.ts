@@ -6,18 +6,18 @@ export const auditEventTypes = [
   "SERVER_DELETED",
   "SERVER_MARKED_ONLINE_BY_AGENT",
   "SERVER_MARKED_OFFLINE_BY_AGENT",
-  "AGENT_REGISTERED",
-  "AGENT_ENROLLED",
-  "AGENT_CONNECTED",
-  "AGENT_HEARTBEAT_RECEIVED",
+  "AGENT_CONFIGURED",
+  "AGENT_PULL_SUCCEEDED",
+  "AGENT_PULL_FAILED",
   "AGENT_MARKED_ONLINE",
   "AGENT_MARKED_OFFLINE",
-  "AGENT_TOKEN_ROTATED",
-  "AGENT_ENROLLMENT_CANCELED",
   "AGENT_DECOMMISSIONED",
 ] as const satisfies AuditEventType[];
 
 const auditEventLabels: Partial<Record<AuditEventType, string>> = {
+  AGENT_CONFIGURED: "Agent configured",
+  AGENT_PULL_SUCCEEDED: "Agent pull succeeded",
+  AGENT_PULL_FAILED: "Agent pull failed",
   AGENT_DECOMMISSIONED: "Agent decommissioned",
 };
 

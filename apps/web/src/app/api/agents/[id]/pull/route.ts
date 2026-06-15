@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const backendUrl = new URL(
-      `/api/v1/agents/${encodeURIComponent(id)}/rotate-token`,
+      `/api/v1/agents/${encodeURIComponent(id)}/pull`,
       apiBaseUrl
     );
 

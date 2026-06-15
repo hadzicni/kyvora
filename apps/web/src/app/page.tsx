@@ -226,11 +226,10 @@ export default function DashboardOverviewPage() {
   const totalAgents = agentsQuery.data?.totalElements ?? agents.length
   const onlineAgents = agents.filter((a) => a.status === "ONLINE").length
   const offlineAgents = agents.filter((a) => a.status === "OFFLINE").length
-  const pendingAgents = agents.filter((a) => a.status === "PENDING").length
   const unknownAgents = agents.filter((a) => a.status === "UNKNOWN").length
 
   const attentionServers = offlineCount + unknownCount
-  const attentionAgents = offlineAgents + pendingAgents + unknownAgents
+  const attentionAgents = offlineAgents + unknownAgents
 
   return (
     <AppShell>
@@ -379,9 +378,9 @@ export default function DashboardOverviewPage() {
                   status={<AgentStatusBadge status="OFFLINE" />}
                 />
                 <HealthMetric
-                  count={pendingAgents + unknownAgents}
+                  count={unknownAgents}
                   helper={t("dashboard.pendingUnknownAgents")}
-                  status={<AgentStatusBadge status="PENDING" />}
+                  status={<AgentStatusBadge status="UNKNOWN" />}
                 />
               </>
             }
@@ -399,8 +398,8 @@ export default function DashboardOverviewPage() {
               },
               {
                 className: "bg-amber-500",
-                label: t("statuses.PENDING"),
-                value: pendingAgents + unknownAgents,
+                label: t("statuses.UNKNOWN"),
+                value: unknownAgents,
               },
             ]}
             title={t("dashboard.agentHealth")}

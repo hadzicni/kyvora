@@ -1,7 +1,12 @@
 package dev.kyvora.api.agent.entity;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.CascadeType;
@@ -45,23 +50,33 @@ public class Agent {
 	@Column(name = "last_seen_at")
 	private Instant lastSeenAt;
 
+	@Column(name = "base_url", nullable = false, length = 512)
+	private String baseUrl;
+
+	@Column(name = "shared_secret", nullable = false, length = 512)
+	private String sharedSecret;
+
+	@Column(name = "pull_enabled", nullable = false)
+	private boolean pullEnabled = true;
+
+	@Column(name = "last_pull_at")
+	private Instant lastPullAt;
+
+	@Column(name = "last_successful_pull_at")
+	private Instant lastSuccessfulPullAt;
+
+	@Column(name = "last_pull_error", length = 1000)
+	private String lastPullError;
+
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(name = "capabilities", columnDefinition = "jsonb")
+	private List<String> capabilities = new ArrayList<>();
+
 	@Column(name = "registered_at", nullable = false, updatable = false)
 	private Instant registeredAt;
 
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
-
-	@Column(name = "token_hash", length = 64)
-	private String tokenHash;
-
-	@Column(name = "token_created_at")
-	private Instant tokenCreatedAt;
-
-	@Column(name = "token_last_used_at")
-	private Instant tokenLastUsedAt;
-
-	@Column(name = "token_revoked_at")
-	private Instant tokenRevokedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "server_id")
@@ -73,12 +88,14 @@ public class Agent {
 	protected Agent() {
 	}
 
-	public Agent(String name, String hostname, String version, AgentStatus status, ServerInventory server) {
+	public Agent(String name, String hostname, String version, AgentStatus status, ServerInventory server, String baseUrl, String sharedSecret) {
 		this.name = name;
 		this.hostname = hostname;
 		this.version = version;
 		this.status = status;
 		this.server = server;
+		this.baseUrl = baseUrl;
+		this.sharedSecret = sharedSecret;
 	}
 
 	@PrePersist
@@ -147,36 +164,60 @@ public class Agent {
 		return updatedAt;
 	}
 
-	public String getTokenHash() {
-		return tokenHash;
+	public String getBaseUrl() {
+		return baseUrl;
 	}
 
-	public void setTokenHash(String tokenHash) {
-		this.tokenHash = tokenHash;
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
 	}
 
-	public Instant getTokenCreatedAt() {
-		return tokenCreatedAt;
+	public String getSharedSecret() {
+		return sharedSecret;
 	}
 
-	public void setTokenCreatedAt(Instant tokenCreatedAt) {
-		this.tokenCreatedAt = tokenCreatedAt;
+	public void setSharedSecret(String sharedSecret) {
+		this.sharedSecret = sharedSecret;
 	}
 
-	public Instant getTokenLastUsedAt() {
-		return tokenLastUsedAt;
+	public boolean isPullEnabled() {
+		return pullEnabled;
 	}
 
-	public void setTokenLastUsedAt(Instant tokenLastUsedAt) {
-		this.tokenLastUsedAt = tokenLastUsedAt;
+	public void setPullEnabled(boolean pullEnabled) {
+		this.pullEnabled = pullEnabled;
 	}
 
-	public Instant getTokenRevokedAt() {
-		return tokenRevokedAt;
+	public Instant getLastPullAt() {
+		return lastPullAt;
 	}
 
-	public void setTokenRevokedAt(Instant tokenRevokedAt) {
-		this.tokenRevokedAt = tokenRevokedAt;
+	public void setLastPullAt(Instant lastPullAt) {
+		this.lastPullAt = lastPullAt;
+	}
+
+	public Instant getLastSuccessfulPullAt() {
+		return lastSuccessfulPullAt;
+	}
+
+	public void setLastSuccessfulPullAt(Instant lastSuccessfulPullAt) {
+		this.lastSuccessfulPullAt = lastSuccessfulPullAt;
+	}
+
+	public String getLastPullError() {
+		return lastPullError;
+	}
+
+	public void setLastPullError(String lastPullError) {
+		this.lastPullError = lastPullError;
+	}
+
+	public List<String> getCapabilities() {
+		return capabilities == null ? List.of() : List.copyOf(capabilities);
+	}
+
+	public void setCapabilities(List<String> capabilities) {
+		this.capabilities = capabilities == null ? new ArrayList<>() : new ArrayList<>(capabilities);
 	}
 
 	public ServerInventory getServer() {

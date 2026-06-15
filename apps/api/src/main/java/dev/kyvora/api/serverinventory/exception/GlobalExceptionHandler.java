@@ -11,10 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import dev.kyvora.api.agent.exception.AgentEnrollmentCancellationException;
 import dev.kyvora.api.agent.exception.AgentNotFoundException;
-import dev.kyvora.api.agent.exception.AgentTokenAuthenticationException;
-import dev.kyvora.api.agent.exception.AgentTokenForbiddenException;
 import dev.kyvora.api.agent.exception.DuplicateAgentException;
 import dev.kyvora.api.auth.service.InvalidCredentialsException;
 import dev.kyvora.api.auth.service.InvalidTokenException;
@@ -113,20 +110,6 @@ public class GlobalExceptionHandler {
 		return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
-	@ExceptionHandler(AgentTokenAuthenticationException.class)
-	public ResponseEntity<ApiErrorResponse> handleAgentTokenAuthenticationFailure(
-			AgentTokenAuthenticationException exception,
-			HttpServletRequest request) {
-		return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request.getRequestURI(), List.of());
-	}
-
-	@ExceptionHandler(AgentTokenForbiddenException.class)
-	public ResponseEntity<ApiErrorResponse> handleAgentTokenForbidden(
-			AgentTokenForbiddenException exception,
-			HttpServletRequest request) {
-		return buildResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI(), List.of());
-	}
-
 	@ExceptionHandler(DuplicateServerInventoryException.class)
 	public ResponseEntity<ApiErrorResponse> handleDuplicate(
 			DuplicateServerInventoryException exception,
@@ -139,13 +122,6 @@ public class GlobalExceptionHandler {
 			DuplicateAgentException exception,
 			HttpServletRequest request) {
 		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of(exception.getField() + ": " + exception.getValue()));
-	}
-
-	@ExceptionHandler(AgentEnrollmentCancellationException.class)
-	public ResponseEntity<ApiErrorResponse> handleAgentEnrollmentCancellation(
-			AgentEnrollmentCancellationException exception,
-			HttpServletRequest request) {
-		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
 	@ExceptionHandler(NotificationNotDismissibleException.class)

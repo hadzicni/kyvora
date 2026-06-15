@@ -16,7 +16,7 @@ import dev.kyvora.api.serverinventory.entity.ServerInventory;
 
 public interface AgentRepository extends JpaRepository<Agent, UUID> {
 
-	boolean existsByHostnameIgnoreCaseAndStatusNot(String hostname, AgentStatus status);
+	boolean existsByHostnameIgnoreCase(String hostname);
 
 	boolean existsByServer(ServerInventory server);
 
@@ -36,7 +36,7 @@ public interface AgentRepository extends JpaRepository<Agent, UUID> {
 			from Agent agent
 			left join fetch agent.server
 			where agent.status = dev.kyvora.api.agent.entity.AgentStatus.ONLINE
-				and agent.lastSeenAt < :staleBefore
+				and agent.lastSuccessfulPullAt < :staleBefore
 			""")
 	List<Agent> findStaleOnlineAgents(@Param("staleBefore") Instant staleBefore);
 

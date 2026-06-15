@@ -1,6 +1,7 @@
 package dev.kyvora.api.agent.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 import dev.kyvora.api.agent.entity.AgentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,18 +24,24 @@ public record AgentResponse(
 		String version,
 		@Schema(description = "Current agent status.", example = "ONLINE")
 		AgentStatus status,
-		@Schema(description = "Time when Kyvora last received a heartbeat from the agent.", example = "2026-06-08T10:00:00Z")
+		@Schema(description = "Time when Kyvora last successfully saw this agent online.", example = "2026-06-08T10:00:00Z")
 		Instant lastSeenAt,
+		@Schema(description = "Agent base URL used for pull requests. The shared secret is never returned.", example = "http://10.0.0.15:9288")
+		String baseUrl,
+		@Schema(description = "Whether pull attempts are enabled for this agent.", example = "true")
+		boolean pullEnabled,
+		@Schema(description = "Last pull attempt timestamp.", example = "2026-06-08T10:00:00Z")
+		Instant lastPullAt,
+		@Schema(description = "Last successful pull timestamp.", example = "2026-06-08T10:00:00Z")
+		Instant lastSuccessfulPullAt,
+		@Schema(description = "Last pull failure message, if any.")
+		String lastPullError,
+		@Schema(description = "Capabilities reported by the agent.")
+		List<String> capabilities,
 		@Schema(description = "Time when the agent was registered.", example = "2026-06-08T09:00:00Z")
 		Instant registeredAt,
 		@Schema(description = "Time when the agent was last updated.", example = "2026-06-08T10:00:00Z")
 		Instant updatedAt,
-		@Schema(description = "Time when the current token hash was created.", example = "2026-06-08T09:00:00Z")
-		Instant tokenCreatedAt,
-		@Schema(description = "Time when the current token was last used for heartbeat authentication.", example = "2026-06-08T10:00:00Z")
-		Instant tokenLastUsedAt,
-		@Schema(description = "Time when the token was revoked, when applicable.", example = "2026-06-08T11:00:00Z")
-		Instant tokenRevokedAt,
 		@Schema(description = "Latest host inventory facts reported by this agent.")
 		AgentHostFactsResponse hostFacts) {
 }

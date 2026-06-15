@@ -5,8 +5,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import dev.kyvora.api.agent.dto.AgentHeartbeatRequest;
-import dev.kyvora.api.agent.dto.AgentEnrollmentResponse;
+import dev.kyvora.api.agent.dto.AgentPullResponse;
 import dev.kyvora.api.agent.dto.AgentRegisterRequest;
 import dev.kyvora.api.agent.dto.AgentResponse;
 
@@ -16,15 +15,11 @@ public interface AgentService {
 
 	AgentResponse findById(UUID id);
 
-	AgentEnrollmentResponse enroll(AgentRegisterRequest request);
+	AgentResponse create(AgentRegisterRequest request);
 
-	void cancelPendingEnrollment(UUID id);
-
-	AgentEnrollmentResponse rotateToken(UUID id);
+	AgentPullResponse pull(UUID id);
 
 	AgentResponse decommission(UUID id);
-
-	AgentResponse heartbeat(UUID id, String agentToken, AgentHeartbeatRequest request);
 
 	int markStaleOnlineAgentsOffline();
 }

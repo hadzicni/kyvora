@@ -1,50 +1,66 @@
 # Kyvora Agent
 
-The Go agent is enrolled from the Kyvora web UI and authenticates heartbeats
-with an agent token. It does not log in with admin credentials and does not
-register itself automatically.
+The Kyvora Agent exposes a small HTTP API on the managed server. The Kyvora API
+pulls health, capabilities, host facts, metrics, and service metadata from that
+local API over a secured channel. The agent does not register itself with
+Kyvora and does not push heartbeats or metrics.
 
 The agent version is part of the single Kyvora product release version recorded
 in the repository root `VERSION` file.
 
-## Enrollment
+## Pull-based operation
 
-1. Log in to the Kyvora web dashboard.
-2. Create or select a server inventory entry.
-3. Enroll an agent for that server from Agents or the server detail page.
-4. Copy the one-time token and run command.
-5. Start the agent.
+1. Start the agent on the managed server with a private listen address and a
+   shared secret.
+2. Create or select a server inventory entry in Kyvora.
+3. Configure an agent connection record with the agent base URL and shared
+   secret.
+4. Use Pull now or the backend polling flow to retrieve the latest agent state.
 
 Example:
 
 ```bash
-KYVORA_API_URL=http://localhost:8080 \
-KYVORA_AGENT_ID=<agent-id> \
-KYVORA_AGENT_TOKEN=<agent-token> \
+KYVORA_AGENT_LISTEN_ADDRESS=127.0.0.1 \
+KYVORA_AGENT_LISTEN_PORT=9288 \
+KYVORA_AGENT_SHARED_SECRET=<shared-secret> \
 npm run dev:agent
 ```
 
-Agent tokens are shown only once. Do not commit tokens or store them in
-browser-exposed environment variables. Pending enrollments can be canceled from
-the web UI before the agent connects; cancellation removes the pending agent and
-revokes the token.
+The agent port is sensitive. Bind it to localhost or a trusted private
+interface unless the deployment adds stronger protection such as mTLS and
+network policy. Never expose the agent port directly to the public internet.
 
-Tokens can be rotated from the server detail Agent Setup section. Rotation
-generates a new one-time plaintext token and invalidates the old token
-immediately. Kyvora stores only the token hash and does not re-show old tokens
-after the setup dialog is closed.
+## Configuration
 
-Connected agents can be decommissioned from the Kyvora web UI. Decommissioning
-revokes the token and unlinks the agent from its server without deleting the
-server inventory record or the agent's historical host facts. The server can
-enroll a replacement agent later. A decommissioned agent cannot heartbeat again
-with its old `KYVORA_AGENT_TOKEN`.
+```env
+KYVORA_AGENT_LISTEN_ADDRESS=127.0.0.1
+KYVORA_AGENT_LISTEN_PORT=9288
+KYVORA_AGENT_SHARED_SECRET=<shared-secret>
+KYVORA_AGENT_NAME=local-agent
+KYVORA_AGENT_HOSTNAME=<os-hostname>
+KYVORA_AGENT_READ_TIMEOUT_SECONDS=5
+KYVORA_AGENT_WRITE_TIMEOUT_SECONDS=5
+KYVORA_AGENT_SHUTDOWN_TIMEOUT_SECONDS=5
+```
 
-Successful heartbeats update the assigned agent status and the linked server
-status and last-seen timestamp. Server status is managed by agent heartbeats
-and offline detection, not manual editing.
+`KYVORA_AGENT_SHARED_SECRET` is required. It is checked on every request using
+the `X-Kyvora-Agent-Secret` header. The agent never logs the shared secret.
 
-Heartbeats also include a latest host facts snapshot when available:
+## HTTP API
+
+All endpoints return structured JSON and require the shared secret header.
+
+```text
+GET /health
+GET /capabilities
+GET /system
+GET /metrics
+GET /services
+POST /actions/{actionName}
+X-Kyvora-Agent-Secret: <shared-secret>
+```
+
+`/system` returns the latest host facts snapshot when available:
 
 - hostname
 - operating system / platform
@@ -61,36 +77,8 @@ Heartbeats also include a latest host facts snapshot when available:
 Host facts are latest inventory snapshots, not metrics history. The agent does
 not collect secrets, environment variables, process lists, usernames, or file
 contents. Collection is best-effort on Linux and macOS; unsupported facts are
-omitted instead of failing the heartbeat. Other platforms degrade gracefully.
+omitted from the response. Other platforms degrade gracefully.
 
-Agents must send heartbeats regularly. If the API does not receive a heartbeat
-within `KYVORA_AGENT_OFFLINE_THRESHOLD_SECONDS` seconds, Kyvora marks the agent
-and its linked server offline during the scheduled offline check. `OFFLINE`
-means the backend has not received a heartbeat recently.
-
-## Configuration
-
-```env
-KYVORA_API_URL=http://localhost:8080
-KYVORA_AGENT_ID=<agent-id>
-KYVORA_AGENT_TOKEN=<agent-token>
-KYVORA_AGENT_NAME=local-agent
-KYVORA_AGENT_HOSTNAME=<os-hostname>
-KYVORA_HEARTBEAT_INTERVAL_SECONDS=30
-```
-
-`KYVORA_AGENT_ID` and `KYVORA_AGENT_TOKEN` are required. `KYVORA_API_URL`
-defaults to `http://localhost:8080`.
-
-The agent reads the Kyvora product version from `GET /api/v1/status` at startup
-and reports that version in heartbeats and host facts.
-
-Heartbeats are sent to:
-
-```text
-POST /api/v1/agents/{id}/heartbeat
-X-Kyvora-Agent-Token: <agent-token>
-```
-
-If the API returns `401` or `403`, the agent logs that the token is invalid or
-revoked and exits.
+`POST /actions/{actionName}` is intentionally limited to predefined actions.
+The initial implementation returns an unsupported-action response and does not
+offer arbitrary shell execution.

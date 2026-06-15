@@ -34,7 +34,7 @@ public class DefaultSettingsService implements SettingsService {
 	private static final Map<String, SettingDefinition> DEFINITIONS = Map.of(
 			INSTANCE_NAME, new SettingDefinition(INSTANCE_NAME, "Kyvora", SettingValueType.STRING, "Display name for this Kyvora instance."),
 			INSTANCE_DESCRIPTION, new SettingDefinition(INSTANCE_DESCRIPTION, "Homelab Control Plane", SettingValueType.STRING, "Short description shown in the UI."),
-			AGENTS_OFFLINE_THRESHOLD_SECONDS, new SettingDefinition(AGENTS_OFFLINE_THRESHOLD_SECONDS, "90", SettingValueType.INTEGER, "Seconds without a heartbeat before an online agent is marked offline."),
+			AGENTS_OFFLINE_THRESHOLD_SECONDS, new SettingDefinition(AGENTS_OFFLINE_THRESHOLD_SECONDS, "90", SettingValueType.INTEGER, "Seconds without a successful pull before an online agent is marked offline."),
 			AGENTS_OFFLINE_CHECK_INTERVAL_SECONDS, new SettingDefinition(AGENTS_OFFLINE_CHECK_INTERVAL_SECONDS, "30", SettingValueType.INTEGER, "Seconds between scheduled stale-agent checks. Changes require API restart."),
 			UI_SHOW_DEV_HINTS, new SettingDefinition(UI_SHOW_DEV_HINTS, "true", SettingValueType.BOOLEAN, "Show local development hints in the web UI."));
 

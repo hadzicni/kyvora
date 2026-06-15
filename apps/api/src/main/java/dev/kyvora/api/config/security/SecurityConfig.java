@@ -5,7 +5,6 @@ import java.util.List;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -50,7 +49,6 @@ public class SecurityConfig {
 						.requestMatchers("/v3/api-docs", "/v3/api-docs/**").permitAll()
 						.requestMatchers("/api/v1/status").permitAll()
 						.requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
-						.requestMatchers(HttpMethod.POST, "/api/v1/agents/*/heartbeat").permitAll()
 						.requestMatchers("/api/v1/**").authenticated()
 						.anyRequest().permitAll())
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -97,7 +95,7 @@ public class SecurityConfig {
 		CorsConfiguration configuration = new CorsConfiguration();
 		configuration.setAllowedOrigins(List.of("http://localhost:3000"));
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Kyvora-Agent-Token"));
+		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 		configuration.setAllowCredentials(true);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

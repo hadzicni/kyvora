@@ -10,9 +10,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import dev.kyvora.api.agent.dto.AgentHeartbeatRequest;
+import dev.kyvora.api.agent.client.AgentPullClient;
+import dev.kyvora.api.agent.client.AgentPullException;
 import dev.kyvora.api.agent.dto.AgentHostFactsRequest;
-import dev.kyvora.api.agent.dto.AgentEnrollmentResponse;
+import dev.kyvora.api.agent.dto.AgentPullResponse;
 import dev.kyvora.api.agent.dto.AgentRegisterRequest;
 import dev.kyvora.api.agent.dto.AgentResponse;
 import dev.kyvora.api.agent.entity.Agent;
@@ -20,10 +21,7 @@ import dev.kyvora.api.agent.entity.AgentHostFacts;
 import dev.kyvora.api.agent.entity.AgentStatus;
 import dev.kyvora.api.agent.event.AgentChangedEvent;
 import dev.kyvora.api.agent.event.AgentEventType;
-import dev.kyvora.api.agent.exception.AgentEnrollmentCancellationException;
 import dev.kyvora.api.agent.exception.AgentNotFoundException;
-import dev.kyvora.api.agent.exception.AgentTokenAuthenticationException;
-import dev.kyvora.api.agent.exception.AgentTokenForbiddenException;
 import dev.kyvora.api.agent.exception.DuplicateAgentException;
 import dev.kyvora.api.agent.mapper.AgentMapper;
 import dev.kyvora.api.agent.repository.AgentHostFactsRepository;
@@ -45,28 +43,28 @@ public class DefaultAgentService implements AgentService {
 	private final AgentRepository repository;
 	private final AgentMapper mapper;
 	private final AuditLogService auditLogService;
-	private final AgentTokenService agentTokenService;
 	private final AgentHostFactsRepository hostFactsRepository;
 	private final ServerInventoryRepository serverInventoryRepository;
 	private final SettingsService settingsService;
+	private final AgentPullClient agentPullClient;
 	private final long fallbackOfflineThresholdSeconds;
 
 	public DefaultAgentService(
 			AgentRepository repository,
 			AgentMapper mapper,
 			AuditLogService auditLogService,
-			AgentTokenService agentTokenService,
 			AgentHostFactsRepository hostFactsRepository,
 			ServerInventoryRepository serverInventoryRepository,
 			SettingsService settingsService,
+			AgentPullClient agentPullClient,
 			@Value("${kyvora.agent.offline-threshold-seconds:90}") long offlineThresholdSeconds) {
 		this.repository = repository;
 		this.mapper = mapper;
 		this.auditLogService = auditLogService;
-		this.agentTokenService = agentTokenService;
 		this.hostFactsRepository = hostFactsRepository;
 		this.serverInventoryRepository = serverInventoryRepository;
 		this.settingsService = settingsService;
+		this.agentPullClient = agentPullClient;
 		this.fallbackOfflineThresholdSeconds = offlineThresholdSeconds;
 	}
 
@@ -83,7 +81,7 @@ public class DefaultAgentService implements AgentService {
 	}
 
 	@Override
-	public AgentEnrollmentResponse enroll(AgentRegisterRequest request) {
+	public AgentResponse create(AgentRegisterRequest request) {
 		ServerInventory server = serverInventoryRepository.findById(request.serverId())
 				.orElseThrow(() -> new ServerInventoryNotFoundException(request.serverId()));
 		if (repository.existsByServer(server)) {
@@ -92,63 +90,63 @@ public class DefaultAgentService implements AgentService {
 					server.getId().toString(),
 					"server already has an agent");
 		}
+
 		String hostname = mapper.normalizeHostname(server.getHostname());
-		if (repository.existsByHostnameIgnoreCaseAndStatusNot(hostname, AgentStatus.DECOMMISSIONED)) {
+		if (repository.existsByHostnameIgnoreCase(hostname)) {
 			throw new DuplicateAgentException("hostname", hostname);
 		}
 
-		String token = agentTokenService.generateToken();
 		Agent agent = mapper.toEntity(request, server);
-		agent.setTokenHash(agentTokenService.hash(token));
-		agent.setTokenCreatedAt(Instant.now());
-
+		agent.setPullEnabled(request.pullEnabled() == null || request.pullEnabled());
 		Agent saved = repository.save(agent);
-		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_ENROLLED, saved));
-		return new AgentEnrollmentResponse(mapper.toResponse(saved), token);
+		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_CONFIGURED, saved));
+		return mapper.toResponse(saved);
 	}
 
 	@Override
-	public void cancelPendingEnrollment(UUID id) {
+	public AgentPullResponse pull(UUID id) {
 		Agent agent = getRequiredEntity(id);
-		if (agent.getStatus() != AgentStatus.PENDING || agent.getLastSeenAt() != null) {
-			throw new AgentEnrollmentCancellationException();
+		Instant pulledAt = Instant.now();
+		AgentStatus previousStatus = agent.getStatus();
+		ServerStatus previousServerStatus = agent.getServer() == null ? null : agent.getServer().getStatus();
+		agent.setLastPullAt(pulledAt);
+
+		if (!agent.isPullEnabled()) {
+			String message = "Agent pull is disabled";
+			recordFailedPull(agent, message);
+			return new AgentPullResponse(mapper.toResponse(agent), agent.getStatus(), pulledAt, message);
 		}
-		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_ENROLLMENT_CANCELED, agent));
-		repository.delete(agent);
-	}
 
-	@Override
-	public AgentEnrollmentResponse rotateToken(UUID id) {
-		Agent agent = getRequiredEntity(id);
-		String token = agentTokenService.generateToken();
-		Instant rotatedAt = Instant.now();
-		agent.setTokenHash(agentTokenService.hash(token));
-		agent.setTokenCreatedAt(rotatedAt);
-		agent.setTokenLastUsedAt(null);
-		agent.setTokenRevokedAt(null);
-
-		Agent saved = repository.save(agent);
-		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_TOKEN_ROTATED, saved));
-		return new AgentEnrollmentResponse(mapper.toResponse(saved), token);
+		try {
+			AgentPullClient.AgentPullSnapshot snapshot = agentPullClient.pull(agent);
+			applySuccessfulPull(agent, snapshot, pulledAt);
+			Agent saved = repository.save(agent);
+			recordPullLifecycleEvents(saved, previousStatus, previousServerStatus);
+			return new AgentPullResponse(mapper.toResponse(saved), saved.getStatus(), pulledAt, null);
+		}
+		catch (AgentPullException exception) {
+			String message = truncate(exception.getMessage(), 1000);
+			recordFailedPull(agent, message);
+			Agent saved = repository.save(agent);
+			if (previousStatus != AgentStatus.OFFLINE) {
+				auditLogService.recordAgentChange(AgentChangedEvent.fromSystemActor(AgentEventType.AGENT_PULL_FAILED, saved));
+			}
+			return new AgentPullResponse(mapper.toResponse(saved), saved.getStatus(), pulledAt, message);
+		}
 	}
 
 	@Override
 	public AgentResponse decommission(UUID id) {
 		Agent agent = getRequiredEntity(id);
-		if (agent.getStatus() == AgentStatus.DECOMMISSIONED) {
-			return mapper.toResponse(agent);
-		}
-
 		AgentStatus previousStatus = agent.getStatus();
 		ServerInventory server = agent.getServer();
 		UUID previousServerId = server == null ? null : server.getId();
 		String previousServerName = server == null ? null : server.getName();
 
-		Instant revokedAt = Instant.now();
-		agent.setTokenHash(null);
-		agent.setTokenRevokedAt(revokedAt);
-		agent.setStatus(AgentStatus.DECOMMISSIONED);
+		agent.setPullEnabled(false);
+		agent.setStatus(AgentStatus.UNKNOWN);
 		agent.setServer(null);
+		agent.setSharedSecret("");
 
 		if (server != null) {
 			server.setStatus(ServerStatus.UNKNOWN);
@@ -164,35 +162,6 @@ public class DefaultAgentService implements AgentService {
 	}
 
 	@Override
-	public AgentResponse heartbeat(UUID id, String agentToken, AgentHeartbeatRequest request) {
-		Agent agent = getRequiredEntity(id);
-		verifyAgentToken(agent, agentToken);
-		if (agent.getStatus() == AgentStatus.DECOMMISSIONED) {
-			throw new AgentTokenForbiddenException("Agent has been decommissioned");
-		}
-
-		AgentStatus previousStatus = agent.getStatus();
-		Instant previousLastSeenAt = agent.getLastSeenAt();
-		ServerInventory linkedServer = agent.getServer();
-		ServerStatus previousServerStatus = linkedServer == null ? null : linkedServer.getStatus();
-		Instant heartbeatAt = Instant.now();
-		agent.setStatus(request.status());
-		if (request.version() != null && !request.version().isBlank()) {
-			agent.setVersion(request.version().trim());
-		}
-		if (request.hostname() != null && !request.hostname().isBlank()) {
-			agent.setHostname(mapper.normalizeHostname(request.hostname()));
-		}
-		agent.setLastSeenAt(heartbeatAt);
-		agent.setTokenLastUsedAt(heartbeatAt);
-		updateLinkedServer(agent, heartbeatAt);
-		upsertHostFacts(agent, request.hostFacts());
-		Agent saved = repository.save(agent);
-		recordHeartbeatLifecycleEvents(saved, previousStatus, previousLastSeenAt, previousServerStatus);
-		return mapper.toResponse(saved);
-	}
-
-	@Override
 	public int markStaleOnlineAgentsOffline() {
 		long offlineThresholdSeconds = settingsService.getLongSettingOrDefault(
 				DefaultSettingsService.AGENTS_OFFLINE_THRESHOLD_SECONDS,
@@ -201,6 +170,7 @@ public class DefaultAgentService implements AgentService {
 		var staleAgents = repository.findStaleOnlineAgents(staleBefore);
 		for (Agent agent : staleAgents) {
 			agent.setStatus(AgentStatus.OFFLINE);
+			agent.setLastPullError("Agent has not been pulled successfully within the offline threshold");
 			ServerInventory server = agent.getServer();
 			if (server != null) {
 				ServerStatus previousServerStatus = server.getStatus();
@@ -217,21 +187,37 @@ public class DefaultAgentService implements AgentService {
 		return staleAgents.size();
 	}
 
-	private void recordHeartbeatLifecycleEvents(
-			Agent agent,
-			AgentStatus previousStatus,
-			Instant previousLastSeenAt,
-			ServerStatus previousServerStatus) {
-		boolean firstHeartbeat = previousLastSeenAt == null;
-		boolean becameOnline = previousStatus != AgentStatus.ONLINE && agent.getStatus() == AgentStatus.ONLINE;
-
-		if (firstHeartbeat || previousStatus == AgentStatus.PENDING) {
-			auditLogService.recordAgentChange(AgentChangedEvent.fromAgentActor(AgentEventType.AGENT_CONNECTED, agent));
+	private void applySuccessfulPull(Agent agent, AgentPullClient.AgentPullSnapshot snapshot, Instant pulledAt) {
+		AgentStatus previousStatus = agent.getStatus();
+		agent.setStatus(AgentStatus.ONLINE);
+		agent.setLastSeenAt(pulledAt);
+		agent.setLastSuccessfulPullAt(pulledAt);
+		agent.setLastPullError(null);
+		if (snapshot.health().version() != null && !snapshot.health().version().isBlank()) {
+			agent.setVersion(snapshot.health().version().trim());
 		}
-		else if (becameOnline) {
-			auditLogService.recordAgentChange(AgentChangedEvent.fromAgentActor(AgentEventType.AGENT_MARKED_ONLINE, agent));
+		if (snapshot.health().hostname() != null && !snapshot.health().hostname().isBlank()) {
+			agent.setHostname(mapper.normalizeHostname(snapshot.health().hostname()));
 		}
+		agent.setCapabilities(snapshot.capabilities().supports());
+		updateLinkedServer(agent, pulledAt);
+		upsertHostFacts(agent, snapshot.system());
+		if (previousStatus != AgentStatus.ONLINE) {
+			auditLogService.recordAgentChange(AgentChangedEvent.fromSystemActor(AgentEventType.AGENT_MARKED_ONLINE, agent));
+		}
+		auditLogService.recordAgentChange(AgentChangedEvent.fromSystemActor(AgentEventType.AGENT_PULL_SUCCEEDED, agent));
+	}
 
+	private void recordFailedPull(Agent agent, String message) {
+		agent.setStatus(AgentStatus.OFFLINE);
+		agent.setLastPullError(message);
+		ServerInventory server = agent.getServer();
+		if (server != null) {
+			server.setStatus(ServerStatus.OFFLINE);
+		}
+	}
+
+	private void recordPullLifecycleEvents(Agent agent, AgentStatus previousStatus, ServerStatus previousServerStatus) {
 		ServerInventory server = agent.getServer();
 		if (server != null
 				&& agent.getStatus() == AgentStatus.ONLINE
@@ -242,27 +228,18 @@ public class DefaultAgentService implements AgentService {
 					server,
 					agent));
 		}
-	}
-
-	private void verifyAgentToken(Agent agent, String agentToken) {
-		if (agentToken == null || agentToken.isBlank()) {
-			throw new AgentTokenAuthenticationException("Agent token is required");
-		}
-		if (agent.getTokenRevokedAt() != null) {
-			throw new AgentTokenForbiddenException("Agent token has been revoked");
-		}
-		if (!agentTokenService.matches(agentToken, agent.getTokenHash())) {
-			throw new AgentTokenAuthenticationException("Invalid agent token");
+		if (previousStatus == AgentStatus.ONLINE) {
+			return;
 		}
 	}
 
-	private void updateLinkedServer(Agent agent, Instant heartbeatAt) {
+	private void updateLinkedServer(Agent agent, Instant pulledAt) {
 		ServerInventory server = agent.getServer();
 		if (server == null) {
 			return;
 		}
-		server.setStatus(ServerStatus.valueOf(agent.getStatus().name()));
-		server.setLastSeenAt(heartbeatAt);
+		server.setStatus(ServerStatus.ONLINE);
+		server.setLastSeenAt(pulledAt);
 	}
 
 	private void upsertHostFacts(Agent agent, AgentHostFactsRequest request) {
@@ -313,6 +290,13 @@ public class DefaultAgentService implements AgentService {
 			return null;
 		}
 		return value.trim();
+	}
+
+	private String truncate(String value, int maxLength) {
+		if (value == null || value.length() <= maxLength) {
+			return value;
+		}
+		return value.substring(0, maxLength);
 	}
 
 	private Agent getRequiredEntity(UUID id) {

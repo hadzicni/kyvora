@@ -19,8 +19,7 @@ public enum PermissionPreset {
 			UserPermission.SERVICE_DELETE,
 			UserPermission.AGENT_READ,
 			UserPermission.AGENT_ENROLL,
-			UserPermission.AGENT_CANCEL_ENROLLMENT,
-			UserPermission.AGENT_ROTATE_TOKEN,
+			UserPermission.AGENT_PULL,
 			UserPermission.AGENT_DECOMMISSION)),
 	VIEWER(EnumSet.of(
 			UserPermission.DASHBOARD_READ,

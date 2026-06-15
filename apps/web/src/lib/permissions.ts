@@ -20,8 +20,7 @@ export const permissions = [
   "SERVICE_DELETE",
   "AGENT_READ",
   "AGENT_ENROLL",
-  "AGENT_CANCEL_ENROLLMENT",
-  "AGENT_ROTATE_TOKEN",
+  "AGENT_PULL",
   "AGENT_DECOMMISSION",
 ] as const;
 
@@ -44,8 +43,7 @@ export const permissionPresets: Record<PermissionPreset, UserPermission[]> = {
     "SERVICE_DELETE",
     "AGENT_READ",
     "AGENT_ENROLL",
-    "AGENT_CANCEL_ENROLLMENT",
-    "AGENT_ROTATE_TOKEN",
+    "AGENT_PULL",
     "AGENT_DECOMMISSION",
   ],
   VIEWER: [
@@ -155,16 +153,8 @@ export function canEnrollAgents(assigned: readonly string[] | null | undefined) 
   return can(assigned, "AGENT_ENROLL");
 }
 
-export function canCancelAgentEnrollments(
-  assigned: readonly string[] | null | undefined
-) {
-  return can(assigned, "AGENT_CANCEL_ENROLLMENT");
-}
-
-export function canRotateAgentTokens(
-  assigned: readonly string[] | null | undefined
-) {
-  return can(assigned, "AGENT_ROTATE_TOKEN");
+export function canPullAgents(assigned: readonly string[] | null | undefined) {
+  return can(assigned, "AGENT_PULL");
 }
 
 export function canDecommissionAgents(

@@ -12,12 +12,11 @@ import { auditLogKeys } from "@/lib/api/audit-logs";
 import {
   agentKeys,
   AgentApiError,
-  cancelAgentEnrollment,
   decommissionAgent,
   getAgent,
   listAgents,
+  pullAgent,
   registerAgent,
-  rotateAgentToken,
   type ListAgentsParams,
   type Agent,
   type RegisterAgentInput,
@@ -69,27 +68,11 @@ export function useRegisterAgent() {
   });
 }
 
-export function useCancelAgentEnrollment() {
+export function usePullAgent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => cancelAgentEnrollment(id),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: agentKeys.all }),
-        queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
-        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
-        queryClient.invalidateQueries({ queryKey: serverKeys.all }),
-      ]);
-    },
-  });
-}
-
-export function useRotateAgentToken() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => rotateAgentToken(id),
+    mutationFn: (id: string) => pullAgent(id),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: agentKeys.all }),

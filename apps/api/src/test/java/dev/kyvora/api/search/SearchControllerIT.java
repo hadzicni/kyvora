@@ -166,7 +166,9 @@ class SearchControllerIT {
 				hostname,
 				"test",
 				AgentStatus.ONLINE,
-				server));
+				server,
+				"http://10.0.0.10:9288",
+				"agent-secret"));
 	}
 
 	private User createUser(String email, String displayName) {

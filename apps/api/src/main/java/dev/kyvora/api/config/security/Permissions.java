@@ -103,12 +103,8 @@ public class Permissions {
 		return hasPermission(authentication, UserPermission.AGENT_ENROLL);
 	}
 
-	public boolean canCancelAgentEnrollments(Authentication authentication) {
-		return hasPermission(authentication, UserPermission.AGENT_CANCEL_ENROLLMENT);
-	}
-
-	public boolean canRotateAgentTokens(Authentication authentication) {
-		return hasPermission(authentication, UserPermission.AGENT_ROTATE_TOKEN);
+	public boolean canPullAgents(Authentication authentication) {
+		return hasPermission(authentication, UserPermission.AGENT_PULL);
 	}
 
 	public boolean canDecommissionAgents(Authentication authentication) {

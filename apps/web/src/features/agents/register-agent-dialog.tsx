@@ -2,9 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Server } from "lucide-react";
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { toast } from "@/lib/toast";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -26,14 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AgentApiError,
-  type AgentEnrollment,
-  type RegisterAgentInput,
-} from "@/lib/api/agents";
+import { AgentApiError, type RegisterAgentInput } from "@/lib/api/agents";
 import type { ServerInventoryItem } from "@/lib/api/servers";
+import { toast } from "@/lib/toast";
 
-import { AgentEnrollmentToken } from "./agent-enrollment-token";
 import { useAgents, useRegisterAgent } from "./use-agents";
 import { useServers } from "../servers/use-servers";
 
@@ -47,11 +42,12 @@ const registerAgentSchema = z.object({
     .refine((value) => !value || value.length >= 2, {
       message: "Name must be at least 2 characters.",
     }),
+  baseUrl: z.url("Enter a valid agent URL.").max(512),
+  sharedSecret: z.string().min(12, "Shared secret must be at least 12 characters.").max(512),
 });
 
 type RegisterAgentFormValues = z.input<typeof registerAgentSchema>;
 type RegisterAgentPayload = z.output<typeof registerAgentSchema>;
-type RegisterAgentField = keyof RegisterAgentFormValues;
 
 function defaultRegisterAgentValues(
   server?: ServerInventoryItem
@@ -59,6 +55,8 @@ function defaultRegisterAgentValues(
   return {
     serverId: server?.id ?? "",
     name: server ? `${server.name} Agent` : "",
+    baseUrl: server ? `http://${server.ipAddress}:9288` : "http://127.0.0.1:9288",
+    sharedSecret: "",
   };
 }
 
@@ -68,20 +66,21 @@ function toRegisterAgentInput(
   return {
     serverId: payload.serverId,
     name: payload.name?.trim() || undefined,
+    baseUrl: payload.baseUrl.trim(),
+    sharedSecret: payload.sharedSecret,
+    pullEnabled: true,
   };
 }
 
 export function RegisterAgentDialog({
   initialServer,
-  triggerLabel = "Register agent",
+  triggerLabel = "Configure agent",
 }: {
   initialServer?: ServerInventoryItem;
   triggerLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [enrollment, setEnrollment] = useState<AgentEnrollment | null>(null);
-  const [agentConnected, setAgentConnected] = useState(false);
   const registerAgent = useRegisterAgent();
   const serversQuery = useServers({ size: 100 });
   const agentsQuery = useAgents({ size: 200 });
@@ -126,17 +125,16 @@ export function RegisterAgentDialog({
     setFormError(null);
 
     try {
-      const enrolled = await registerAgent.mutateAsync(toRegisterAgentInput(values));
-      form.reset(defaultRegisterAgentValues(initialServer));
-      setEnrollment(enrolled);
-      toast.success("Agent enrolled.", {
-        description: enrolled.agent.name,
+      const agent = await registerAgent.mutateAsync(toRegisterAgentInput(values));
+      toast.success("Agent configured.", {
+        description: agent.name,
       });
+      handleOpenChange(false);
     } catch (error) {
       if (error instanceof AgentApiError && error.status === 409) {
         const message = "The selected server already has an agent.";
         setFormError(message);
-        toast.error("Unable to enroll agent.", {
+        toast.error("Unable to configure agent.", {
           description: message,
         });
         return;
@@ -145,33 +143,23 @@ export function RegisterAgentDialog({
       const message =
         error instanceof Error
           ? error.message
-          : "Unable to register the agent right now.";
+          : "Unable to configure the agent right now.";
 
       setFormError(message);
-      toast.error("Unable to enroll agent.", {
+      toast.error("Unable to configure agent.", {
         description: message,
       });
     }
   }
 
   function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen && enrollment && !agentConnected) {
-      return;
-    }
-
     setOpen(nextOpen);
 
     if (!nextOpen) {
       form.reset(defaultRegisterAgentValues(initialServer));
       setFormError(null);
-      setEnrollment(null);
-      setAgentConnected(false);
     }
   }
-
-  const handleAgentConnectionChange = useCallback((connected: boolean) => {
-    setAgentConnected(connected);
-  }, []);
 
   function handleServerChange(serverId: string) {
     const server = servers.find((entry) => entry.id === serverId);
@@ -181,15 +169,11 @@ export function RegisterAgentDialog({
         shouldDirty: true,
         shouldValidate: true,
       });
+      setValue("baseUrl", `http://${server.ipAddress}:9288`, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     }
-  }
-
-  function closeEnrollmentDialog() {
-    setOpen(false);
-    form.reset(defaultRegisterAgentValues(initialServer));
-    setFormError(null);
-    setEnrollment(null);
-    setAgentConnected(false);
   }
 
   return (
@@ -200,141 +184,140 @@ export function RegisterAgentDialog({
           {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent
-        className="sm:max-w-2xl"
-        showCloseButton={!enrollment || agentConnected}
-        onEscapeKeyDown={(event) => {
-          if (enrollment && !agentConnected) {
-            event.preventDefault();
-          }
-        }}
-        onPointerDownOutside={(event) => {
-          if (enrollment && !agentConnected) {
-            event.preventDefault();
-          }
-        }}
-      >
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{enrollment ? "Agent token" : "Enroll agent"}</DialogTitle>
+          <DialogTitle>Configure agent</DialogTitle>
           <DialogDescription>
-            {enrollment
-              ? "This token is shown only once."
-              : "Create an agent for a server and generate a one-time enrollment token."}
+            Add the secured HTTP endpoint Kyvora will call to pull system data.
           </DialogDescription>
         </DialogHeader>
 
-        {enrollment ? (
-          <AgentEnrollmentToken
-            enrollment={enrollment}
-            onClose={closeEnrollmentDialog}
-            onConnectionChange={handleAgentConnectionChange}
-          />
-        ) : (
-          <form
-            className="grid gap-4"
-            onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}
+        <form
+          className="grid gap-4"
+          onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}
+        >
+          {formError ? (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {formError}
+            </div>
+          ) : null}
+
+          <FormField
+            error={errors.serverId?.message}
+            htmlFor="register-agent-server"
+            label="Server"
           >
-            {formError ? (
-              <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {formError}
-              </div>
-            ) : null}
-
-            <FormField
-              error={errors.serverId?.message}
-              htmlFor="register-agent-server"
-              label="Server"
+            <Select
+              disabled={isLoadingServers || hasNoServers}
+              onValueChange={handleServerChange}
+              value={selectedServerId}
             >
-              <Select
-                disabled={isLoadingServers || hasNoServers}
-                onValueChange={handleServerChange}
-                value={selectedServerId}
+              <SelectTrigger
+                id="register-agent-server"
+                className="h-auto min-h-10 w-full justify-between"
+                aria-invalid={Boolean(errors.serverId)}
               >
-                <SelectTrigger
-                  id="register-agent-server"
-                  className="h-auto min-h-10 w-full justify-between"
-                  aria-invalid={Boolean(errors.serverId)}
-                >
-                  <SelectValue
-                    placeholder={
-                      isLoadingServers ? "Loading servers..." : "Select server"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent className="max-h-80">
-                  {servers.map((server) => {
-                    const isAssigned =
-                      assignedServerIds.has(server.id) &&
-                      server.id !== selectedServerId;
+                <SelectValue
+                  placeholder={
+                    isLoadingServers ? "Loading servers..." : "Select server"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent className="max-h-80">
+                {servers.map((server) => {
+                  const isAssigned =
+                    assignedServerIds.has(server.id) &&
+                    server.id !== selectedServerId;
 
-                    return (
-                      <SelectItem
-                        disabled={isAssigned}
-                        key={server.id}
-                        value={server.id}
-                      >
-                        {server.name} / {server.hostname} / {server.ipAddress}
-                        {isAssigned ? " / assigned" : ""}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              {selectedServer ? (
-                <div className="flex items-start gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
-                  <Server className="mt-0.5 size-4 text-muted-foreground" />
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">
-                      {selectedServer.name}
-                    </div>
-                    <div className="truncate font-mono text-xs text-muted-foreground">
-                      {selectedServer.hostname} / {selectedServer.ipAddress}
-                    </div>
+                  return (
+                    <SelectItem
+                      disabled={isAssigned}
+                      key={server.id}
+                      value={server.id}
+                    >
+                      {server.name} / {server.hostname} / {server.ipAddress}
+                      {isAssigned ? " / assigned" : ""}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            {selectedServer ? (
+              <div className="flex items-start gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                <Server className="mt-0.5 size-4 text-muted-foreground" />
+                <div className="min-w-0">
+                  <div className="truncate font-medium">
+                    {selectedServer.name}
+                  </div>
+                  <div className="truncate font-mono text-xs text-muted-foreground">
+                    {selectedServer.hostname} / {selectedServer.ipAddress}
                   </div>
                 </div>
-              ) : null}
-              {hasNoServers ? (
-                <p className="text-xs text-muted-foreground">
-                  Create a server inventory entry before enrolling an agent.
-                </p>
-              ) : null}
-            </FormField>
+              </div>
+            ) : null}
+          </FormField>
 
-            <FormField
-              error={errors.name?.message}
-              htmlFor="register-agent-name"
-              label="Name"
+          <FormField
+            error={errors.name?.message}
+            htmlFor="register-agent-name"
+            label="Name"
+          >
+            <Input
+              id="register-agent-name"
+              placeholder={selectedServer ? `${selectedServer.name} Agent` : "Node Agent"}
+              aria-invalid={Boolean(errors.name)}
+              {...register("name")}
+            />
+          </FormField>
+
+          <FormField
+            error={errors.baseUrl?.message}
+            htmlFor="register-agent-url"
+            label="Agent base URL"
+          >
+            <Input
+              id="register-agent-url"
+              placeholder="http://10.0.0.15:9288"
+              aria-invalid={Boolean(errors.baseUrl)}
+              {...register("baseUrl")}
+            />
+          </FormField>
+
+          <FormField
+            error={errors.sharedSecret?.message}
+            htmlFor="register-agent-secret"
+            label="Shared secret"
+          >
+            <Input
+              id="register-agent-secret"
+              type="password"
+              autoComplete="new-password"
+              aria-invalid={Boolean(errors.sharedSecret)}
+              {...register("sharedSecret")}
+            />
+          </FormField>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
             >
-              <Input
-                id="register-agent-name"
-                placeholder={selectedServer ? `${selectedServer.name} Agent` : "Node Agent"}
-                aria-invalid={Boolean(errors.name)}
-                {...register("name")}
-              />
-            </FormField>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={registerAgent.isPending || isLoadingServers || hasNoServers}
-              >
-                {registerAgent.isPending ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Plus className="size-4" />
-                )}
-                Enroll agent
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={registerAgent.isPending || isLoadingServers || hasNoServers}
+            >
+              {registerAgent.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Plus className="size-4" />
+              )}
+              Configure agent
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -348,7 +331,7 @@ function FormField({
 }: {
   children: React.ReactNode;
   error?: string;
-  htmlFor: RegisterAgentField | string;
+  htmlFor: string;
   label: string;
 }) {
   return (

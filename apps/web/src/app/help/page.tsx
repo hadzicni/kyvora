@@ -154,30 +154,30 @@ export default function HelpPage() {
               <CardContent className="space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <GuidanceItem icon={Server}>
-                    Create or select a server, then enroll an agent for that
-                    server from the Agent Setup card.
+                    Create or select a server, then configure the agent base
+                    URL for that server from the Agent Setup card.
                   </GuidanceItem>
                   <GuidanceItem icon={Terminal}>
-                    Copy the one-time command and run the Go agent with the API
-                    URL, agent ID, and agent token.
+                    Run the Go agent on the managed host with a private listen
+                    address, port, and shared secret.
                   </GuidanceItem>
                   <GuidanceItem icon={ShieldCheck}>
-                    The token is shown once. Tokens can be rotated from the
-                    server detail Agent Setup card.
+                    Kyvora uses the shared secret when pulling data from the
+                    secured agent HTTP API.
                   </GuidanceItem>
                   <GuidanceItem icon={RotateCw}>
-                    Pending enrollments can be canceled before the first
-                    heartbeat is accepted.
+                    Use Pull now to test connectivity and update status,
+                    capabilities, and host facts.
                   </GuidanceItem>
                 </div>
-                <CodeBlock>{`KYVORA_API_URL=http://localhost:8080
-KYVORA_AGENT_ID=<agent-id>
-KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
+                <CodeBlock>{`KYVORA_AGENT_LISTEN_ADDRESS=127.0.0.1
+KYVORA_AGENT_LISTEN_PORT=9288
+KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Agent status becomes ONLINE after the first heartbeat. The
+                  Agent status becomes ONLINE after a successful pull. The
                   linked server status is agent-managed, and both agent and
-                  server become OFFLINE when heartbeats are missed beyond the
-                  offline threshold.
+                  server become OFFLINE when pulls fail beyond the offline
+                  threshold.
                 </p>
               </CardContent>
             </Card>
@@ -198,7 +198,7 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                   <div className="rounded-md border bg-muted/20 p-3">
                     <Badge variant="outline">UNKNOWN</Badge>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      No agent heartbeat has been received yet, or operational
+                      No successful agent pull has completed yet, or operational
                       state is not known.
                     </p>
                   </div>
@@ -207,7 +207,7 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                       ONLINE
                     </Badge>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      A linked agent is reporting heartbeats.
+                      A linked agent is reachable and returning current data.
                     </p>
                   </div>
                   <div className="rounded-md border bg-muted/20 p-3">
@@ -215,8 +215,7 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                       OFFLINE
                     </Badge>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      The agent missed heartbeats, or the server or agent is
-                      down.
+                      Agent pulls are failing, or the server or agent is down.
                     </p>
                   </div>
                 </CardContent>
@@ -234,8 +233,8 @@ KYVORA_AGENT_TOKEN=<one-time-token>`}</CodeBlock>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <GuidanceItem icon={Activity}>
-                    Activity records server, agent, token, and lifecycle events
-                    that are useful for operational review.
+                    Activity records server, agent, pull, and lifecycle events
+                    for operational review.
                   </GuidanceItem>
                   <GuidanceItem icon={ShieldCheck}>
                     Tokens and token hashes are never logged.

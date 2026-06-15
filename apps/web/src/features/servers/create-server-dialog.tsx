@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   emptyServerFormValues,
   ServerForm,
@@ -25,12 +23,6 @@ import {
   serverFormSchema,
   toServerInput,
 } from "@/features/servers/server-form";
-import { useRegisterAgent } from "@/features/agents/use-agents";
-import {
-  AgentApiError,
-  type AgentEnrollment,
-} from "@/lib/api/agents";
-import { AgentEnrollmentToken } from "@/features/agents/agent-enrollment-token";
 import { useCreateServer } from "@/features/servers/use-servers";
 import { ApiError } from "@/lib/api/servers";
 import { toast } from "@/lib/toast";
@@ -64,21 +56,11 @@ export function CreateServerDialog() {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [enrollAgent, setEnrollAgent] = useState(false);
-  const [agentName, setAgentName] = useState("");
-  const [agentNameTouched, setAgentNameTouched] = useState(false);
-  const [enrollment, setEnrollment] = useState<AgentEnrollment | null>(null);
-  const [agentConnected, setAgentConnected] = useState(false);
   const createServer = useCreateServer();
-  const registerAgent = useRegisterAgent();
   const form = useForm<ServerFormValues, unknown, ServerFormPayload>({
     resolver: zodResolver(serverFormSchema),
     defaultValues: emptyServerFormValues,
   });
-  const serverName = useWatch({ control: form.control, name: "name" }) ?? "";
-  const displayedAgentName = agentNameTouched
-    ? agentName
-    : defaultAgentName(serverName);
 
   async function onSubmit(values: ServerFormPayload) {
     setFormError(null);
@@ -89,45 +71,8 @@ export function CreateServerDialog() {
         status: "UNKNOWN",
       });
       toast.success(t("servers.serverCreated"), { description: server.hostname });
-
-      if (!enrollAgent) {
-        form.reset(emptyServerFormValues);
-        setOpen(false);
-        return;
-      }
-
-      const trimmedAgentName = displayedAgentName.trim();
-      if (trimmedAgentName && trimmedAgentName.length < 2) {
-        const message =
-          "Server was created, but the agent name must be at least 2 characters.";
-        setFormError(message);
-        toast.warning(t("servers.createdAgentSkipped"), { description: message });
-        return;
-      }
-
-      try {
-        const enrolled = await registerAgent.mutateAsync({
-          serverId: server.id,
-          name: trimmedAgentName || undefined,
-        });
-        form.reset(emptyServerFormValues);
-        setEnrollment(enrolled);
-        toast.success(t("servers.agentEnrolled"), {
-          description: enrolled.agent.name,
-        });
-      } catch (agentError) {
-        const message =
-          agentError instanceof AgentApiError && agentError.status === 409
-            ? "Server was created, but this server already has an agent."
-            : agentError instanceof Error
-              ? `Server was created, but agent enrollment failed: ${agentError.message}`
-              : "Server was created, but agent enrollment failed.";
-
-        setFormError(message);
-        toast.warning(t("servers.createdAgentFailed"), {
-          description: message,
-        });
-      }
+      form.reset(emptyServerFormValues);
+      setOpen(false);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         const field = getConflictField(error);
@@ -158,40 +103,12 @@ export function CreateServerDialog() {
   }
 
   function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen && enrollment && !agentConnected) {
-      return;
-    }
-
     setOpen(nextOpen);
 
     if (!nextOpen) {
       form.reset(emptyServerFormValues);
       setFormError(null);
-      setEnrollAgent(false);
-      setAgentName("");
-      setAgentNameTouched(false);
-      setEnrollment(null);
-      setAgentConnected(false);
     }
-  }
-
-  const handleAgentConnectionChange = useCallback((connected: boolean) => {
-    setAgentConnected(connected);
-  }, []);
-
-  function handleEnrollAgentChange(checked: boolean) {
-    setEnrollAgent(checked);
-  }
-
-  function closeEnrollmentDialog() {
-    setOpen(false);
-    form.reset(emptyServerFormValues);
-    setFormError(null);
-    setEnrollAgent(false);
-    setAgentName("");
-    setAgentNameTouched(false);
-    setEnrollment(null);
-    setAgentConnected(false);
   }
 
   return (
@@ -202,107 +119,30 @@ export function CreateServerDialog() {
           {t("servers.createServer")}
         </Button>
       </DialogTrigger>
-      <DialogContent
-        className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl"
-        showCloseButton={!enrollment || agentConnected}
-        onEscapeKeyDown={(event) => {
-          if (enrollment && !agentConnected) {
-            event.preventDefault();
-          }
-        }}
-        onPointerDownOutside={(event) => {
-          if (enrollment && !agentConnected) {
-            event.preventDefault();
-          }
-        }}
-      >
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            {enrollment ? t("servers.agentToken") : t("servers.createServer")}
-          </DialogTitle>
-          <DialogDescription>
-            {enrollment
-              ? t("servers.tokenShownOnce")
-              : t("servers.addManagedServer")}
-          </DialogDescription>
+          <DialogTitle>{t("servers.createServer")}</DialogTitle>
+          <DialogDescription>{t("servers.addManagedServer")}</DialogDescription>
         </DialogHeader>
 
-        {enrollment ? (
-          <AgentEnrollmentToken
-            enrollment={enrollment}
-            onClose={closeEnrollmentDialog}
-            onConnectionChange={handleAgentConnectionChange}
-          />
-        ) : (
-          <ServerForm
-            childrenBeforeFooter={
-              <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
-                <label
-                  className="flex cursor-pointer items-start gap-3"
-                  htmlFor="create-server-enroll-agent"
-                >
-                  <input
-                    id="create-server-enroll-agent"
-                    type="checkbox"
-                    checked={enrollAgent}
-                    onChange={(event) =>
-                      handleEnrollAgentChange(event.currentTarget.checked)
-                    }
-                    className="mt-1 size-4 accent-primary"
-                  />
-                  <span className="grid gap-1 text-sm">
-                    <span className="font-medium">
-                      {t("servers.enrollAgent")}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {t("servers.enrollAgentDescription")}
-                    </span>
-                  </span>
-                </label>
-
-                {enrollAgent ? (
-                  <div className="grid gap-2 pl-7">
-                    <Label htmlFor="create-server-agent-name">
-                      {t("servers.agentName")}
-                    </Label>
-                    <Input
-                      id="create-server-agent-name"
-                      value={displayedAgentName}
-                      onChange={(event) => {
-                        setAgentName(event.currentTarget.value);
-                        setAgentNameTouched(true);
-                      }}
-                      placeholder={defaultAgentName(serverName)}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            }
-            form={form}
-            formError={formError}
-            idPrefix="create-server"
-            isPending={createServer.isPending || registerAgent.isPending}
-            onCancel={() => handleOpenChange(false)}
-            onSubmit={onSubmit}
-            showStatusField={false}
-            submitIcon={
-              createServer.isPending || registerAgent.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Plus className="size-4" />
-              )
-            }
-            submitLabel={
-              enrollAgent ? t("servers.createAndEnroll") : t("servers.createServer")
-            }
-          />
-        )}
+        <ServerForm
+          form={form}
+          formError={formError}
+          idPrefix="create-server"
+          isPending={createServer.isPending}
+          onCancel={() => handleOpenChange(false)}
+          onSubmit={onSubmit}
+          showStatusField={false}
+          submitIcon={
+            createServer.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Plus className="size-4" />
+            )
+          }
+          submitLabel={t("servers.createServer")}
+        />
       </DialogContent>
     </Dialog>
   );
-}
-
-function defaultAgentName(serverName: string) {
-  const trimmed = serverName.trim();
-  return trimmed ? `${trimmed} Agent` : "Server Agent";
 }

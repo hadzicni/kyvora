@@ -7,18 +7,15 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
-import dev.kyvora.api.agent.dto.AgentEnrollmentResponse;
-import dev.kyvora.api.agent.dto.AgentHeartbeatRequest;
 import dev.kyvora.api.agent.dto.AgentPageResponse;
+import dev.kyvora.api.agent.dto.AgentPullResponse;
 import dev.kyvora.api.agent.dto.AgentRegisterRequest;
 import dev.kyvora.api.agent.dto.AgentResponse;
 import dev.kyvora.api.agent.service.AgentService;
@@ -36,11 +33,9 @@ import jakarta.validation.Valid;
 @Validated
 @RestController
 @RequestMapping("/api/v1/agents")
-@Tag(name = "Agent Management", description = "Register agents and receive agent heartbeats.")
+@Tag(name = "Agent Management", description = "Configure pull-based agents and trigger agent pulls.")
 @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH_SCHEME)
 public class AgentController {
-
-	public static final String AGENT_TOKEN_HEADER = "X-Kyvora-Agent-Token";
 
 	private final AgentService service;
 
@@ -50,16 +45,7 @@ public class AgentController {
 
 	@GetMapping
 	@PreAuthorize("@permissions.canReadAgents(authentication)")
-	@Operation(
-			summary = "List agents",
-			description = "Returns a paginated list of registered agents.",
-			responses = {
-					@ApiResponse(responseCode = "200", description = "Agent page returned"),
-					@ApiResponse(responseCode = "400", description = "Invalid pagination parameter",
-							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
-					@ApiResponse(responseCode = "401", description = "Authentication is required",
-							content = @Content)
-			})
+	@Operation(summary = "List agents")
 	public ResponseEntity<AgentPageResponse> findAll(
 			@Parameter(description = "Pagination and sorting options. Supports page, size, and sort query parameters.")
 			@PageableDefault(size = 20) Pageable pageable) {
@@ -68,15 +54,7 @@ public class AgentController {
 
 	@GetMapping("/{id}")
 	@PreAuthorize("@permissions.canReadAgents(authentication)")
-	@Operation(
-			summary = "Get an agent",
-			responses = {
-					@ApiResponse(responseCode = "200", description = "Agent returned"),
-					@ApiResponse(responseCode = "401", description = "Authentication is required",
-							content = @Content),
-					@ApiResponse(responseCode = "404", description = "Agent was not found",
-							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-			})
+	@Operation(summary = "Get an agent")
 	public ResponseEntity<AgentResponse> findById(
 			@Parameter(description = "Agent identifier.", example = "00000000-0000-0000-0000-000000000001")
 			@PathVariable UUID id) {
@@ -86,101 +64,38 @@ public class AgentController {
 	@PostMapping
 	@PreAuthorize("@permissions.canEnrollAgents(authentication)")
 	@Operation(
-			summary = "Enroll an agent",
-			description = "Creates an agent record and returns a one-time plaintext agent token. The token is never stored in plaintext and is shown only in this response.",
+			summary = "Configure a pull-based agent",
+			description = "Creates an agent connection record. Shared secrets are accepted in requests but never returned in responses.",
 			responses = {
-					@ApiResponse(responseCode = "201", description = "Agent enrolled"),
+					@ApiResponse(responseCode = "201", description = "Agent configured"),
 					@ApiResponse(responseCode = "400", description = "Request body failed validation",
 							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
-					@ApiResponse(responseCode = "401", description = "Authentication is required",
-							content = @Content),
+					@ApiResponse(responseCode = "401", description = "Authentication is required", content = @Content),
 					@ApiResponse(responseCode = "409", description = "Request conflicts with existing agent data",
 							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
 			})
-	public ResponseEntity<AgentEnrollmentResponse> enroll(@Valid @RequestBody AgentRegisterRequest request) {
-		AgentEnrollmentResponse enrolled = service.enroll(request);
-		return ResponseEntity.created(java.net.URI.create("/api/v1/agents/" + enrolled.agent().id())).body(enrolled);
+	public ResponseEntity<AgentResponse> create(@Valid @RequestBody AgentRegisterRequest request) {
+		AgentResponse created = service.create(request);
+		return ResponseEntity.created(java.net.URI.create("/api/v1/agents/" + created.id())).body(created);
 	}
 
-	@DeleteMapping("/{id}")
-	@PreAuthorize("@permissions.canCancelAgentEnrollments(authentication)")
+	@PostMapping("/{id}/pull")
+	@PreAuthorize("@permissions.canPullAgents(authentication)")
 	@Operation(
-			summary = "Cancel a pending agent enrollment",
-			description = "Deletes a pending, never-connected agent and revokes its one-time token by removing the agent row. Connected agents cannot be deleted through this endpoint.",
-			responses = {
-					@ApiResponse(responseCode = "204", description = "Pending enrollment canceled"),
-					@ApiResponse(responseCode = "401", description = "Authentication is required",
-							content = @Content),
-					@ApiResponse(responseCode = "404", description = "Agent was not found",
-							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
-					@ApiResponse(responseCode = "409", description = "Agent has already connected",
-							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-			})
-	public ResponseEntity<Void> cancelPendingEnrollment(
+			summary = "Pull data from an agent",
+			description = "Calls the secured agent HTTP API and updates agent/server status, capabilities, and host facts.")
+	public ResponseEntity<AgentPullResponse> pull(
 			@Parameter(description = "Agent identifier.", example = "00000000-0000-0000-0000-000000000001")
 			@PathVariable UUID id) {
-		service.cancelPendingEnrollment(id);
-		return ResponseEntity.noContent().build();
-	}
-
-	@PostMapping("/{id}/rotate-token")
-	@PreAuthorize("@permissions.canRotateAgentTokens(authentication)")
-	@Operation(
-			summary = "Rotate an agent token",
-			description = "Generates a new one-time plaintext agent token, stores only its SHA-256 hash, and invalidates the previous token immediately.",
-			responses = {
-					@ApiResponse(responseCode = "200", description = "Agent token rotated"),
-					@ApiResponse(responseCode = "401", description = "Authentication is required",
-							content = @Content),
-					@ApiResponse(responseCode = "404", description = "Agent was not found",
-							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-			})
-	public ResponseEntity<AgentEnrollmentResponse> rotateToken(
-			@Parameter(description = "Agent identifier.", example = "00000000-0000-0000-0000-000000000001")
-			@PathVariable UUID id) {
-		return ResponseEntity.ok(service.rotateToken(id));
+		return ResponseEntity.ok(service.pull(id));
 	}
 
 	@PostMapping("/{id}/decommission")
 	@PreAuthorize("@permissions.canDecommissionAgents(authentication)")
-	@Operation(
-			summary = "Decommission a connected agent",
-			description = "Idempotently revokes the agent token, marks the agent DECOMMISSIONED, unlinks it from its server, and preserves agent history. Already decommissioned agents return the current agent representation.",
-			responses = {
-					@ApiResponse(responseCode = "200", description = "Agent decommissioned"),
-					@ApiResponse(responseCode = "401", description = "Authentication is required",
-							content = @Content),
-					@ApiResponse(responseCode = "404", description = "Agent was not found",
-							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-			})
+	@Operation(summary = "Decommission an agent target")
 	public ResponseEntity<AgentResponse> decommission(
 			@Parameter(description = "Agent identifier.", example = "00000000-0000-0000-0000-000000000001")
 			@PathVariable UUID id) {
 		return ResponseEntity.ok(service.decommission(id));
-	}
-
-	@PostMapping("/{id}/heartbeat")
-	@Operation(
-			summary = "Receive an agent heartbeat",
-			description = "Authenticates with the X-Kyvora-Agent-Token header. User JWTs are not accepted for agent heartbeat authentication.",
-			security = {},
-			responses = {
-					@ApiResponse(responseCode = "200", description = "Heartbeat received"),
-					@ApiResponse(responseCode = "400", description = "Request body failed validation",
-							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
-					@ApiResponse(responseCode = "401", description = "Agent token is missing or invalid",
-							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
-					@ApiResponse(responseCode = "403", description = "Agent token is revoked",
-							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
-					@ApiResponse(responseCode = "404", description = "Agent was not found",
-							content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
-			})
-	public ResponseEntity<AgentResponse> heartbeat(
-			@Parameter(description = "Agent identifier.", example = "00000000-0000-0000-0000-000000000001")
-			@PathVariable UUID id,
-			@Parameter(description = "One-time enrollment token assigned to the agent.", required = true)
-			@RequestHeader(value = AGENT_TOKEN_HEADER, required = false) String agentToken,
-			@Valid @RequestBody AgentHeartbeatRequest request) {
-		return ResponseEntity.ok(service.heartbeat(id, agentToken, request));
 	}
 }

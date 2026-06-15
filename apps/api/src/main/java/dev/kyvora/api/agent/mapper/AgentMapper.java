@@ -19,9 +19,11 @@ public class AgentMapper {
 		return new Agent(
 				normalizeName(request.name(), server),
 				normalizeHostname(server.getHostname()),
-				normalizeVersion(request.version()),
-				AgentStatus.PENDING,
-				server);
+				"unknown",
+				AgentStatus.UNKNOWN,
+				server,
+				normalizeBaseUrl(request.baseUrl()),
+				request.sharedSecret().trim());
 	}
 
 	public AgentResponse toResponse(Agent entity) {
@@ -36,11 +38,14 @@ public class AgentMapper {
 				entity.getVersion(),
 				entity.getStatus(),
 				entity.getLastSeenAt(),
+				entity.getBaseUrl(),
+				entity.isPullEnabled(),
+				entity.getLastPullAt(),
+				entity.getLastSuccessfulPullAt(),
+				entity.getLastPullError(),
+				entity.getCapabilities(),
 				entity.getRegisteredAt(),
 				entity.getUpdatedAt(),
-				entity.getTokenCreatedAt(),
-				entity.getTokenLastUsedAt(),
-				entity.getTokenRevokedAt(),
 				toHostFactsResponse(entity.getHostFacts()));
 	}
 
@@ -84,5 +89,9 @@ public class AgentMapper {
 			return "0.1.0";
 		}
 		return version.trim();
+	}
+
+	public String normalizeBaseUrl(String baseUrl) {
+		return baseUrl == null ? null : baseUrl.trim().replaceAll("/+$", "");
 	}
 }

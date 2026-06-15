@@ -355,23 +355,20 @@ function formatActivityMessage(auditLog: AuditLog) {
   const hostname = metadataString(auditLog, "hostname");
 
   switch (auditLog.eventType) {
-    case "AGENT_REGISTERED":
-    case "AGENT_ENROLLED":
-      return `Agent enrolled${serverName ? ` for server ${serverName}` : ""}`;
-    case "AGENT_CONNECTED":
-      return `Agent connected${hostname ? ` from ${hostname}` : ""}`;
+    case "AGENT_CONFIGURED":
+      return `Agent configured${serverName ? ` for server ${serverName}` : ""}`;
+    case "AGENT_PULL_SUCCEEDED":
+      return `Agent pull succeeded${hostname ? ` from ${hostname}` : ""}`;
+    case "AGENT_PULL_FAILED":
+      return `Agent pull failed${hostname ? ` from ${hostname}` : ""}`;
     case "AGENT_MARKED_ONLINE":
       return `Agent marked online${hostname ? ` from ${hostname}` : ""}`;
     case "AGENT_MARKED_OFFLINE":
-      return "Agent marked offline after missed heartbeats";
+      return "Agent marked offline after failed or missed pulls";
     case "SERVER_MARKED_ONLINE_BY_AGENT":
       return "Server marked online by agent";
     case "SERVER_MARKED_OFFLINE_BY_AGENT":
       return "Server marked offline by agent";
-    case "AGENT_TOKEN_ROTATED":
-      return "Agent token rotated";
-    case "AGENT_ENROLLMENT_CANCELED":
-      return "Agent enrollment canceled";
     case "AGENT_DECOMMISSIONED":
       return `Agent decommissioned${serverName ? ` from server ${serverName}` : ""}`;
     default:

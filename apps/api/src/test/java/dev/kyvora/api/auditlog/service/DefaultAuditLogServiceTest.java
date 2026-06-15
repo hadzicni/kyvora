@@ -26,10 +26,11 @@ class DefaultAuditLogServiceTest {
 	private final DefaultAuditLogService service = new DefaultAuditLogService(repository, mapper, currentUserProvider);
 
 	@Test
-	void heartbeatActorFallsBackToAgentIdWhenHostnameIsUnknown() {
+	void pullEventsUseCurrentActor() {
+		when(currentUserProvider.currentActor()).thenReturn("system");
 		UUID agentId = UUID.randomUUID();
 		AgentChangedEvent event = new AgentChangedEvent(
-				AgentEventType.AGENT_HEARTBEAT_RECEIVED,
+				AgentEventType.AGENT_PULL_SUCCEEDED,
 				agentId,
 				"Agent 01",
 				null,
@@ -45,19 +46,19 @@ class DefaultAuditLogServiceTest {
 
 		ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
 		verify(repository).save(captor.capture());
-		assertThat(captor.getValue().getActor()).isEqualTo("agent:" + agentId);
+		assertThat(captor.getValue().getActor()).isEqualTo("system");
 	}
 
 	@Test
 	void nonHeartbeatAgentEventsKeepCurrentActor() {
 		when(currentUserProvider.currentActor()).thenReturn("system");
 		AgentChangedEvent event = new AgentChangedEvent(
-				AgentEventType.AGENT_REGISTERED,
+				AgentEventType.AGENT_CONFIGURED,
 				UUID.randomUUID(),
 				"Agent 01",
 				"node01.example.com",
 				"0.1.0",
-				AgentStatus.PENDING,
+				AgentStatus.UNKNOWN,
 				null,
 				null,
 				null,

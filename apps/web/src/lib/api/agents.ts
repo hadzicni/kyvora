@@ -1,11 +1,9 @@
 import { apiRequest, appendSearchParam, ApiRequestError } from "@/lib/api/client";
 
 export type AgentStatus =
-  | "PENDING"
   | "ONLINE"
   | "OFFLINE"
-  | "UNKNOWN"
-  | "DECOMMISSIONED";
+  | "UNKNOWN";
 
 export type AgentHostFacts = {
   hostname: string | null;
@@ -34,11 +32,14 @@ export type Agent = {
   version: string;
   status: AgentStatus;
   lastSeenAt: string | null;
+  baseUrl: string;
+  pullEnabled: boolean;
+  lastPullAt: string | null;
+  lastSuccessfulPullAt: string | null;
+  lastPullError: string | null;
+  capabilities: string[];
   registeredAt: string;
   updatedAt: string;
-  tokenCreatedAt: string | null;
-  tokenLastUsedAt: string | null;
-  tokenRevokedAt: string | null;
   hostFacts: AgentHostFacts | null;
 };
 
@@ -62,12 +63,16 @@ export type ListAgentsParams = {
 export type RegisterAgentInput = {
   serverId: string;
   name?: string;
-  version?: string;
+  baseUrl: string;
+  sharedSecret: string;
+  pullEnabled?: boolean;
 };
 
-export type AgentEnrollment = {
+export type AgentPullResult = {
   agent: Agent;
-  agentToken: string;
+  status: AgentStatus;
+  pulledAt: string;
+  error: string | null;
 };
 
 export class AgentApiError extends ApiRequestError {
@@ -106,8 +111,8 @@ export async function getAgent(id: string): Promise<Agent> {
 
 export async function registerAgent(
   input: RegisterAgentInput
-): Promise<AgentEnrollment> {
-  return request<AgentEnrollment>("/api/agents", {
+): Promise<Agent> {
+  return request<Agent>("/api/agents", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -116,19 +121,10 @@ export async function registerAgent(
   });
 }
 
-export async function cancelAgentEnrollment(id: string): Promise<void> {
-  await request<void>(`/api/agents/${encodeURIComponent(id)}`, {
-    method: "DELETE",
+export async function pullAgent(id: string): Promise<AgentPullResult> {
+  return request<AgentPullResult>(`/api/agents/${encodeURIComponent(id)}/pull`, {
+    method: "POST",
   });
-}
-
-export async function rotateAgentToken(id: string): Promise<AgentEnrollment> {
-  return request<AgentEnrollment>(
-    `/api/agents/${encodeURIComponent(id)}/rotate-token`,
-    {
-      method: "POST",
-    }
-  );
 }
 
 export async function decommissionAgent(id: string): Promise<Agent> {

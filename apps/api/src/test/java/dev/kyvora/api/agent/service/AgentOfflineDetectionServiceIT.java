@@ -110,20 +110,6 @@ class AgentOfflineDetectionServiceIT {
 	}
 
 	@Test
-	void pendingAgentIsNotChangedEvenWhenLastSeenIsOld() {
-		ServerInventory server = createServer("Node 03", "node03.example.com");
-		Agent agent = createAgent("Agent 03", "node03.example.com", AgentStatus.PENDING, server, 120);
-
-		int changed = agentService.markStaleOnlineAgentsOffline();
-
-		assertThat(changed).isZero();
-		assertThat(agentRepository.findById(agent.getId()).orElseThrow().getStatus()).isEqualTo(AgentStatus.PENDING);
-		assertThat(serverInventoryRepository.findById(server.getId()).orElseThrow().getStatus())
-				.isEqualTo(ServerStatus.ONLINE);
-		assertThat(auditLogRepository.findAll()).isEmpty();
-	}
-
-	@Test
 	void unknownAgentIsNotChangedEvenWhenLastSeenIsOld() {
 		ServerInventory server = createServer("Node 04", "node04.example.com");
 		Agent agent = createAgent("Agent 04", "node04.example.com", AgentStatus.UNKNOWN, server, 120);
@@ -137,22 +123,6 @@ class AgentOfflineDetectionServiceIT {
 		assertThat(auditLogRepository.findAll()).isEmpty();
 	}
 
-	@Test
-	void decommissionedAgentIsNotChangedEvenWhenLastSeenIsOld() {
-		ServerInventory server = createServer("Node 07", "node07.example.com");
-		Agent agent = createAgent("Agent 07", "node07.example.com", AgentStatus.DECOMMISSIONED, server, 120);
-
-		int changed = agentService.markStaleOnlineAgentsOffline();
-
-		assertThat(changed).isZero();
-		assertThat(agentRepository.findById(agent.getId()).orElseThrow().getStatus())
-				.isEqualTo(AgentStatus.DECOMMISSIONED);
-		assertThat(serverInventoryRepository.findById(server.getId()).orElseThrow().getStatus())
-				.isEqualTo(ServerStatus.ONLINE);
-		assertThat(auditLogRepository.findAll()).isEmpty();
-	}
-
-	@Test
 	void serverWithoutLinkedAgentIsNotChanged() {
 		ServerInventory server = createServer("Node 05", "node05.example.com");
 
@@ -182,8 +152,9 @@ class AgentOfflineDetectionServiceIT {
 			AgentStatus status,
 			ServerInventory server,
 			long lastSeenSecondsAgo) {
-		Agent agent = new Agent(name, hostname, "0.1.0", status, server);
+		Agent agent = new Agent(name, hostname, "0.1.0", status, server, "http://10.0.0.10:9288", "agent-secret");
 		agent.setLastSeenAt(Instant.now().minusSeconds(lastSeenSecondsAgo));
+		agent.setLastSuccessfulPullAt(Instant.now().minusSeconds(lastSeenSecondsAgo));
 		return agentRepository.save(agent);
 	}
 }

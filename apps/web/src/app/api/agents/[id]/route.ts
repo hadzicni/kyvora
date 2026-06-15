@@ -43,21 +43,3 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return agentApiUnavailableResponse();
   }
 }
-
-export async function DELETE(request: NextRequest, context: RouteContext) {
-  try {
-    const response = await backendFetch(
-      request,
-      await createBackendUrl(request, context),
-      {
-        method: "DELETE",
-      }
-    );
-
-    const body = await response.text();
-
-    return createBackendResponse(response, body);
-  } catch {
-    return agentApiUnavailableResponse();
-  }
-}

@@ -53,8 +53,8 @@ It currently provides:
 - a Spring Boot backend API with JWT authentication
 - a Next.js web dashboard with Auth.js login sessions
 - server inventory management with CRUD, search, filters, pagination, and detail pages
-- agent registration and heartbeat tracking
-- latest host facts reported by enrolled agents
+- pull-based agent connectivity tracking
+- latest host facts retrieved from configured agents
 - persistent audit logging for infrastructure changes
 - dashboard summary metrics
 - OpenAPI/Swagger documentation
@@ -86,9 +86,9 @@ Kyvora is built as a monorepo with a modular backend, a modern web UI, and a lig
 - JWT-secured backend API
 - Server Inventory CRUD
 - Server search, filtering, pagination, and detail pages
-- Agent registration and heartbeat tracking
-- Latest host facts snapshot from enrolled agents
-- Initial Go agent for local registration and heartbeats
+- Pull-based agent connectivity tracking
+- Latest host facts snapshot retrieved from configured agents
+- Initial Go agent with a secured local HTTP API
 - Dashboard summary metrics
 - Persistent audit logs with recent activity
 - OpenAPI/Swagger API documentation
@@ -213,13 +213,13 @@ npm run dev:api
 
 #### Start the Go agent
 
-Create or select a server inventory entry in the web UI, enroll an agent for
-that server, then start the agent with the generated agent ID and token:
+Start the agent on a private interface, then configure the agent base URL and
+shared secret for a server inventory entry in the web UI:
 
 ```bash
-KYVORA_API_URL=http://localhost:8080 \
-KYVORA_AGENT_ID=<agent-id> \
-KYVORA_AGENT_TOKEN=<agent-token> \
+KYVORA_AGENT_LISTEN_ADDRESS=127.0.0.1 \
+KYVORA_AGENT_LISTEN_PORT=9288 \
+KYVORA_AGENT_SHARED_SECRET=<shared-secret> \
 npm run dev:agent
 ```
 
@@ -278,33 +278,29 @@ threshold applies dynamically; scheduler interval changes are stored but require
 an API restart before the scheduler uses the new interval.
 
 Secrets remain environment variables or secure runtime configuration. Do not
-store `KYVORA_JWT_SECRET`, database credentials, Auth.js secrets, or any agent
-token in system settings. Agent enrollment tokens are shown once, and only token
-hashes are persisted by the API.
+store `KYVORA_JWT_SECRET`, database credentials, Auth.js secrets, or agent
+shared secrets in system settings. Agent shared secrets are accepted when
+configuring the connection and are never returned by API responses.
 
-Local agent API configuration:
+Local agent configuration:
 
 ```env
-KYVORA_API_URL=http://localhost:8080
-KYVORA_AGENT_ID=<agent-id>
-KYVORA_AGENT_TOKEN=<agent-token>
+KYVORA_AGENT_LISTEN_ADDRESS=127.0.0.1
+KYVORA_AGENT_LISTEN_PORT=9288
+KYVORA_AGENT_SHARED_SECRET=<shared-secret>
 ```
 
-Create or register a server from the web dashboard, then enroll an agent for
-that server to receive `KYVORA_AGENT_ID` and `KYVORA_AGENT_TOKEN`. Agent tokens
-are shown only once. Do not commit tokens or store them in `NEXT_PUBLIC_*`
-variables.
+Create or register a server from the web dashboard, then configure an agent
+connection with the agent base URL and shared secret. Do not commit shared
+secrets or store them in `NEXT_PUBLIC_*` variables.
 
-The agent reports a latest host inventory snapshot with each heartbeat when
+The Kyvora API pulls the latest host inventory snapshot from the agent when
 facts are available. This includes basic operating system, architecture, CPU,
 memory, disk, uptime, IP address, and agent version information. These facts
 are latest snapshots, not metrics history. The agent does not collect secrets,
 environment variables, process lists, usernames, or file contents. Collection
 is best-effort on Linux and macOS, and unsupported platforms degrade
 gracefully.
-
-The agent reads the Kyvora product version from the API status endpoint at
-startup, matching the web UI's release metadata source.
 
 ## Usage
 
@@ -343,48 +339,52 @@ new refresh token returned by the refresh response.
 The first admin temporary password is generated per fresh database and is shown
 only once in the API startup logs.
 
-## Agent Enrollment
+## Agent Pull Model
 
-Agent enrollment uses one-time plaintext tokens. Kyvora stores only token
-hashes and authenticates heartbeats with the `X-Kyvora-Agent-Token` header.
+Kyvora uses a pull-based agent architecture. The agent exposes a secured local
+HTTP API, and the Kyvora API calls that agent API to retrieve health,
+capabilities, system information, metrics, and service information.
 
-1. Log in to the web dashboard.
-2. Create or select an existing server inventory entry.
-3. Enroll an agent for that server from Agents or the server detail page.
-4. Copy the one-time token and generated run command.
-5. Start the agent with `KYVORA_API_URL`, `KYVORA_AGENT_ID`, and
-   `KYVORA_AGENT_TOKEN`.
+Supported initial agent endpoints:
 
-The token is shown only once immediately after creation. Store it securely and
-do not commit it to Git. Successful heartbeats update the assigned agent status
-and the linked server status and last-seen timestamp.
+```text
+GET /health
+GET /capabilities
+GET /system
+GET /metrics
+GET /services
+POST /actions/{actionName}
+X-Kyvora-Agent-Secret: <shared-secret>
+```
 
-Pending enrollments can be canceled before the agent connects. Canceling a
-pending enrollment deletes the pending agent record, revokes the setup token,
-and frees the server so a new agent can be enrolled later.
+The agent does not push registration, heartbeats, status, or metrics to the
+Kyvora API. The backend records `lastPullAt`, `lastSuccessfulPullAt`,
+`lastPullError`, capabilities, and agent status from pull attempts.
 
-Agent tokens can be rotated from the server detail Agent Setup section. Rotation
-returns a new one-time plaintext token and immediately invalidates the previous
-token. Kyvora still stores only the SHA-256 token hash and never re-shows old
-plaintext tokens after the setup dialog is closed.
+1. Start the agent with `KYVORA_AGENT_LISTEN_ADDRESS`,
+   `KYVORA_AGENT_LISTEN_PORT`, and `KYVORA_AGENT_SHARED_SECRET`.
+2. Log in to the web dashboard.
+3. Create or select an existing server inventory entry.
+4. Configure the agent connection with its base URL and shared secret.
+5. Use Pull now to test the connection and update operational data.
+
+Successful pulls update the assigned agent status and the linked server status
+and last-seen timestamp. Failed pulls record the error and mark the agent and
+linked server offline or unreachable without breaking unrelated application
+functionality.
+
+The agent port is sensitive. Bind it to localhost or a trusted private network
+interface by default, and do not expose it publicly without stronger transport
+security such as mTLS and network policy.
 
 Connected agents can be decommissioned from the server detail Agent Setup
-section or the Agents page. Decommissioning revokes the agent token, marks the
-agent `DECOMMISSIONED`, and unlinks it from the server without deleting
-heartbeat or host facts history. The server remains in inventory, moves back to
-`UNKNOWN`, and can enroll a replacement agent. A decommissioned agent cannot
-heartbeat again with its old `KYVORA_AGENT_TOKEN`.
+section or the Agents page. Decommissioning disables pulls and unlinks the
+agent from the server without deleting the server inventory record.
 
-Server operational status is managed by agent heartbeats and offline detection,
-not manual editing. A server starts as `UNKNOWN`, becomes `ONLINE` when its
-linked agent reports a heartbeat, and becomes `OFFLINE` when the backend has
-not received a heartbeat recently.
-
-Activity tracks lifecycle transitions such as enrollment, first connection,
-token rotation, cancellation, decommissioning, and offline detection. Routine
-heartbeats update status and last-seen timestamps without creating repeated
-Activity rows. Token values, token hashes, authorization headers, and cookies
-are never logged.
+Activity tracks lifecycle transitions such as configuration, manual pulls,
+pull failures, decommissioning, and offline detection. Shared secrets,
+authorization headers, and cookies are never logged or returned in API
+responses.
 
 ## Development
 

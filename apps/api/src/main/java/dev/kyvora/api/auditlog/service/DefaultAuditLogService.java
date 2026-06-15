@@ -118,14 +118,6 @@ public class DefaultAuditLogService implements AuditLogService {
 		if (event.actor() != null && !event.actor().isBlank()) {
 			return event.actor();
 		}
-		if (event.type() == AgentEventType.AGENT_HEARTBEAT_RECEIVED
-				|| event.type() == AgentEventType.AGENT_CONNECTED
-				|| event.type() == AgentEventType.AGENT_MARKED_ONLINE) {
-			if (event.hostname() != null && !event.hostname().isBlank()) {
-				return "agent:" + event.hostname();
-			}
-			return "agent:" + event.agentId();
-		}
 		return currentActor();
 	}
 
@@ -141,13 +133,11 @@ public class DefaultAuditLogService implements AuditLogService {
 
 	private String messageFor(AgentChangedEvent event) {
 		return switch (event.type()) {
-			case AGENT_REGISTERED, AGENT_ENROLLED -> "Agent enrolled";
-			case AGENT_CONNECTED -> "Agent connected";
-			case AGENT_HEARTBEAT_RECEIVED -> "Agent heartbeat received: " + event.hostname();
+			case AGENT_CONFIGURED -> "Agent configured: " + agentDisplayName(event);
+			case AGENT_PULL_SUCCEEDED -> "Agent pull succeeded: " + agentDisplayName(event);
+			case AGENT_PULL_FAILED -> "Agent pull failed: " + agentDisplayName(event);
 			case AGENT_MARKED_ONLINE -> "Agent marked online";
 			case AGENT_MARKED_OFFLINE -> "Agent marked offline: " + event.hostname();
-			case AGENT_TOKEN_ROTATED -> "Agent token rotated";
-			case AGENT_ENROLLMENT_CANCELED -> "Agent enrollment canceled";
 			case AGENT_DECOMMISSIONED -> "Agent decommissioned: " + agentDisplayName(event);
 		};
 	}
