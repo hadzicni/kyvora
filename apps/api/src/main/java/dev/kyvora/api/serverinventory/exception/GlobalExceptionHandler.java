@@ -21,6 +21,8 @@ import dev.kyvora.api.auth.service.InvalidTokenException;
 import dev.kyvora.api.auth.exception.UserManagementException;
 import dev.kyvora.api.auth.exception.UserNotFoundException;
 import dev.kyvora.api.managedservice.exception.ManagedServiceNotFoundException;
+import dev.kyvora.api.notification.exception.NotificationNotDismissibleException;
+import dev.kyvora.api.notification.exception.NotificationNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import dev.kyvora.api.settings.exception.SettingsValidationException;
@@ -45,6 +47,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(ManagedServiceNotFoundException.class)
 	public ResponseEntity<ApiErrorResponse> handleManagedServiceNotFound(
 			ManagedServiceNotFoundException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
+	}
+
+	@ExceptionHandler(NotificationNotFoundException.class)
+	public ResponseEntity<ApiErrorResponse> handleNotificationNotFound(
+			NotificationNotFoundException exception,
 			HttpServletRequest request) {
 		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
 	}
@@ -135,6 +144,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(AgentEnrollmentCancellationException.class)
 	public ResponseEntity<ApiErrorResponse> handleAgentEnrollmentCancellation(
 			AgentEnrollmentCancellationException exception,
+			HttpServletRequest request) {
+		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of());
+	}
+
+	@ExceptionHandler(NotificationNotDismissibleException.class)
+	public ResponseEntity<ApiErrorResponse> handleNotificationNotDismissible(
+			NotificationNotDismissibleException exception,
 			HttpServletRequest request) {
 		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of());
 	}

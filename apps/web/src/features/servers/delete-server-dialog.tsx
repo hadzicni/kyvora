@@ -4,7 +4,6 @@ import { Loader2, Trash2 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useToastNotification } from "@/features/notifications/hooks/use-notifications";
 import { useDeleteServer } from "@/features/servers/use-servers";
 import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
 
@@ -38,6 +38,7 @@ export function DeleteServerDialog({
   const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const deleteServer = useDeleteServer();
+  const toast = useToastNotification();
 
   async function handleDelete() {
     setErrorMessage(null);
@@ -45,25 +46,19 @@ export function DeleteServerDialog({
     try {
       await deleteServer.mutateAsync(server.id);
       setOpen(false);
-      toast.success(t("servers.deletedToast"), {
-        description: server.hostname,
-      });
+      toast.success(t("servers.deletedToast"), server.hostname);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         const message = t("servers.noLongerExists");
         setErrorMessage(message);
-        toast.error(t("servers.deleteFailedToast"), {
-          description: message,
-        });
+        toast.error(t("servers.deleteFailedToast"), message);
         return;
       }
 
       if (error instanceof ApiError && error.status === 409) {
         const message = t("servers.deleteReferenced");
         setErrorMessage(message);
-        toast.error(t("servers.deleteFailedToast"), {
-          description: message,
-        });
+        toast.error(t("servers.deleteFailedToast"), message);
         return;
       }
 
@@ -73,9 +68,7 @@ export function DeleteServerDialog({
           : t("servers.deleteFailedDescription");
 
       setErrorMessage(message);
-      toast.error(t("servers.deleteFailedToast"), {
-        description: message,
-      });
+      toast.error(t("servers.deleteFailedToast"), message);
     }
   }
 

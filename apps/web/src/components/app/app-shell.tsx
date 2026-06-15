@@ -42,6 +42,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { NotificationBell } from "@/features/notifications/components/notification-bell"
 import { useGlobalSearch } from "@/features/search/use-global-search"
 import { useSettings } from "@/features/settings/use-settings"
 import type { SearchResult, SearchResultType } from "@/lib/api/search"
@@ -624,6 +625,7 @@ export function AppShell({
           </div>
 
           <div className="hidden flex-1 md:block" />
+          <NotificationBell />
         </header>
 
         {/* ── Page content ── */}

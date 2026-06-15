@@ -9,6 +9,7 @@ import {
 
 import { auditLogKeys } from "@/lib/api/audit-logs";
 import { dashboardKeys } from "@/lib/api/dashboard";
+import { notificationKeys } from "@/features/notifications/api/notifications";
 import {
   createServer,
   deleteServer,
@@ -53,6 +54,7 @@ export function useCreateServer() {
         queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
         queryClient.invalidateQueries({ queryKey: serverKeys.all }),
         queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+        queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
       ]);
     },
   });
@@ -84,6 +86,7 @@ export function useDeleteServer() {
         queryClient.invalidateQueries({ queryKey: auditLogKeys.all }),
         queryClient.invalidateQueries({ queryKey: serverKeys.all }),
         queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+        queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
       ]);
     },
   });

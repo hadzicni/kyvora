@@ -4,11 +4,16 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import dev.kyvora.api.agent.repository.AgentRepository;
 import dev.kyvora.api.auditlog.service.AuditLogService;
+import dev.kyvora.api.auth.security.AuthenticatedUser;
+import dev.kyvora.api.notification.dto.CreateNotificationCommand;
+import dev.kyvora.api.notification.entity.NotificationSeverity;
+import dev.kyvora.api.notification.service.NotificationService;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryCreateRequest;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryFilter;
 import dev.kyvora.api.serverinventory.dto.ServerInventoryResponse;
@@ -30,16 +35,19 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 	private final AgentRepository agentRepository;
 	private final ServerInventoryMapper mapper;
 	private final AuditLogService auditLogService;
+	private final NotificationService notificationService;
 
 	public DefaultServerInventoryService(
 			ServerInventoryRepository repository,
 			AgentRepository agentRepository,
 			ServerInventoryMapper mapper,
-			AuditLogService auditLogService) {
+			AuditLogService auditLogService,
+			NotificationService notificationService) {
 		this.repository = repository;
 		this.agentRepository = agentRepository;
 		this.mapper = mapper;
 		this.auditLogService = auditLogService;
+		this.notificationService = notificationService;
 	}
 
 	@Override
@@ -62,6 +70,11 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 		validateUniqueFields(request.hostname(), request.ipAddress(), null);
 		ServerInventory saved = repository.save(mapper.toEntity(request));
 		handleInventoryEvent(ServerInventoryChangedEvent.from(ServerInventoryEventType.SERVER_CREATED, saved));
+		notifyCurrentUser(
+				"Server created",
+				saved.getName() + " was added to inventory.",
+				NotificationSeverity.SUCCESS,
+				saved);
 		return mapper.toResponse(saved);
 	}
 
@@ -79,6 +92,11 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 	public void delete(UUID id) {
 		ServerInventory entity = getRequiredEntity(id);
 		handleInventoryEvent(ServerInventoryChangedEvent.from(ServerInventoryEventType.SERVER_DELETED, entity));
+		notifyCurrentUser(
+				"Server deleted",
+				entity.getName() + " was removed from inventory.",
+				NotificationSeverity.INFO,
+				entity);
 		repository.delete(entity);
 	}
 
@@ -88,6 +106,35 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 
 	private ServerInventory getRequiredEntity(UUID id) {
 		return repository.findById(id).orElseThrow(() -> new ServerInventoryNotFoundException(id));
+	}
+
+	private void notifyCurrentUser(
+			String title,
+			String message,
+			NotificationSeverity severity,
+			ServerInventory server) {
+		AuthenticatedUser principal = currentPrincipal();
+		if (principal == null) {
+			return;
+		}
+
+		notificationService.create(new CreateNotificationCommand(
+				principal.id(),
+				title,
+				message,
+				severity,
+				"SERVER",
+				server.getId().toString(),
+				"/servers/" + server.getId(),
+				true));
+	}
+
+	private AuthenticatedUser currentPrincipal() {
+		var authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser principal)) {
+			return null;
+		}
+		return principal;
 	}
 
 	private void validateUniqueFields(String hostname, String ipAddress, UUID id) {
