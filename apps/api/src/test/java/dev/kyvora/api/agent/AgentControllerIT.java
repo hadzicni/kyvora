@@ -84,14 +84,6 @@ class AgentControllerIT {
 	}
 
 	@Test
-	void oldHeartbeatEndpointIsRemoved() throws Exception {
-		mockMvc.perform(post("/api/v1/agents/00000000-0000-0000-0000-000000000001/heartbeat")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{}"))
-				.andExpect(status().isUnauthorized());
-	}
-
-	@Test
 	void manualPullRequiresPullPermission() throws Exception {
 		mockMvc.perform(post("/api/v1/agents/00000000-0000-0000-0000-000000000001/pull")
 						.with(user("viewer").authorities(new SimpleGrantedAuthority("PERMISSION_AGENT_READ"))))

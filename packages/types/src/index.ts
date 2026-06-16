@@ -20,8 +20,7 @@ export type UserPermission =
   | "SERVICE_DELETE"
   | "AGENT_READ"
   | "AGENT_ENROLL"
-  | "AGENT_CANCEL_ENROLLMENT"
-  | "AGENT_ROTATE_TOKEN"
+  | "AGENT_PULL"
   | "AGENT_DECOMMISSION";
 
 export type PermissionPreset = "ADMIN" | "OPERATOR" | "VIEWER";

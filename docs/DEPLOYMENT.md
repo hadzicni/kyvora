@@ -151,9 +151,9 @@ Do not use `localhost` for container-to-container traffic. In a container,
 
 The Compose files derive:
 
-- `SPRING_DATASOURCE_URL` from the PostgreSQL service name and database name.
-- `SPRING_DATASOURCE_USERNAME` from `POSTGRES_USER`.
-- `SPRING_DATASOURCE_PASSWORD` from `POSTGRES_PASSWORD`.
+- `KYVORA_DATASOURCE_URL` from the PostgreSQL service name and database name.
+- `KYVORA_DATASOURCE_USERNAME` from `POSTGRES_USER`.
+- `KYVORA_DATASOURCE_PASSWORD` from `POSTGRES_PASSWORD`.
 - `KYVORA_API_URL=http://api:8080` for server-side web calls.
 
 Users should not need to edit JDBC URLs or internal service hostnames.
@@ -257,9 +257,9 @@ These were discovered from the current code and configuration.
 Backend API:
 
 - `SPRING_PROFILES_ACTIVE`
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
+- `KYVORA_DATASOURCE_URL`
+- `KYVORA_DATASOURCE_USERNAME`
+- `KYVORA_DATASOURCE_PASSWORD`
 - `KYVORA_JWT_SECRET`
 - `KYVORA_JWT_ACCESS_TOKEN_TTL_SECONDS`
 - `KYVORA_REFRESH_TOKEN_TTL_SECONDS`
@@ -267,10 +267,7 @@ Backend API:
 Web dashboard:
 
 - `KYVORA_API_URL`
-- `API_BASE_URL`
-- `AUTH_URL`
 - `NEXTAUTH_URL`
-- `AUTH_SECRET`
 - `NEXTAUTH_SECRET`
 
 Docker users normally edit only:
@@ -282,6 +279,6 @@ Docker users normally edit only:
 - `KYVORA_VERSION`
 - `KYVORA_WEB_PORT`
 
-`API_BASE_URL`, `AUTH_URL`, and `AUTH_SECRET` remain supported for local
-compatibility, but the Docker examples use `KYVORA_API_URL`, `NEXTAUTH_URL`,
-and map `NEXTAUTH_SECRET` to `AUTH_SECRET` inside the web container.
+The web dashboard uses `KYVORA_API_URL`, `NEXTAUTH_URL`, and
+`NEXTAUTH_SECRET`. The backend uses `KYVORA_DATASOURCE_*` and
+`KYVORA_JWT_SECRET`.

@@ -261,10 +261,10 @@ password change on first login. Existing databases are left unchanged.
 Local web Auth.js configuration:
 
 ```env
-AUTH_SECRET=
+NEXTAUTH_SECRET=
 # Generate a local secret with: npx auth secret
-AUTH_URL=http://localhost:3000
-API_BASE_URL=http://localhost:8080
+NEXTAUTH_URL=http://localhost:3000
+KYVORA_API_URL=http://localhost:8080
 ```
 
 The web app uses Auth.js session cookies plus server-side proxy routes to talk
@@ -357,7 +357,7 @@ POST /actions/{actionName}
 X-Kyvora-Agent-Secret: <shared-secret>
 ```
 
-The agent does not push registration, heartbeats, status, or metrics to the
+The agent does not initiate registration, status, or metrics writes to the
 Kyvora API. The backend records `lastPullAt`, `lastSuccessfulPullAt`,
 `lastPullError`, capabilities, and agent status from pull attempts.
 
@@ -457,10 +457,10 @@ We will investigate and provide updates as quickly as possible.
 
 ### Supported Versions
 
-| Version        | Supported |
-| -------------- | --------- |
-| Latest         | ✅        |
-| Older versions | ❌        |
+| Version          | Supported |
+| ---------------- | --------- |
+| Latest           | Yes       |
+| Earlier versions | No        |
 
 ## Contributing
 

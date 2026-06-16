@@ -5,7 +5,7 @@ import { apiBaseUrl, authSecret, useSecureCookies } from "@/auth";
 
 function getSecret() {
   if (!authSecret) {
-    throw new Error("AUTH_SECRET must be set");
+    throw new Error("NEXTAUTH_SECRET must be set");
   }
 
   return authSecret;

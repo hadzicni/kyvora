@@ -3,7 +3,7 @@
 The Kyvora Agent exposes a small HTTP API on the managed server. The Kyvora API
 pulls health, capabilities, host facts, metrics, and service metadata from that
 local API over a secured channel. The agent does not register itself with
-Kyvora and does not push heartbeats or metrics.
+Kyvora and does not initiate status or metrics writes to the Kyvora API.
 
 The agent version is part of the single Kyvora product release version recorded
 in the repository root `VERSION` file.

@@ -30,9 +30,9 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8080
       KYVORA_JWT_SECRET: ${KYVORA_JWT_SECRET}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kyvora
-      SPRING_DATASOURCE_USERNAME: kyvora
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      KYVORA_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kyvora
+      KYVORA_DATASOURCE_USERNAME: kyvora
+      KYVORA_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "8080:8080"
     healthcheck:
@@ -53,8 +53,6 @@ services:
     environment:
       NODE_ENV: production
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      AUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      AUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       KYVORA_API_URL: http://api:8080
     ports:

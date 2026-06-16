@@ -34,7 +34,7 @@ const sessionCookieName = useSecureCookies
 
 function getSecret() {
   if (!authSecret) {
-    throw new Error("AUTH_SECRET must be set");
+    throw new Error("NEXTAUTH_SECRET must be set");
   }
 
   return authSecret;

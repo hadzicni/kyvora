@@ -110,7 +110,7 @@ class AgentOfflineDetectionServiceIT {
 	}
 
 	@Test
-	void unknownAgentIsNotChangedEvenWhenLastSeenIsOld() {
+	void unknownAgentIsNotChangedEvenWhenLastSeenIsStale() {
 		ServerInventory server = createServer("Node 04", "node04.example.com");
 		Agent agent = createAgent("Agent 04", "node04.example.com", AgentStatus.UNKNOWN, server, 120);
 

@@ -226,7 +226,7 @@ Expected local URLs:
 Local web proxy env example:
 
 ```env
-API_BASE_URL=http://localhost:8080
+KYVORA_API_URL=http://localhost:8080
 API_USERNAME=user
 API_PASSWORD=dev-password
 ```

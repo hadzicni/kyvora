@@ -34,7 +34,7 @@
 ### Added
 
 - Added interface translations to the web application.
-- Added role-based permission enforcement for authenticated users.
+- Added permission enforcement for authenticated users.
 - Added local font support for the web application.
 - Added local font support for the marketing website.
 
@@ -98,7 +98,7 @@
 
 ### Added
 
-- Added permission-based access control, replacing role-based authorization.
+- Added granular permission-based access control.
 - Added sidebar-integrated search bar and command palette.
 - Added a dedicated user menu component.
 
@@ -106,7 +106,7 @@
 
 - Modernized the login page, dashboard, and application shell.
 - Improved navigation and overall user experience.
-- Refactored the authorization system to use granular permissions.
+- Refactored authorization to use granular permissions.
 
 ### Fixed
 
@@ -133,7 +133,7 @@
 
 ### Changed
 
-- Replaced the previous push-based agent communication model with a pull-based agent API.
+- Added the pull-based agent API.
 - Consolidated shared utility usage across the codebase.
 - Improved service-related navigation and discovery in the web interface.
 

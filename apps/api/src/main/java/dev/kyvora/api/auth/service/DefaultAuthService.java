@@ -81,8 +81,8 @@ public class DefaultAuthService implements AuthService {
 
 	@Override
 	public RefreshResponse refresh(RefreshRequest request) {
-		RefreshToken oldToken = refreshTokenService.consume(request.refreshToken());
-		User user = oldToken.getUser();
+		RefreshToken consumedToken = refreshTokenService.consume(request.refreshToken());
+		User user = consumedToken.getUser();
 		String newRefreshToken = refreshTokenService.create(user);
 		auditLogService.recordAuthEvent(AuditEventType.TOKEN_REFRESHED, user.getId(), user.getEmail(), "Token refreshed");
 		return refreshResponse(user, newRefreshToken);
