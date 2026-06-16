@@ -158,3 +158,9 @@
 
 - Removed obsolete push-based agent registration, heartbeat, metrics, and token flows.
 - Removed the marketing website from the repository.
+
+## [0.6.1] - 2026-06-16
+
+### Fixed
+
+- Fixed Docker release builds by updating the web image Node.js base image and avoiding Alpine-related native dependency issues.
