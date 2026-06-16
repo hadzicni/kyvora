@@ -1,50 +1,169 @@
 # Kyvora Agent
 
-The Kyvora Agent exposes a small HTTP API on the managed server. The Kyvora API
-pulls health, capabilities, host facts, metrics, and service metadata from that
-local API over a secured channel. The agent does not register itself with
-Kyvora and does not initiate status or metrics writes to the Kyvora API.
+Kyvora Agent officially supports Linux with systemd only. Windows, macOS,
+launchd, Windows Service, and other service managers are not supported.
 
-The agent version is part of the single Kyvora product release version recorded
-in the repository root `VERSION` file.
+The agent exposes a small authenticated HTTP API on the managed Linux host.
+The Kyvora API pulls health, capabilities, host facts, metrics, and service
+metadata from that local API. The agent does not initiate registration, status,
+or metrics writes to the Kyvora API.
 
-## Pull-based operation
+The default listener is conservative: `127.0.0.1:9187`. If the Kyvora API runs
+on another host, bind the agent to a trusted private interface and protect the
+port with host or network firewall rules. Do not expose the agent port to the
+public internet.
 
-1. Start the agent on the managed server with a private listen address and a
-   shared secret.
-2. Create or select a server inventory entry in Kyvora.
-3. Configure an agent connection record with the agent base URL and shared
-   secret.
-4. Use Pull now or the backend polling flow to retrieve the latest agent state.
+## Build
 
-Example:
+Build release-style Linux binaries from the repository root:
 
 ```bash
-KYVORA_AGENT_LISTEN_ADDRESS=127.0.0.1 \
-KYVORA_AGENT_LISTEN_PORT=9288 \
-KYVORA_AGENT_SHARED_SECRET=<shared-secret> \
-npm run dev:agent
+scripts/build-agent.sh
 ```
 
-The agent port is sensitive. Bind it to localhost or a trusted private
-interface unless the deployment adds stronger protection such as mTLS and
-network policy. Never expose the agent port directly to the public internet.
+The script writes:
+
+```text
+apps/agent/dist/kyvora-agent-linux-amd64
+apps/agent/dist/kyvora-agent-linux-arm64
+```
+
+## Install As A Service
+
+Prerequisites:
+
+- Linux
+- systemd
+- root or sudo access
+- a prebuilt binary from `scripts/build-agent.sh`, or Go installed so the
+  installer can build from source
+
+Install:
+
+```bash
+sudo scripts/install-agent.sh
+```
+
+The installer is Linux-only and fails clearly when systemd is unavailable. It
+creates or updates:
+
+```text
+/usr/local/bin/kyvora-agent
+/etc/kyvora/agent.yaml
+/etc/kyvora/agent.secret
+/etc/systemd/system/kyvora-agent.service
+```
+
+It also creates the unprivileged `kyvora-agent` system user and group. Existing
+config and secret files are preserved during upgrades.
 
 ## Configuration
 
-```env
-KYVORA_AGENT_LISTEN_ADDRESS=127.0.0.1
-KYVORA_AGENT_LISTEN_PORT=9288
-KYVORA_AGENT_SHARED_SECRET=<shared-secret>
-KYVORA_AGENT_NAME=local-agent
-KYVORA_AGENT_HOSTNAME=<os-hostname>
-KYVORA_AGENT_READ_TIMEOUT_SECONDS=5
-KYVORA_AGENT_WRITE_TIMEOUT_SECONDS=5
-KYVORA_AGENT_SHUTDOWN_TIMEOUT_SECONDS=5
+The systemd service starts the agent with:
+
+```bash
+/usr/local/bin/kyvora-agent --config /etc/kyvora/agent.yaml
 ```
 
-`KYVORA_AGENT_SHARED_SECRET` is required. It is checked on every request using
-the `X-Kyvora-Agent-Secret` header. The agent never logs the shared secret.
+Default config:
+
+```yaml
+server:
+  listenAddress: "127.0.0.1"
+  listenPort: 9187
+
+security:
+  sharedSecretFile: "/etc/kyvora/agent.secret"
+
+logging:
+  level: "info"
+```
+
+Optional fields:
+
+```yaml
+server:
+  hostname: "node01.example.internal"
+  id: "server-inventory-id"
+  enabledCapabilities: ["health", "capabilities", "system", "metrics", "services"]
+
+agent:
+  name: "node01-agent"
+  version: "0.1.0"
+
+timeouts:
+  readSeconds: 5
+  writeSeconds: 10
+  shutdownSeconds: 5
+```
+
+Edit the config and restart:
+
+```bash
+sudo nano /etc/kyvora/agent.yaml
+sudo systemctl restart kyvora-agent
+```
+
+## Secret Handling
+
+The shared secret is stored in:
+
+```text
+/etc/kyvora/agent.secret
+```
+
+The installer generates this file if missing and does not print the secret.
+Default permissions are:
+
+```text
+/etc/kyvora              root:kyvora-agent 0750
+/etc/kyvora/agent.yaml   root:kyvora-agent 0640
+/etc/kyvora/agent.secret root:kyvora-agent 0640
+```
+
+Rotate the secret:
+
+```bash
+sudo sh -c 'umask 027 && openssl rand -base64 48 > /etc/kyvora/agent.secret'
+sudo chown root:kyvora-agent /etc/kyvora/agent.secret
+sudo chmod 0640 /etc/kyvora/agent.secret
+sudo systemctl restart kyvora-agent
+```
+
+Then update the agent connection secret in Kyvora. The secret is required on
+every HTTP request through the `X-Kyvora-Agent-Secret` header. It is never
+returned by the agent API.
+
+## Service Operations
+
+```bash
+sudo systemctl status kyvora-agent
+sudo systemctl stop kyvora-agent
+sudo systemctl start kyvora-agent
+sudo systemctl restart kyvora-agent
+sudo journalctl -u kyvora-agent -f
+```
+
+Logs go to journald.
+
+## Connect To Kyvora
+
+In the Kyvora web UI, create or select a server inventory entry and configure
+an agent connection with:
+
+- scheme: `http`
+- host: the Linux host or private interface address reachable by the Kyvora API
+- port: the configured `listenPort`, default `9187`
+- secret: the contents of `/etc/kyvora/agent.secret`
+
+If the API runs on the same host as the agent, use:
+
+```text
+http://127.0.0.1:9187
+```
+
+If the API runs on another host, change `listenAddress` to a private interface
+address and restrict inbound traffic to trusted Kyvora API hosts.
 
 ## HTTP API
 
@@ -60,6 +179,8 @@ POST /actions/{actionName}
 X-Kyvora-Agent-Secret: <shared-secret>
 ```
 
+Missing or invalid authentication returns `401`.
+
 `/system` returns the latest host facts snapshot when available:
 
 - hostname
@@ -74,11 +195,51 @@ X-Kyvora-Agent-Secret: <shared-secret>
 - agent version
 - collection timestamp
 
-Host facts are latest inventory snapshots, not metrics history. The agent does
-not collect secrets, environment variables, process lists, usernames, or file
-contents. Collection is best-effort on Linux and macOS; unsupported facts are
-omitted from the response. Other platforms degrade gracefully.
+The agent does not collect secrets, environment variables, process lists,
+usernames, or file contents.
 
-`POST /actions/{actionName}` is intentionally limited to predefined actions.
-The initial implementation returns an unsupported-action response and does not
-offer arbitrary shell execution.
+## Uninstall
+
+Remove the service and binary while preserving config and secrets:
+
+```bash
+sudo scripts/uninstall-agent.sh
+```
+
+Remove config and secret files explicitly:
+
+```bash
+sudo scripts/uninstall-agent.sh --purge-config
+```
+
+The uninstaller only targets the Kyvora Agent service unit, binary, and
+optionally `/etc/kyvora/agent.yaml` plus `/etc/kyvora/agent.secret`.
+
+## Troubleshooting
+
+Check service state:
+
+```bash
+sudo systemctl status kyvora-agent
+```
+
+Follow logs:
+
+```bash
+sudo journalctl -u kyvora-agent -f
+```
+
+Validate config permissions:
+
+```bash
+sudo ls -l /etc/kyvora/agent.yaml /etc/kyvora/agent.secret
+```
+
+Common issues:
+
+- `systemd does not appear to be running`: install on a Linux host booted with
+  systemd.
+- `shared secret is required`: ensure `/etc/kyvora/agent.secret` exists and is
+  readable by the `kyvora-agent` group.
+- Kyvora cannot pull the agent: verify `listenAddress`, firewall rules, the
+  configured URL, and the shared secret.

@@ -213,15 +213,19 @@ npm run dev:api
 
 #### Start the Go agent
 
-Start the agent on a private interface, then configure the agent base URL and
-shared secret for a server inventory entry in the web UI:
+For local development only, start the Linux agent on a private interface, then
+configure the agent base URL and shared secret for a server inventory entry in
+the web UI:
 
 ```bash
 KYVORA_AGENT_LISTEN_ADDRESS=127.0.0.1 \
-KYVORA_AGENT_LISTEN_PORT=9288 \
+KYVORA_AGENT_LISTEN_PORT=9187 \
 KYVORA_AGENT_SHARED_SECRET=<shared-secret> \
 npm run dev:agent
 ```
+
+For service installation on Linux with systemd, use
+[`apps/agent/README.md`](./apps/agent/README.md).
 
 ### Useful local URLs:
 
@@ -282,11 +286,11 @@ store `KYVORA_JWT_SECRET`, database credentials, Auth.js secrets, or agent
 shared secrets in system settings. Agent shared secrets are accepted when
 configuring the connection and are never returned by API responses.
 
-Local agent configuration:
+Local development agent configuration:
 
 ```env
 KYVORA_AGENT_LISTEN_ADDRESS=127.0.0.1
-KYVORA_AGENT_LISTEN_PORT=9288
+KYVORA_AGENT_LISTEN_PORT=9187
 KYVORA_AGENT_SHARED_SECRET=<shared-secret>
 ```
 
@@ -299,8 +303,7 @@ facts are available. This includes basic operating system, architecture, CPU,
 memory, disk, uptime, IP address, and agent version information. These facts
 are latest snapshots, not metrics history. The agent does not collect secrets,
 environment variables, process lists, usernames, or file contents. Collection
-is best-effort on Linux and macOS, and unsupported platforms degrade
-gracefully.
+is supported on Linux only.
 
 ## Usage
 
@@ -345,6 +348,9 @@ Kyvora uses a pull-based agent architecture. The agent exposes a secured local
 HTTP API, and the Kyvora API calls that agent API to retrieve health,
 capabilities, system information, metrics, and service information.
 
+Kyvora Agent officially supports Linux with systemd only. Windows, macOS,
+launchd, Windows Service, and other service managers are not supported.
+
 Supported initial agent endpoints:
 
 ```text
@@ -361,7 +367,8 @@ The agent does not initiate registration, status, or metrics writes to the
 Kyvora API. The backend records `lastPullAt`, `lastSuccessfulPullAt`,
 `lastPullError`, capabilities, and agent status from pull attempts.
 
-1. Start the agent with `KYVORA_AGENT_LISTEN_ADDRESS`,
+1. Install the agent as a Linux systemd service, or run it locally for
+   development with `KYVORA_AGENT_LISTEN_ADDRESS`,
    `KYVORA_AGENT_LISTEN_PORT`, and `KYVORA_AGENT_SHARED_SECRET`.
 2. Log in to the web dashboard.
 3. Create or select an existing server inventory entry.

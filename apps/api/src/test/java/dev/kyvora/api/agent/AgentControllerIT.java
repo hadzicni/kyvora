@@ -75,11 +75,11 @@ class AgentControllerIT {
 						.content(objectMapper.writeValueAsString(Map.of(
 								"serverId", server.getId(),
 								"name", "Node Agent",
-								"baseUrl", "http://10.0.0.10:9288",
+								"baseUrl", "http://10.0.0.10:9187",
 								"sharedSecret", "very-secret-value"))))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.status", is("UNKNOWN")))
-				.andExpect(jsonPath("$.baseUrl", is("http://10.0.0.10:9288")))
+				.andExpect(jsonPath("$.baseUrl", is("http://10.0.0.10:9187")))
 				.andExpect(jsonPath("$.sharedSecret").doesNotExist());
 	}
 

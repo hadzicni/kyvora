@@ -61,6 +61,9 @@ type ActionResponse struct {
 }
 
 func NewServer(cfg Config, logger *slog.Logger) *Server {
+	if len(cfg.Capabilities) == 0 {
+		cfg.Capabilities = defaultCapabilities()
+	}
 	return &Server{cfg: cfg, logger: logger}
 }
 
@@ -131,7 +134,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) handleCapabilities(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, CapabilityResponse{
 		Version:     s.cfg.Version,
-		Supports:    []string{"health", "capabilities", "system", "metrics", "services"},
+		Supports:    s.cfg.Capabilities,
 		GeneratedAt: time.Now().UTC(),
 	})
 }

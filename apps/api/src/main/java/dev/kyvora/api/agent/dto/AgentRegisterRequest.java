@@ -16,7 +16,7 @@ public record AgentRegisterRequest(
 		@Size(min = 2, max = 120)
 		String name,
 
-		@Schema(description = "Agent base URL used by the Kyvora API when pulling data.", example = "http://10.0.0.15:9288", minLength = 8, maxLength = 512)
+		@Schema(description = "Agent base URL used by the Kyvora API when pulling data.", example = "http://10.0.0.15:9187", minLength = 8, maxLength = 512)
 		@NotNull
 		@Size(min = 8, max = 512)
 		String baseUrl,

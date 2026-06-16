@@ -152,7 +152,7 @@ class AgentOfflineDetectionServiceIT {
 			AgentStatus status,
 			ServerInventory server,
 			long lastSeenSecondsAgo) {
-		Agent agent = new Agent(name, hostname, "0.1.0", status, server, "http://10.0.0.10:9288", "agent-secret");
+		Agent agent = new Agent(name, hostname, "0.1.0", status, server, "http://10.0.0.10:9187", "agent-secret");
 		agent.setLastSeenAt(Instant.now().minusSeconds(lastSeenSecondsAgo));
 		agent.setLastSuccessfulPullAt(Instant.now().minusSeconds(lastSeenSecondsAgo));
 		return agentRepository.save(agent);

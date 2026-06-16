@@ -26,7 +26,7 @@ public record AgentResponse(
 		AgentStatus status,
 		@Schema(description = "Time when Kyvora last successfully saw this agent online.", example = "2026-06-08T10:00:00Z")
 		Instant lastSeenAt,
-		@Schema(description = "Agent base URL used for pull requests. The shared secret is never returned.", example = "http://10.0.0.15:9288")
+		@Schema(description = "Agent base URL used for pull requests. The shared secret is never returned.", example = "http://10.0.0.15:9187")
 		String baseUrl,
 		@Schema(description = "Whether pull attempts are enabled for this agent.", example = "true")
 		boolean pullEnabled,

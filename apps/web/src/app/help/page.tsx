@@ -171,7 +171,7 @@ export default function HelpPage() {
                   </GuidanceItem>
                 </div>
                 <CodeBlock>{`KYVORA_AGENT_LISTEN_ADDRESS=127.0.0.1
-KYVORA_AGENT_LISTEN_PORT=9288
+KYVORA_AGENT_LISTEN_PORT=9187
 KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
                 <p className="text-sm leading-6 text-muted-foreground">
                   Agent status becomes ONLINE after a successful pull. The

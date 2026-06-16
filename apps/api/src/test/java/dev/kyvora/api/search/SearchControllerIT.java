@@ -167,7 +167,7 @@ class SearchControllerIT {
 				"test",
 				AgentStatus.ONLINE,
 				server,
-				"http://10.0.0.10:9288",
+				"http://10.0.0.10:9187",
 				"agent-secret"));
 	}
 

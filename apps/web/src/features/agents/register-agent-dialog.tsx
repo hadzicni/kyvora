@@ -55,7 +55,7 @@ function defaultRegisterAgentValues(
   return {
     serverId: server?.id ?? "",
     name: server ? `${server.name} Agent` : "",
-    baseUrl: server ? `http://${server.ipAddress}:9288` : "http://127.0.0.1:9288",
+    baseUrl: server ? `http://${server.ipAddress}:9187` : "http://127.0.0.1:9187",
     sharedSecret: "",
   };
 }
@@ -169,7 +169,7 @@ export function RegisterAgentDialog({
         shouldDirty: true,
         shouldValidate: true,
       });
-      setValue("baseUrl", `http://${server.ipAddress}:9288`, {
+      setValue("baseUrl", `http://${server.ipAddress}:9187`, {
         shouldDirty: true,
         shouldValidate: true,
       });
@@ -277,7 +277,7 @@ export function RegisterAgentDialog({
           >
             <Input
               id="register-agent-url"
-              placeholder="http://10.0.0.15:9288"
+              placeholder="http://10.0.0.15:9187"
               aria-invalid={Boolean(errors.baseUrl)}
               {...register("baseUrl")}
             />

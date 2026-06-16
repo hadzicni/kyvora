@@ -1,6 +1,10 @@
 package agent
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestLoadConfigDefaults(t *testing.T) {
 	env := map[string]string{
@@ -78,5 +82,104 @@ func TestLoadConfigRequiresSharedSecret(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("loadConfig returned nil error")
+	}
+}
+
+func TestLoadConfigFile(t *testing.T) {
+	dir := t.TempDir()
+	secretPath := filepath.Join(dir, "agent.secret")
+	configPath := filepath.Join(dir, "agent.yaml")
+
+	if err := os.WriteFile(secretPath, []byte("file-secret\n"), 0o640); err != nil {
+		t.Fatalf("write secret: %v", err)
+	}
+	if err := os.WriteFile(configPath, []byte(`
+server:
+  listenAddress: "127.0.0.1"
+  listenPort: 9187
+  hostname: "node01.example.test"
+  id: "server-01"
+
+security:
+  sharedSecretFile: "`+secretPath+`"
+
+logging:
+  level: "debug"
+
+agent:
+  name: "node-agent"
+  version: "1.2.3"
+  enabledCapabilities: ["health", "system"]
+`), 0o640); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cfg, err := loadConfigFile(configPath, func() (string, error) {
+		return "ignored-host", nil
+	})
+	if err != nil {
+		t.Fatalf("loadConfigFile returned error: %v", err)
+	}
+
+	if cfg.Name != "node-agent" ||
+		cfg.Hostname != "node01.example.test" ||
+		cfg.ServerID != "server-01" ||
+		cfg.Version != "1.2.3" ||
+		cfg.ListenAddress != "127.0.0.1" ||
+		cfg.ListenPort != 9187 ||
+		cfg.SharedSecret != "file-secret" ||
+		cfg.LogLevel != "debug" {
+		t.Fatalf("config file values were not applied: %#v", cfg)
+	}
+	if len(cfg.Capabilities) != 2 || cfg.Capabilities[0] != "health" || cfg.Capabilities[1] != "system" {
+		t.Fatalf("Capabilities = %#v, want health/system", cfg.Capabilities)
+	}
+}
+
+func TestLoadConfigFileRequiresSharedSecretFile(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "agent.yaml")
+
+	if err := os.WriteFile(configPath, []byte(`
+server:
+  listenAddress: "127.0.0.1"
+  listenPort: 9187
+`), 0o640); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	_, err := loadConfigFile(configPath, func() (string, error) {
+		return "test-host", nil
+	})
+	if err == nil {
+		t.Fatal("loadConfigFile returned nil error")
+	}
+}
+
+func TestLoadConfigFileRejectsInvalidLogLevel(t *testing.T) {
+	dir := t.TempDir()
+	secretPath := filepath.Join(dir, "agent.secret")
+	configPath := filepath.Join(dir, "agent.yaml")
+
+	if err := os.WriteFile(secretPath, []byte("file-secret\n"), 0o640); err != nil {
+		t.Fatalf("write secret: %v", err)
+	}
+	if err := os.WriteFile(configPath, []byte(`
+server:
+  listenAddress: "127.0.0.1"
+  listenPort: 9187
+security:
+  sharedSecretFile: "`+secretPath+`"
+logging:
+  level: "trace"
+`), 0o640); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	_, err := loadConfigFile(configPath, func() (string, error) {
+		return "test-host", nil
+	})
+	if err == nil {
+		t.Fatal("loadConfigFile returned nil error")
 	}
 }
