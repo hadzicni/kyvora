@@ -351,6 +351,23 @@ capabilities, system information, metrics, and service information.
 Kyvora Agent officially supports Linux with systemd only. Windows, macOS,
 launchd, Windows Service, and other service managers are not supported.
 
+Install the latest released Linux agent:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/install-agent.sh | sudo bash
+```
+
+Install a specific released version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/install-agent.sh | sudo KYVORA_AGENT_VERSION=v1.0.0 bash
+```
+
+The installer downloads `kyvora-agent-linux-amd64` or
+`kyvora-agent-linux-arm64` from GitHub Releases, installs the systemd service,
+and preserves existing `/etc/kyvora/agent.yaml` and
+`/etc/kyvora/agent.secret` during upgrades.
+
 Supported initial agent endpoints:
 
 ```text

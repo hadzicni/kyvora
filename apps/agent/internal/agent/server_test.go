@@ -59,7 +59,7 @@ func testServerConfig() Config {
 	return Config{
 		Name:            defaultAgentName,
 		Hostname:        "node01.example.test",
-		Version:         "0.1.0",
+		Version:         defaultAgentVersion,
 		ListenAddress:   defaultListenAddress,
 		ListenPort:      defaultListenPort,
 		SharedSecret:    "agent-secret",

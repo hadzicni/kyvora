@@ -13,6 +13,10 @@ listen_address="127.0.0.1"
 listen_port="9187"
 temp_binary=""
 source_binary=""
+github_repo="${KYVORA_GITHUB_REPO:-hadzicni/kyvora}"
+release_version="${KYVORA_AGENT_VERSION:-}"
+local_binary=""
+downloaded_from=""
 
 cleanup() {
   if [ -n "$temp_binary" ] && [ -f "$temp_binary" ]; then
@@ -20,6 +24,22 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
+
+usage() {
+  cat <<EOF
+Usage: sudo scripts/install-agent.sh [--version <tag>] [--local <path>]
+
+Options:
+  --version <tag>  Install from a specific GitHub Release tag, for example v1.0.0.
+                   Defaults to the latest GitHub Release.
+  --local <path>   Install an explicit local kyvora-agent binary for development.
+  -h, --help       Show this help.
+
+Environment:
+  KYVORA_AGENT_VERSION=<tag>       Same as --version.
+  KYVORA_GITHUB_REPO=owner/repo    Defaults to hadzicni/kyvora.
+EOF
+}
 
 fail() {
   echo "ERROR: $*" >&2
@@ -30,6 +50,35 @@ require_command() {
   local command_name="$1"
 
   command -v "$command_name" >/dev/null 2>&1 || fail "Required command not found: $command_name"
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --version)
+        [ "$#" -ge 2 ] || fail "--version requires a tag value"
+        release_version="$2"
+        shift
+        ;;
+      --local)
+        [ "$#" -ge 2 ] || fail "--local requires a binary path"
+        local_binary="$2"
+        shift
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        fail "Unknown argument: $1"
+        ;;
+    esac
+    shift
+  done
+
+  if [ -n "$release_version" ] && [ -n "$local_binary" ]; then
+    fail "Use either --version/KYVORA_AGENT_VERSION or --local, not both."
+  fi
 }
 
 require_linux_systemd() {
@@ -56,43 +105,77 @@ detect_arch() {
   esac
 }
 
-repo_root() {
-  cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd
+download_base_url() {
+  if [ -n "$release_version" ]; then
+    printf 'https://github.com/%s/releases/download/%s\n' "$github_repo" "$release_version"
+  else
+    printf 'https://github.com/%s/releases/latest/download\n' "$github_repo"
+  fi
 }
 
-find_or_build_binary() {
+download_file() {
+  local url="$1"
+  local destination="$2"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url" -o "$destination"
+    return
+  fi
+  if command -v wget >/dev/null 2>&1; then
+    wget -qO "$destination" "$url"
+    return
+  fi
+  fail "curl or wget is required to download Kyvora Agent release assets."
+}
+
+download_release_binary() {
   local arch="$1"
-  local root
-  root="$(repo_root)"
+  local asset_name="kyvora-agent-linux-$arch"
+  local base_url
+  local binary_url
+  local checksum_url
+  local checksum_file
 
-  if [ "${KYVORA_AGENT_BINARY:-}" != "" ]; then
-    [ -f "$KYVORA_AGENT_BINARY" ] || fail "KYVORA_AGENT_BINARY does not exist: $KYVORA_AGENT_BINARY"
-    source_binary="$KYVORA_AGENT_BINARY"
-    return
-  fi
+  base_url="$(download_base_url)"
+  binary_url="$base_url/$asset_name"
+  checksum_url="$base_url/checksums.txt"
+  temp_binary="$(mktemp "/tmp/kyvora-agent-$arch.XXXXXX")"
+  checksum_file="$(mktemp "/tmp/kyvora-agent-checksums.XXXXXX")"
 
-  for candidate in \
-    "$root/apps/agent/dist/kyvora-agent-linux-$arch" \
-    "$root/dist/kyvora-agent-linux-$arch" \
-    "$root/kyvora-agent-linux-$arch"; do
-    if [ -f "$candidate" ]; then
-      source_binary="$candidate"
-      return
+  echo "Downloading $asset_name from GitHub Releases."
+  download_file "$binary_url" "$temp_binary"
+
+  [ -s "$temp_binary" ] || fail "Downloaded agent binary is empty: $binary_url"
+
+  if command -v sha256sum >/dev/null 2>&1; then
+    if download_file "$checksum_url" "$checksum_file"; then
+      if grep -E "[[:space:]]$asset_name$" "$checksum_file" >/dev/null 2>&1; then
+        (
+          cd "$(dirname "$temp_binary")"
+          grep -E "[[:space:]]$asset_name$" "$checksum_file" | sed "s#$asset_name#$(basename "$temp_binary")#" | sha256sum -c -
+        ) >/dev/null
+        echo "Checksum verified for $asset_name."
+      else
+        echo "WARNING: checksums.txt did not contain $asset_name; skipping checksum verification." >&2
+      fi
+    else
+      echo "WARNING: checksums.txt was not available; skipping checksum verification." >&2
     fi
-  done
-
-  if [ -d "$root/apps/agent" ] && command -v go >/dev/null 2>&1; then
-    temp_binary="$(mktemp "/tmp/kyvora-agent-$arch.XXXXXX")"
-    echo "No prebuilt agent binary found; building linux/$arch from source."
-    (
-      cd "$root/apps/agent"
-      CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -o "$temp_binary" ./cmd/kyvora-agent
-    )
-    source_binary="$temp_binary"
-    return
+  else
+    echo "WARNING: sha256sum is not available; skipping checksum verification." >&2
   fi
 
-  fail "No agent binary found. Run scripts/build-agent.sh first or set KYVORA_AGENT_BINARY=/path/to/kyvora-agent-linux-$arch."
+  chmod 0755 "$temp_binary"
+  source_binary="$temp_binary"
+  downloaded_from="$binary_url"
+  rm -f "$checksum_file"
+}
+
+use_local_binary() {
+  [ -f "$local_binary" ] || fail "Local agent binary does not exist: $local_binary"
+  [ -s "$local_binary" ] || fail "Local agent binary is empty: $local_binary"
+  source_binary="$local_binary"
+  downloaded_from="local file $local_binary"
 }
 
 create_user_and_group() {
@@ -214,10 +297,15 @@ read_config_value() {
   ' "$config_file"
 }
 
+parse_args "$@"
 require_root
 require_linux_systemd
 arch="$(detect_arch)"
-find_or_build_binary "$arch"
+if [ -n "$local_binary" ]; then
+  use_local_binary
+else
+  download_release_binary "$arch"
+fi
 
 create_user_and_group
 create_config_dir
@@ -237,6 +325,7 @@ configured_port="$(read_config_value listenPort)"
 echo
 echo "Kyvora Agent installed as a systemd service."
 echo "Service: $service_name"
+echo "Binary source: $downloaded_from"
 echo "Config: $config_file"
 echo "Secret: $secret_file (not printed)"
 echo "Listen address: ${configured_address:-$listen_address}"

@@ -13,6 +13,7 @@ const (
 	defaultAgentName       = "local-agent"
 	defaultListenAddress   = "127.0.0.1"
 	defaultListenPort      = 9187
+	defaultAgentVersion    = "dev"
 	defaultReadTimeout     = 5 * time.Second
 	defaultWriteTimeout    = 10 * time.Second
 	defaultShutdownTimeout = 5 * time.Second
@@ -51,7 +52,7 @@ func loadConfig(getenv func(string) string, hostname func() (string, error)) (Co
 	cfg := Config{
 		Name:            envOrDefault(getenv, "KYVORA_AGENT_NAME", defaultAgentName),
 		Hostname:        envOrDefault(getenv, "KYVORA_AGENT_HOSTNAME", osHostname),
-		Version:         envOrDefault(getenv, "KYVORA_AGENT_VERSION", "0.1.0"),
+		Version:         envOrDefault(getenv, "KYVORA_AGENT_VERSION", defaultAgentVersion),
 		ListenAddress:   envOrDefault(getenv, "KYVORA_AGENT_LISTEN_ADDRESS", defaultListenAddress),
 		ListenPort:      defaultListenPort,
 		SharedSecret:    getenv("KYVORA_AGENT_SHARED_SECRET"),
@@ -116,7 +117,7 @@ func loadConfigFile(path string, hostname func() (string, error)) (Config, error
 		Name:            valueOrDefault(values["agent.name"], defaultAgentName),
 		Hostname:        valueOrDefault(values["server.hostname"], valueOrDefault(values["agent.hostname"], osHostname)),
 		ServerID:        values["server.id"],
-		Version:         valueOrDefault(values["agent.version"], "0.1.0"),
+		Version:         valueOrDefault(values["agent.version"], defaultAgentVersion),
 		ListenAddress:   valueOrDefault(values["server.listenAddress"], defaultListenAddress),
 		ListenPort:      defaultListenPort,
 		LogLevel:        valueOrDefault(values["logging.level"], defaultLogLevel),

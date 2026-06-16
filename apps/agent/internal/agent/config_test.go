@@ -23,8 +23,8 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if cfg.Hostname != "test-host" {
 		t.Fatalf("Hostname = %q, want test-host", cfg.Hostname)
 	}
-	if cfg.Version != "0.1.0" {
-		t.Fatalf("Version = %q, want 0.1.0", cfg.Version)
+	if cfg.Version != defaultAgentVersion {
+		t.Fatalf("Version = %q, want %q", cfg.Version, defaultAgentVersion)
 	}
 	if cfg.ListenAddress != defaultListenAddress || cfg.ListenPort != defaultListenPort {
 		t.Fatalf("listen = %s:%d, want %s:%d", cfg.ListenAddress, cfg.ListenPort, defaultListenAddress, defaultListenPort)

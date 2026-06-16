@@ -13,7 +13,21 @@ on another host, bind the agent to a trusted private interface and protect the
 port with host or network firewall rules. Do not expose the agent port to the
 public internet.
 
-## Build
+## Release Binaries
+
+Kyvora releases publish Linux agent binaries as GitHub Release assets:
+
+```text
+kyvora-agent-linux-amd64
+kyvora-agent-linux-arm64
+checksums.txt
+```
+
+The installer downloads the correct binary for the host architecture from
+GitHub Releases and verifies it with `checksums.txt` when `sha256sum` is
+available.
+
+## Build Locally
 
 Build release-style Linux binaries from the repository root:
 
@@ -26,7 +40,11 @@ The script writes:
 ```text
 apps/agent/dist/kyvora-agent-linux-amd64
 apps/agent/dist/kyvora-agent-linux-arm64
+apps/agent/dist/checksums.txt
 ```
+
+Local binaries are for development and manual testing. They are not committed
+to the repository.
 
 ## Install As A Service
 
@@ -35,17 +53,38 @@ Prerequisites:
 - Linux
 - systemd
 - root or sudo access
-- a prebuilt binary from `scripts/build-agent.sh`, or Go installed so the
-  installer can build from source
+- `curl` or `wget`
+- `openssl`
 
-Install:
+Install the latest released agent:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/install-agent.sh | sudo bash
+```
+
+Install a specific release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/install-agent.sh | sudo KYVORA_AGENT_VERSION=v1.0.0 bash
+```
+
+From a cloned repository, the equivalent commands are:
 
 ```bash
 sudo scripts/install-agent.sh
+sudo scripts/install-agent.sh --version v1.0.0
+```
+
+Development-only local binary install:
+
+```bash
+scripts/build-agent.sh
+sudo scripts/install-agent.sh --local ./apps/agent/dist/kyvora-agent-linux-amd64
 ```
 
 The installer is Linux-only and fails clearly when systemd is unavailable. It
-creates or updates:
+detects `linux/amd64` and `linux/arm64`, downloads the matching release asset,
+and creates or updates:
 
 ```text
 /usr/local/bin/kyvora-agent
@@ -56,6 +95,16 @@ creates or updates:
 
 It also creates the unprivileged `kyvora-agent` system user and group. Existing
 config and secret files are preserved during upgrades.
+
+Upgrade by rerunning the installer. Without a version, it installs the latest
+GitHub Release. With `KYVORA_AGENT_VERSION` or `--version`, it installs that
+specific tag.
+
+Check the installed binary version:
+
+```bash
+/usr/local/bin/kyvora-agent --version
+```
 
 ## Configuration
 

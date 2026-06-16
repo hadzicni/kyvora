@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -13,15 +14,26 @@ import (
 	"dev.kyvora/agent/internal/agent"
 )
 
+var version = "dev"
+
 func main() {
 	configPath := flag.String("config", "", "Path to the Kyvora Agent YAML config file")
+	showVersion := flag.Bool("version", false, "Print the Kyvora Agent version")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("kyvora-agent", version)
+		return
+	}
 
 	cfg, err := loadConfig(*configPath)
 	if err != nil {
 		logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 		logger.Error("configuration error", "error", err)
 		os.Exit(1)
+	}
+	if cfg.Version == "" || cfg.Version == "dev" {
+		cfg.Version = version
 	}
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
