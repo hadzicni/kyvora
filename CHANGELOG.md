@@ -140,3 +140,21 @@
 ### Fixed
 
 - Added missing `next-intl` integration to additional web pages.
+
+## [0.6.0] - 2026-06-16
+
+### Added
+
+- Added Linux-only systemd installation support for the Kyvora Agent.
+- Added GitHub Release binaries for the Kyvora Agent on `linux/amd64` and `linux/arm64`.
+
+### Changed
+
+- Replaced the old push-based agent architecture with the new pull-based agent model.
+- Updated agent configuration, documentation, and install flow for Linux systemd usage.
+- Removed legacy compatibility code across the project.
+
+### Removed
+
+- Removed obsolete push-based agent registration, heartbeat, metrics, and token flows.
+- Removed the marketing website from the repository.
