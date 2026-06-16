@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import dev.kyvora.api.agent.event.AgentChangedEvent;
 import dev.kyvora.api.auditlog.dto.AuditLogFilter;
 import dev.kyvora.api.auditlog.dto.AuditLogResponse;
 import dev.kyvora.api.auditlog.entity.AuditEventType;
@@ -18,8 +19,6 @@ import dev.kyvora.api.auditlog.entity.AuditLog;
 import dev.kyvora.api.auditlog.mapper.AuditLogMapper;
 import dev.kyvora.api.auditlog.repository.AuditLogRepository;
 import dev.kyvora.api.auditlog.repository.AuditLogSpecifications;
-import dev.kyvora.api.agent.event.AgentChangedEvent;
-import dev.kyvora.api.agent.event.AgentEventType;
 import dev.kyvora.api.auth.security.CurrentUserProvider;
 import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
 
