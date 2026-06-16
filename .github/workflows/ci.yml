@@ -38,30 +38,6 @@ jobs:
       - name: Build web
         run: npm run build -w apps/web
 
-  website:
-    name: Website
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint website
-        run: npm run lint -w apps/website
-
-      - name: Build website
-        run: npm run build -w apps/website
-
   api:
     name: API
     runs-on: ubuntu-latest

@@ -29,7 +29,7 @@ do not include vulnerability details in that issue.
 Please include:
 
 - A clear description of the vulnerability.
-- Affected component or area, such as API, web dashboard, website, agent, auth,
+- Affected component or area, such as API, web dashboard, agent, auth,
   RBAC, token handling, audit logging, monitoring, or deployment configuration.
 - Steps to reproduce, proof of concept, or relevant logs where safe to share.
 - Expected impact and any known prerequisites.

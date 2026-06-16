@@ -8,7 +8,6 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/package.json
-COPY apps/website/package.json ./apps/website/package.json
 COPY packages/config/package.json ./packages/config/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/types/package.json ./packages/types/package.json

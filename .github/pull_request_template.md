@@ -15,7 +15,6 @@ Describe what this pull request changes and why.
 ## Area
 
 - [ ] Web dashboard
-- [ ] Marketing website
 - [ ] API
 - [ ] Agent
 - [ ] Infrastructure

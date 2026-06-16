@@ -19,7 +19,6 @@ abstractions, or unrelated feature work in the same pull request.
 ```text
 apps/
   web       Authenticated Kyvora dashboard app
-  website   Public marketing website
   api       Spring Boot backend
   agent     Go agent
 
@@ -62,7 +61,6 @@ Run specific services:
 
 ```bash
 npm run dev:web
-npm run dev:website
 npm run dev:api
 npm run dev:agent
 ```
