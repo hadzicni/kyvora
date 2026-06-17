@@ -26,9 +26,11 @@ import dev.kyvora.api.networkmap.dto.NetworkMapSubnetResponse;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;
 import dev.kyvora.api.serverinventory.entity.ServerStatus;
 import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional(readOnly = true)
+@Slf4j
 public class DefaultNetworkMapService implements NetworkMapService {
 
 	private static final String UNKNOWN_SUBNET_ID = "subnet-unknown";
@@ -86,6 +88,8 @@ public class DefaultNetworkMapService implements NetworkMapService {
 						subnet.nodeCount))
 				.toList();
 
+		log.debug("Built network map with {} subnets, {} nodes, and {} edges",
+				subnetResponses.size(), nodes.size(), edges.size());
 		return new NetworkMapResponse(subnetResponses, nodes, edges, Instant.now());
 	}
 
@@ -180,6 +184,7 @@ public class DefaultNetworkMapService implements NetworkMapService {
 				return new SubnetDescriptor(id, cidr, cidr, gatewayIp, "Gateway " + gatewayIp);
 			}
 		} catch (UnknownHostException exception) {
+			log.warn("Unable to infer subnet for malformed IP address");
 			return new SubnetDescriptor(
 					UNKNOWN_SUBNET_ID,
 					UNKNOWN_SUBNET_LABEL,

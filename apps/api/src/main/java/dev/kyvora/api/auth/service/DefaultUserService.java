@@ -11,9 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 import dev.kyvora.api.auth.entity.User;
 import dev.kyvora.api.auth.entity.UserPermission;
 import dev.kyvora.api.auth.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 public class DefaultUserService implements UserService {
 
 	private final UserRepository repository;
@@ -42,12 +44,14 @@ public class DefaultUserService implements UserService {
 
 	@Override
 	public User create(String email, String rawPassword, String displayName, Set<UserPermission> permissions) {
-		return repository.save(new User(
+		User saved = repository.save(new User(
 				normalizeEmail(email),
 				passwordEncoder.encode(rawPassword),
 				displayName,
 				permissions,
 				true));
+		log.info("Created enabled user {}", saved.getId());
+		return saved;
 	}
 
 	private String normalizeEmail(String email) {

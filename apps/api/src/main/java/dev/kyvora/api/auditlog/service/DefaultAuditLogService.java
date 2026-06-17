@@ -21,9 +21,11 @@ import dev.kyvora.api.auditlog.repository.AuditLogRepository;
 import dev.kyvora.api.auditlog.repository.AuditLogSpecifications;
 import dev.kyvora.api.auth.security.CurrentUserProvider;
 import dev.kyvora.api.serverinventory.event.ServerInventoryChangedEvent;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 public class DefaultAuditLogService implements AuditLogService {
 
 	private static final String SERVER_AGGREGATE_TYPE = "SERVER";
@@ -62,6 +64,7 @@ public class DefaultAuditLogService implements AuditLogService {
 				event.actor() == null || event.actor().isBlank() ? currentActor() : event.actor(),
 				messageFor(event),
 				metadataFor(event)));
+		log.debug("Recorded audit log for server event {} on aggregate {}", eventType, event.serverId());
 	}
 
 	@Override
@@ -74,28 +77,33 @@ public class DefaultAuditLogService implements AuditLogService {
 				actorFor(event),
 				messageFor(event),
 				metadataFor(event)));
+		log.debug("Recorded audit log for agent event {} on aggregate {}", eventType, event.agentId());
 	}
 
 	@Override
 	public void recordAuthEvent(AuditEventType eventType, UUID userId, String actor, String message) {
+		UUID aggregateId = userId == null ? EMPTY_AGGREGATE_ID : userId;
 		repository.save(new AuditLog(
 				eventType,
 				AUTH_AGGREGATE_TYPE,
-				userId == null ? EMPTY_AGGREGATE_ID : userId,
+				aggregateId,
 				actor == null || actor.isBlank() ? currentActor() : actor,
 				message,
 				Map.of()));
+		log.debug("Recorded audit log for auth event {} on aggregate {}", eventType, aggregateId);
 	}
 
 	@Override
 	public void recordUserEvent(AuditEventType eventType, UUID userId, String actor, String message, Map<String, Object> metadata) {
+		UUID aggregateId = userId == null ? EMPTY_AGGREGATE_ID : userId;
 		repository.save(new AuditLog(
 				eventType,
 				USER_AGGREGATE_TYPE,
-				userId == null ? EMPTY_AGGREGATE_ID : userId,
+				aggregateId,
 				actor == null || actor.isBlank() ? currentActor() : actor,
 				message,
 				metadata == null ? Map.of() : Map.copyOf(metadata)));
+		log.debug("Recorded audit log for user event {} on aggregate {}", eventType, aggregateId);
 	}
 
 	@Override
@@ -107,6 +115,7 @@ public class DefaultAuditLogService implements AuditLogService {
 				actor == null || actor.isBlank() ? currentActor() : actor,
 				"System settings updated",
 				Map.of("changedKeys", List.copyOf(changedKeys))));
+		log.debug("Recorded audit log for settings update with {} changed keys", changedKeys.size());
 	}
 
 	private String currentActor() {

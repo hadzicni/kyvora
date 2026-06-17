@@ -22,8 +22,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtService jwtService;
@@ -62,6 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 							.toList());
 			SecurityContextHolder.getContext().setAuthentication(authentication);
 			if (user.isMustChangePassword() && !isPasswordChangeAllowed(request)) {
+				log.warn("Authenticated user {} blocked because credential rotation is required", user.getId());
 				writePasswordChangeRequired(response, request);
 				return;
 			}
@@ -69,6 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		}
 		catch (InvalidTokenException exception) {
 			SecurityContextHolder.clearContext();
+			log.warn("Rejected request with invalid or expired authorization credential");
 			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 			response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 			objectMapper.writeValue(response.getOutputStream(), new ApiErrorResponse(

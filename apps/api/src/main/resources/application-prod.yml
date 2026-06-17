@@ -18,6 +18,15 @@ springdoc:
   swagger-ui:
     enabled: false
 
+logging:
+  level:
+    root: ${KYVORA_LOG_LEVEL_ROOT:INFO}
+    dev.kyvora.api: ${KYVORA_LOG_LEVEL_APP:INFO}
+    org.springframework.security: ${KYVORA_LOG_LEVEL_SECURITY:WARN}
+    org.hibernate.SQL: ${KYVORA_LOG_LEVEL_SQL:WARN}
+  file:
+    name: ${KYVORA_LOG_FILE:/var/log/kyvora/kyvora-api.log}
+
 kyvora:
   jwt:
     secret: ${KYVORA_JWT_SECRET}

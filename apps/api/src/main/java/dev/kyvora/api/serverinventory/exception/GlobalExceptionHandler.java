@@ -6,6 +6,8 @@ import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,14 +25,17 @@ import dev.kyvora.api.notification.exception.NotificationNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import dev.kyvora.api.settings.exception.SettingsValidationException;
+import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
 	@ExceptionHandler(ServerInventoryNotFoundException.class)
 	public ResponseEntity<ApiErrorResponse> handleNotFound(
 			ServerInventoryNotFoundException exception,
 			HttpServletRequest request) {
+		log.debug("Server inventory item not found for path {}", request.getRequestURI());
 		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
@@ -38,6 +43,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleAgentNotFound(
 			AgentNotFoundException exception,
 			HttpServletRequest request) {
+		log.debug("Agent not found for path {}", request.getRequestURI());
 		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
@@ -45,6 +51,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleManagedServiceNotFound(
 			ManagedServiceNotFoundException exception,
 			HttpServletRequest request) {
+		log.debug("Managed service not found for path {}", request.getRequestURI());
 		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
@@ -52,6 +59,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleNotificationNotFound(
 			NotificationNotFoundException exception,
 			HttpServletRequest request) {
+		log.debug("Notification not found for path {}", request.getRequestURI());
 		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
@@ -59,6 +67,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleUserNotFound(
 			UserNotFoundException exception,
 			HttpServletRequest request) {
+		log.debug("User not found for path {}", request.getRequestURI());
 		return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
@@ -69,7 +78,16 @@ public class GlobalExceptionHandler {
 		List<String> details = exception.getBindingResult().getFieldErrors().stream()
 				.map(GlobalExceptionHandler::formatFieldError)
 				.toList();
+		log.warn("Request validation failed for path {} with {} field errors", request.getRequestURI(), details.size());
 		return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed", request.getRequestURI(), details);
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ApiErrorResponse> handleUnreadableMessage(
+			HttpMessageNotReadableException exception,
+			HttpServletRequest request) {
+		log.warn("Request body could not be read for path {}", request.getRequestURI());
+		return buildResponse(HttpStatus.BAD_REQUEST, "Request body is invalid or missing", request.getRequestURI(), List.of());
 	}
 
 	@ExceptionHandler(ConstraintViolationException.class)
@@ -79,6 +97,7 @@ public class GlobalExceptionHandler {
 		List<String> details = exception.getConstraintViolations().stream()
 				.map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
 				.toList();
+		log.warn("Request constraint validation failed for path {} with {} violations", request.getRequestURI(), details.size());
 		return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed", request.getRequestURI(), details);
 	}
 
@@ -86,6 +105,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleSettingsValidation(
 			SettingsValidationException exception,
 			HttpServletRequest request) {
+		log.warn("Settings validation failed for path {} with {} errors", request.getRequestURI(), exception.getDetails().size());
 		return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI(), exception.getDetails());
 	}
 
@@ -93,6 +113,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleUserManagement(
 			UserManagementException exception,
 			HttpServletRequest request) {
+		log.warn("User management conflict for path {}", request.getRequestURI());
 		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of());
 	}
 
@@ -100,6 +121,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(
 			DataIntegrityViolationException exception,
 			HttpServletRequest request) {
+		log.warn("Data integrity conflict for path {}", request.getRequestURI());
 		return buildResponse(HttpStatus.CONFLICT, "Request conflicts with existing data", request.getRequestURI(), List.of(detectConflictDetail(exception)));
 	}
 
@@ -107,13 +129,27 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleAuthenticationFailure(
 			RuntimeException exception,
 			HttpServletRequest request) {
+		log.warn("Authentication failure for path {}", request.getRequestURI());
 		return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request.getRequestURI(), List.of());
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+			AccessDeniedException exception,
+			HttpServletRequest request) {
+		log.warn("Access denied for path {}", request.getRequestURI());
+		return buildResponse(
+				HttpStatus.FORBIDDEN,
+				"You do not have permission to perform this action.",
+				request.getRequestURI(),
+				List.of());
 	}
 
 	@ExceptionHandler(DuplicateServerInventoryException.class)
 	public ResponseEntity<ApiErrorResponse> handleDuplicate(
 			DuplicateServerInventoryException exception,
 			HttpServletRequest request) {
+		log.warn("Duplicate server inventory value rejected for field {}", exception.getField());
 		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of(exception.getField() + ": " + exception.getValue()));
 	}
 
@@ -121,6 +157,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleDuplicateAgent(
 			DuplicateAgentException exception,
 			HttpServletRequest request) {
+		log.warn("Duplicate agent value rejected for field {}", exception.getField());
 		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of(exception.getField() + ": " + exception.getValue()));
 	}
 
@@ -128,7 +165,16 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleNotificationNotDismissible(
 			NotificationNotDismissibleException exception,
 			HttpServletRequest request) {
+		log.warn("Notification dismiss rejected for path {}", request.getRequestURI());
 		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of());
+	}
+
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ApiErrorResponse> handleUnexpected(
+			Exception exception,
+			HttpServletRequest request) {
+		log.error("Unexpected error while handling path {}", request.getRequestURI(), exception);
+		return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", request.getRequestURI(), List.of());
 	}
 
 	private static String formatFieldError(FieldError fieldError) {

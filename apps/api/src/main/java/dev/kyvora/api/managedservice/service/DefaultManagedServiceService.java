@@ -19,9 +19,11 @@ import dev.kyvora.api.managedservice.specification.ManagedServiceSpecifications;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;
 import dev.kyvora.api.serverinventory.exception.ServerInventoryNotFoundException;
 import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 public class DefaultManagedServiceService implements ManagedServiceService {
 
 	private final ManagedServiceRepository repository;
@@ -53,6 +55,7 @@ public class DefaultManagedServiceService implements ManagedServiceService {
 	public ManagedServiceResponse create(ManagedServiceCreateRequest request) {
 		ServerInventory linkedServer = resolveLinkedServer(request.linkedServerId());
 		ManagedService saved = repository.save(mapper.toEntity(request, linkedServer));
+		log.info("Created managed service {}", saved.getId());
 		return mapper.toResponse(saved);
 	}
 
@@ -61,12 +64,15 @@ public class DefaultManagedServiceService implements ManagedServiceService {
 		ManagedService entity = getRequiredEntity(id);
 		ServerInventory linkedServer = resolveLinkedServer(request.linkedServerId());
 		mapper.updateEntity(entity, request, linkedServer);
-		return mapper.toResponse(repository.save(entity));
+		ManagedService saved = repository.save(entity);
+		log.info("Updated managed service {}", saved.getId());
+		return mapper.toResponse(saved);
 	}
 
 	@Override
 	public void delete(UUID id) {
 		repository.delete(getRequiredEntity(id));
+		log.info("Deleted managed service {}", id);
 	}
 
 	private ManagedService getRequiredEntity(UUID id) {
@@ -77,6 +83,7 @@ public class DefaultManagedServiceService implements ManagedServiceService {
 		if (linkedServerId == null) {
 			return null;
 		}
+		log.debug("Resolving linked server {} for managed service", linkedServerId);
 		return serverInventoryRepository.findById(linkedServerId)
 				.orElseThrow(() -> new ServerInventoryNotFoundException(linkedServerId));
 	}

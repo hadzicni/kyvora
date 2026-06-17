@@ -3,8 +3,6 @@ package dev.kyvora.api.notification.service;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,12 +19,12 @@ import dev.kyvora.api.notification.exception.NotificationNotDismissibleException
 import dev.kyvora.api.notification.exception.NotificationNotFoundException;
 import dev.kyvora.api.notification.mapper.NotificationMapper;
 import dev.kyvora.api.notification.repository.NotificationRepository;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 class DefaultNotificationService implements NotificationService {
-
-	private static final Logger log = LoggerFactory.getLogger(DefaultNotificationService.class);
 
 	private final NotificationRepository notificationRepository;
 	private final UserRepository userRepository;
@@ -58,12 +56,15 @@ class DefaultNotificationService implements NotificationService {
 	public NotificationResponse markRead(AuthenticatedUser principal, UUID id) {
 		Notification notification = findUserNotification(principal.id(), id);
 		notification.markRead(Instant.now());
+		log.debug("Marked notification {} as read for user {}", id, principal.id());
 		return mapper.toResponse(notification);
 	}
 
 	@Override
 	public int markAllRead(AuthenticatedUser principal) {
-		return notificationRepository.markAllRead(principal.id(), Instant.now());
+		int updated = notificationRepository.markAllRead(principal.id(), Instant.now());
+		log.info("Marked {} notifications as read for user {}", updated, principal.id());
+		return updated;
 	}
 
 	@Override
@@ -71,7 +72,9 @@ class DefaultNotificationService implements NotificationService {
 		Notification notification = findUserNotification(principal.id(), id);
 		try {
 			notification.dismiss(Instant.now());
+			log.debug("Dismissed notification {} for user {}", id, principal.id());
 		} catch (IllegalStateException exception) {
+			log.warn("Notification {} could not be dismissed for user {}", id, principal.id());
 			throw new NotificationNotDismissibleException();
 		}
 	}

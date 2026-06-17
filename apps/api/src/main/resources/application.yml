@@ -21,6 +21,23 @@ spring:
 server:
   port: ${KYVORA_API_PORT:8080}
 
+logging:
+  level:
+    root: ${KYVORA_LOG_LEVEL_ROOT:INFO}
+    dev.kyvora.api: ${KYVORA_LOG_LEVEL_APP:INFO}
+    org.springframework.security: ${KYVORA_LOG_LEVEL_SECURITY:WARN}
+    org.hibernate.SQL: ${KYVORA_LOG_LEVEL_SQL:WARN}
+  file:
+    name: ${KYVORA_LOG_FILE:logs/kyvora-api.log}
+  logback:
+    rollingpolicy:
+      max-file-size: ${KYVORA_LOG_MAX_FILE_SIZE:10MB}
+      max-history: ${KYVORA_LOG_MAX_HISTORY:14}
+      total-size-cap: ${KYVORA_LOG_TOTAL_SIZE_CAP:256MB}
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} - %msg%n"
+
 management:
   endpoints:
     web:

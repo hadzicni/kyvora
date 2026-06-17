@@ -12,9 +12,9 @@ import dev.kyvora.api.auth.entity.PermissionPreset;
 import dev.kyvora.api.auth.repository.UserRepository;
 
 @Component
+@Slf4j
 public class BootstrapAdminRunner implements CommandLineRunner {
 
-	private static final Logger log = LoggerFactory.getLogger(BootstrapAdminRunner.class);
 	private static final String FIRST_ADMIN_EMAIL = "admin@kyvora.local";
 	private static final String FIRST_ADMIN_DISPLAY_NAME = "Kyvora Admin";
 

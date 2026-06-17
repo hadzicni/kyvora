@@ -35,9 +35,11 @@ import dev.kyvora.api.serverinventory.exception.ServerInventoryNotFoundException
 import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
 import dev.kyvora.api.settings.service.DefaultSettingsService;
 import dev.kyvora.api.settings.service.SettingsService;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 public class DefaultAgentService implements AgentService {
 
 	private final AgentRepository repository;
@@ -100,6 +102,7 @@ public class DefaultAgentService implements AgentService {
 		agent.setPullEnabled(request.pullEnabled() == null || request.pullEnabled());
 		Agent saved = repository.save(agent);
 		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_CONFIGURED, saved));
+		log.info("Configured agent {} for server {}", saved.getId(), server.getId());
 		return mapper.toResponse(saved);
 	}
 
@@ -114,6 +117,7 @@ public class DefaultAgentService implements AgentService {
 		if (!agent.isPullEnabled()) {
 			String message = "Agent pull is disabled";
 			recordFailedPull(agent, message);
+			log.warn("Agent pull skipped for {} because pull is disabled", agent.getId());
 			return new AgentPullResponse(mapper.toResponse(agent), agent.getStatus(), pulledAt, message);
 		}
 
@@ -122,6 +126,7 @@ public class DefaultAgentService implements AgentService {
 			applySuccessfulPull(agent, snapshot, pulledAt);
 			Agent saved = repository.save(agent);
 			recordPullLifecycleEvents(saved, previousStatus, previousServerStatus);
+			log.info("Agent pull succeeded for {}", saved.getId());
 			return new AgentPullResponse(mapper.toResponse(saved), saved.getStatus(), pulledAt, null);
 		}
 		catch (AgentPullException exception) {
@@ -131,6 +136,7 @@ public class DefaultAgentService implements AgentService {
 			if (previousStatus != AgentStatus.OFFLINE) {
 				auditLogService.recordAgentChange(AgentChangedEvent.fromSystemActor(AgentEventType.AGENT_PULL_FAILED, saved));
 			}
+			log.warn("Agent pull failed for {} with {}", saved.getId(), exception.getClass().getSimpleName());
 			return new AgentPullResponse(mapper.toResponse(saved), saved.getStatus(), pulledAt, message);
 		}
 	}
@@ -158,6 +164,7 @@ public class DefaultAgentService implements AgentService {
 				previousStatus,
 				previousServerId,
 				previousServerName));
+		log.info("Decommissioned agent {}", saved.getId());
 		return mapper.toResponse(saved);
 	}
 
@@ -168,6 +175,10 @@ public class DefaultAgentService implements AgentService {
 				fallbackOfflineThresholdSeconds);
 		Instant staleBefore = Instant.now().minusSeconds(offlineThresholdSeconds);
 		var staleAgents = repository.findStaleOnlineAgents(staleBefore);
+		if (staleAgents.isEmpty()) {
+			log.debug("No stale online agents found before {}", staleBefore);
+			return 0;
+		}
 		for (Agent agent : staleAgents) {
 			agent.setStatus(AgentStatus.OFFLINE);
 			agent.setLastPullError("Agent has not been pulled successfully within the offline threshold");
@@ -184,6 +195,7 @@ public class DefaultAgentService implements AgentService {
 			}
 			auditLogService.recordAgentChange(AgentChangedEvent.fromSystemActor(AgentEventType.AGENT_MARKED_OFFLINE, agent));
 		}
+		log.warn("Marked {} stale agents offline", staleAgents.size());
 		return staleAgents.size();
 	}
 
@@ -244,6 +256,7 @@ public class DefaultAgentService implements AgentService {
 
 	private void upsertHostFacts(Agent agent, AgentHostFactsRequest request) {
 		if (request == null) {
+			log.debug("Skipping host facts update for agent {} because no system facts were returned", agent.getId());
 			return;
 		}
 		AgentHostFacts facts = hostFactsRepository.findById(agent.getId())
@@ -268,6 +281,7 @@ public class DefaultAgentService implements AgentService {
 		hostFactsRepository.save(facts);
 		agent.setHostFacts(facts);
 		updateLinkedServerOperatingSystem(agent.getServer(), facts);
+		log.debug("Updated host facts for agent {}", agent.getId());
 	}
 
 	private void updateLinkedServerOperatingSystem(ServerInventory server, AgentHostFacts facts) {

@@ -16,8 +16,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.kyvora.api.agent.dto.AgentHostFactsRequest;
 import dev.kyvora.api.agent.entity.Agent;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class AgentPullClient {
 
 	public static final String SHARED_SECRET_HEADER = "X-Kyvora-Agent-Secret";
@@ -37,9 +39,11 @@ public class AgentPullClient {
 	}
 
 	public AgentPullSnapshot pull(Agent agent) {
+		log.debug("Starting pull for agent {}", agent.getId());
 		HealthResponse health = get(agent, "/health", HealthResponse.class);
 		CapabilitiesResponse capabilities = get(agent, "/capabilities", CapabilitiesResponse.class);
 		AgentHostFactsRequest system = get(agent, "/system", AgentHostFactsRequest.class);
+		log.debug("Completed HTTP pull for agent {}", agent.getId());
 		return new AgentPullSnapshot(health, capabilities, system);
 	}
 
@@ -53,18 +57,22 @@ public class AgentPullClient {
 					.build();
 			HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 			if (response.statusCode() == 401 || response.statusCode() == 403) {
+				log.warn("Agent {} rejected Kyvora credentials while requesting {}", agent.getId(), path);
 				throw new AgentPullException("Agent rejected Kyvora credentials");
 			}
 			if (response.statusCode() < 200 || response.statusCode() >= 300) {
+				log.warn("Agent {} returned HTTP {} while requesting {}", agent.getId(), response.statusCode(), path);
 				throw new AgentPullException("Agent returned HTTP " + response.statusCode());
 			}
 			return objectMapper.readValue(response.body(), responseType);
 		}
 		catch (InterruptedException exception) {
 			Thread.currentThread().interrupt();
+			log.warn("Agent pull interrupted for {} while requesting {}", agent.getId(), path);
 			throw new AgentPullException("Agent pull was interrupted", exception);
 		}
 		catch (IOException | IllegalArgumentException exception) {
+			log.warn("Unable to reach agent {} while requesting {}: {}", agent.getId(), path, exception.getClass().getSimpleName());
 			throw new AgentPullException("Unable to reach agent: " + exception.getMessage(), exception);
 		}
 	}

@@ -20,9 +20,11 @@ import dev.kyvora.api.settings.entity.SettingValueType;
 import dev.kyvora.api.settings.entity.SystemSetting;
 import dev.kyvora.api.settings.exception.SettingsValidationException;
 import dev.kyvora.api.settings.repository.SystemSettingRepository;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 public class DefaultSettingsService implements SettingsService {
 
 	public static final String INSTANCE_NAME = "instance.name";
@@ -70,6 +72,7 @@ public class DefaultSettingsService implements SettingsService {
 
 		List<String> errors = validateValues(requested, stored);
 		if (!errors.isEmpty()) {
+			log.warn("Settings update rejected with {} validation errors", errors.size());
 			throw new SettingsValidationException("Validation failed", errors);
 		}
 
@@ -89,6 +92,10 @@ public class DefaultSettingsService implements SettingsService {
 		if (!changedKeys.isEmpty()) {
 			repository.saveAll(stored.values());
 			auditLogService.recordSettingsUpdated(actor, changedKeys);
+			log.info("Updated {} system settings", changedKeys.size());
+		}
+		else {
+			log.debug("Settings update completed with no changes");
 		}
 
 		return responseFrom(stored);
@@ -104,6 +111,7 @@ public class DefaultSettingsService implements SettingsService {
 					.orElse(fallback);
 		}
 		catch (DataAccessException exception) {
+			log.warn("Falling back to default for setting {} because it could not be read", key);
 			return fallback;
 		}
 	}
@@ -115,6 +123,7 @@ public class DefaultSettingsService implements SettingsService {
 				.map(key -> key + ": unknown setting")
 				.toList();
 		if (!unknownKeys.isEmpty()) {
+			log.warn("Settings update rejected because {} unknown settings were supplied", unknownKeys.size());
 			throw new SettingsValidationException("Validation failed", unknownKeys);
 		}
 	}
@@ -256,6 +265,7 @@ public class DefaultSettingsService implements SettingsService {
 			return Long.parseLong(value);
 		}
 		catch (NumberFormatException exception) {
+			log.warn("Falling back to default for setting value that could not be parsed as a long");
 			return fallback;
 		}
 	}

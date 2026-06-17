@@ -24,9 +24,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import dev.kyvora.api.auth.security.JwtAuthenticationFilter;
 import dev.kyvora.api.serverinventory.exception.ApiErrorResponse;
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @EnableMethodSecurity
+@Slf4j
 public class SecurityConfig {
 
 	@Bean
@@ -63,6 +65,7 @@ public class SecurityConfig {
 	@Bean
 	AuthenticationEntryPoint authenticationEntryPoint(ObjectMapper objectMapper) {
 		return (request, response, exception) -> {
+			log.warn("Unauthenticated request rejected for path {}", request.getRequestURI());
 			response.setStatus(HttpStatus.UNAUTHORIZED.value());
 			response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 			objectMapper.writeValue(response.getOutputStream(), new ApiErrorResponse(
@@ -78,6 +81,7 @@ public class SecurityConfig {
 	@Bean
 	AccessDeniedHandler accessDeniedHandler(ObjectMapper objectMapper) {
 		return (request, response, exception) -> {
+			log.warn("Access denied for authenticated request to path {}", request.getRequestURI());
 			response.setStatus(HttpStatus.FORBIDDEN.value());
 			response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 			objectMapper.writeValue(response.getOutputStream(), new ApiErrorResponse(

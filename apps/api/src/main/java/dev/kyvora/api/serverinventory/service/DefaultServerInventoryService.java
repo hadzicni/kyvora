@@ -26,9 +26,11 @@ import dev.kyvora.api.serverinventory.exception.ServerInventoryNotFoundException
 import dev.kyvora.api.serverinventory.mapper.ServerInventoryMapper;
 import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
 import dev.kyvora.api.serverinventory.specification.ServerInventorySpecifications;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 public class DefaultServerInventoryService implements ServerInventoryService {
 
 	private final ServerInventoryRepository repository;
@@ -73,6 +75,7 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 		validateUniqueFields(request.hostname(), request.ipAddress(), null);
 		ServerInventory saved = repository.save(mapper.toEntity(request));
 		handleInventoryEvent(ServerInventoryChangedEvent.from(ServerInventoryEventType.SERVER_CREATED, saved));
+		log.info("Created server inventory item {}", saved.getId());
 		notifyCurrentUser(
 				"Server created",
 				saved.getName() + " was added to inventory.",
@@ -88,6 +91,7 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 		mapper.updateEntity(entity, request);
 		ServerInventory saved = repository.save(entity);
 		handleInventoryEvent(ServerInventoryChangedEvent.from(ServerInventoryEventType.SERVER_UPDATED, saved));
+		log.info("Updated server inventory item {}", saved.getId());
 		return mapper.toResponse(saved);
 	}
 
@@ -101,6 +105,7 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 				NotificationSeverity.INFO,
 				entity);
 		repository.delete(entity);
+		log.info("Deleted server inventory item {}", id);
 	}
 
 	private void handleInventoryEvent(ServerInventoryChangedEvent event) {
@@ -118,6 +123,7 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 			ServerInventory server) {
 		AuthenticatedUser principal = currentPrincipal();
 		if (principal == null) {
+			log.debug("Skipping notification '{}' because no authenticated user is available", title);
 			return;
 		}
 
@@ -139,18 +145,22 @@ public class DefaultServerInventoryService implements ServerInventoryService {
 	private void validateUniqueFields(String hostname, String ipAddress, UUID id) {
 		if (id == null) {
 			if (repository.existsByHostnameIgnoreCase(hostname)) {
+				log.warn("Server inventory create rejected because hostname already exists");
 				throw new DuplicateServerInventoryException("hostname", hostname);
 			}
 			if (repository.existsByIpAddress(ipAddress)) {
+				log.warn("Server inventory create rejected because IP address already exists");
 				throw new DuplicateServerInventoryException("ipAddress", ipAddress);
 			}
 			return;
 		}
 
 		if (repository.existsByHostnameIgnoreCaseAndIdNot(hostname, id)) {
+			log.warn("Server inventory update rejected for {} because hostname already exists", id);
 			throw new DuplicateServerInventoryException("hostname", hostname);
 		}
 		if (repository.existsByIpAddressAndIdNot(ipAddress, id)) {
+			log.warn("Server inventory update rejected for {} because IP address already exists", id);
 			throw new DuplicateServerInventoryException("ipAddress", ipAddress);
 		}
 	}

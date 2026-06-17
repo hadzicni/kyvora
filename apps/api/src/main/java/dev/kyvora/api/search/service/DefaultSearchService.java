@@ -26,8 +26,10 @@ import dev.kyvora.api.search.dto.SearchResponse;
 import dev.kyvora.api.search.dto.SearchResultResponse;
 import dev.kyvora.api.serverinventory.entity.ServerInventory;
 import dev.kyvora.api.serverinventory.repository.ServerInventoryRepository;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class DefaultSearchService implements SearchService {
 
 	private static final int MAX_LIMIT = 25;
@@ -61,6 +63,7 @@ public class DefaultSearchService implements SearchService {
 		String normalizedQuery = query == null ? "" : query.trim();
 		int normalizedLimit = normalizeLimit(limit);
 		if (normalizedQuery.length() < 2) {
+			log.debug("Search skipped because query was shorter than the minimum length");
 			return new SearchResponse(normalizedQuery, List.of(), Instant.now());
 		}
 
@@ -102,6 +105,7 @@ public class DefaultSearchService implements SearchService {
 				.limit(normalizedLimit)
 				.toList();
 
+		log.debug("Search completed with {} results", orderedResults.size());
 		return new SearchResponse(normalizedQuery, orderedResults, Instant.now());
 	}
 

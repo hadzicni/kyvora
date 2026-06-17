@@ -28,9 +28,11 @@ import dev.kyvora.api.user.dto.CreateUserRequest;
 import dev.kyvora.api.user.dto.ResetPasswordRequest;
 import dev.kyvora.api.user.dto.UpdateUserRequest;
 import dev.kyvora.api.user.dto.UserResponse;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 class DefaultUserManagementService implements UserManagementService {
 
 	private final UserRepository userRepository;
@@ -71,6 +73,7 @@ class DefaultUserManagementService implements UserManagementService {
 		Set<UserPermission> permissions = resolvePermissions(request.permissionPreset(), request.permissions());
 		String email = normalizeEmail(request.email());
 		if (userRepository.existsByEmailIgnoreCase(email)) {
+			log.warn("User create rejected because email is already in use");
 			throw new UserManagementException("Email is already in use");
 		}
 
@@ -82,6 +85,7 @@ class DefaultUserManagementService implements UserManagementService {
 				true));
 		saved.setMustChangePassword(request.mustChangePassword() == null || request.mustChangePassword());
 		auditLogService.recordUserEvent(AuditEventType.USER_CREATED, saved.getId(), currentUserActor(), "User created", metadata(saved));
+		log.info("Created user {}", saved.getId());
 		return mapper.toResponse(saved);
 	}
 
@@ -100,6 +104,7 @@ class DefaultUserManagementService implements UserManagementService {
 		user.setPermissions(permissions);
 		auditLogService.recordUserEvent(AuditEventType.USER_UPDATED, user.getId(), currentUserActor(), "User updated", metadata(user,
 				Map.of("previousPermissions", permissionNames(previousPermissions))));
+		log.info("Updated user {}", user.getId());
 		return mapper.toResponse(user);
 	}
 
@@ -116,6 +121,7 @@ class DefaultUserManagementService implements UserManagementService {
 		user.setEnabled(false);
 		refreshTokenRepository.deleteByUser(user);
 		auditLogService.recordUserEvent(AuditEventType.USER_DISABLED, user.getId(), actorEmail(actor), "User disabled", metadata(user));
+		log.info("Disabled user {}", user.getId());
 		return mapper.toResponse(user);
 	}
 
@@ -124,6 +130,7 @@ class DefaultUserManagementService implements UserManagementService {
 		User user = findUser(id);
 		user.setEnabled(true);
 		auditLogService.recordUserEvent(AuditEventType.USER_ENABLED, user.getId(), currentUserActor(), "User enabled", metadata(user));
+		log.info("Enabled user {}", user.getId());
 		return mapper.toResponse(user);
 	}
 
@@ -134,15 +141,18 @@ class DefaultUserManagementService implements UserManagementService {
 		user.setMustChangePassword(true);
 		refreshTokenRepository.deleteByUser(user);
 		auditLogService.recordUserEvent(AuditEventType.USER_PASSWORD_RESET, user.getId(), currentUserActor(), "User password reset", metadata(user));
+		log.info("Reset credential for user {}", user.getId());
 	}
 
 	@Override
 	public void changeOwnPassword(AuthenticatedUser principal, ChangePasswordRequest request) {
 		User user = findUser(principal.id());
 		if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+			log.warn("Credential change rejected for user {} because current credential did not match", user.getId());
 			throw new InvalidCredentialsException("Current password is incorrect");
 		}
 		if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+			log.warn("Credential change rejected for user {} because replacement credential matched existing credential", user.getId());
 			throw new UserManagementException("New password must be different from the current password");
 		}
 
@@ -150,6 +160,7 @@ class DefaultUserManagementService implements UserManagementService {
 		user.setMustChangePassword(false);
 		refreshTokenRepository.deleteByUser(user);
 		auditLogService.recordUserEvent(AuditEventType.USER_PASSWORD_CHANGED, user.getId(), principal.email(), "User password changed", metadata(user));
+		log.info("Changed credential for user {}", user.getId());
 	}
 
 	private User findUser(UUID id) {
@@ -162,6 +173,7 @@ class DefaultUserManagementService implements UserManagementService {
 				? (preset == null ? Set.of() : preset.permissions())
 				: Set.copyOf(permissions);
 		if (resolved.isEmpty()) {
+			log.warn("User permission resolution rejected because no permissions were supplied");
 			throw new UserManagementException("At least one permission is required");
 		}
 		return resolved;
@@ -172,6 +184,7 @@ class DefaultUserManagementService implements UserManagementService {
 		if (enabledUserManagers <= 1 && userRepository.findById(userId)
 				.filter(user -> user.getPermissions().contains(UserPermission.USER_UPDATE) && user.isEnabled())
 				.isPresent()) {
+			log.warn("User management operation rejected because it would remove the last enabled user manager");
 			throw new UserManagementException(message);
 		}
 	}

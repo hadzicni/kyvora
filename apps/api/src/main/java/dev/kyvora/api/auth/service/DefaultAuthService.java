@@ -14,9 +14,11 @@ import dev.kyvora.api.auth.dto.RefreshResponse;
 import dev.kyvora.api.auth.entity.RefreshToken;
 import dev.kyvora.api.auth.entity.User;
 import dev.kyvora.api.auth.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional
+@Slf4j
 public class DefaultAuthService implements AuthService {
 
 	private static final String BEARER_TOKEN_TYPE = "Bearer";
@@ -66,16 +68,19 @@ public class DefaultAuthService implements AuthService {
 									null,
 									request.email(),
 									"User login failed"));
+			log.warn("Login failed for unknown or disabled account");
 			throw exception;
 		}
 
 		if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
 			auditLogService.recordAuthEvent(AuditEventType.USER_LOGIN_FAILED, user.getId(), user.getEmail(), "User login failed");
+			log.warn("Login failed for user {}", user.getId());
 			throw new InvalidCredentialsException("Invalid email or password");
 		}
 
 		user.markLoginSuccessful();
 		auditLogService.recordAuthEvent(AuditEventType.USER_LOGIN_SUCCEEDED, user.getId(), user.getEmail(), "User login succeeded");
+		log.info("User {} logged in successfully", user.getId());
 		return loginResponse(user, refreshTokenService.create(user));
 	}
 
@@ -85,6 +90,7 @@ public class DefaultAuthService implements AuthService {
 		User user = consumedToken.getUser();
 		String newRefreshToken = refreshTokenService.create(user);
 		auditLogService.recordAuthEvent(AuditEventType.TOKEN_REFRESHED, user.getId(), user.getEmail(), "Token refreshed");
+		log.debug("Refreshed session credential for user {}", user.getId());
 		return refreshResponse(user, newRefreshToken);
 	}
 
@@ -92,6 +98,7 @@ public class DefaultAuthService implements AuthService {
 	public void logout(String refreshToken) {
 		refreshTokenService.revoke(refreshToken);
 		auditLogService.recordAuthEvent(AuditEventType.USER_LOGOUT, null, null, "User logout");
+		log.info("User session logout completed");
 	}
 
 	@Override
