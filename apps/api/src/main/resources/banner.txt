@@ -1,0 +1,24 @@
+${AnsiColor.BRIGHT_YELLOW}
+
+ ______   _______   ______   _____ _______    ______      ____     ___________          _____
+|\     \  \      \ |\     \ |     |\      |  |      | ____\_  \__  \          \       /      |_
+ \\     \  |     /|\ \     \|     | |     /  /     /|/     /     \  \    /\    \     /         \
+  \|     |/     //  \ \           | |\    \  \    |//     /\      |  |   \_\    |   |     /\    \
+   |     |_____//    \ \____      | \ \    \ |    ||     |  |     |  |      ___/    |    |  |    \
+   |     |\     \     \|___/     /|  \|     \|    ||     |  |     |  |      \  ____ |     \/      \
+  /     /|\|     |        /     / |   |\         /||     | /     /| /     /\ \/    \|\      /\     \
+ /_____/ |/_____/|       /_____/  /   | \_______/ ||\     \_____/ |/_____/ |\______|| \_____\ \_____\
+|     | / |    | |       |     | /     \ |     | / | \_____\   | / |     | | |     || |     | |     |
+|_____|/  |____|/        |_____|/       \|_____|/   \ |    |___|/  |_____|/ \|_____| \|_____|\|_____|
+                                                     \|____|
+${AnsiColor.DEFAULT}
+
+${AnsiColor.BRIGHT_GREEN}Application:         ${AnsiColor.WHITE}${spring.application.name}
+${AnsiColor.BRIGHT_GREEN}Spring Boot:         ${AnsiColor.WHITE}${spring-boot.version}
+${AnsiColor.BRIGHT_GREEN}Java:                ${AnsiColor.WHITE}${java.version}
+${AnsiColor.BRIGHT_YELLOW}User:                ${AnsiColor.WHITE}${user.name}
+${AnsiColor.BRIGHT_YELLOW}Dir:                 ${AnsiColor.WHITE}${user.dir}
+${AnsiColor.BRIGHT_YELLOW}Encoding:            ${AnsiColor.WHITE}${file.encoding}
+${AnsiColor.BRIGHT_YELLOW}Time Zone:           ${AnsiColor.WHITE}${user.timezone}
+${AnsiColor.BRIGHT_YELLOW}OS:                  ${AnsiColor.WHITE}${os.name} ${os.version} (${os.arch})
+${AnsiColor.DEFAULT}
