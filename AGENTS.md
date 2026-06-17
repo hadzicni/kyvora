@@ -145,52 +145,6 @@ Security rules:
 * Local development may use `user/dev-password`, but production credentials must come from environment variables.
 * JWT, refresh tokens, and RBAC are planned but should not be implemented unless explicitly requested.
 
-## Current Functional Areas
-
-Implemented or in progress:
-
-* Server Inventory backend API
-* PostgreSQL + Flyway migrations
-* Server Inventory pagination/filtering/validation
-* Next.js dashboard shell
-* Server Inventory list UI
-* Next.js API proxy for server inventory
-* Create Server dialog
-* GitHub Actions CI
-
-Server Inventory fields:
-
-* id
-* name
-* hostname
-* ipAddress
-* description
-* tags
-* operatingSystem
-* status
-* lastSeenAt
-* createdAt
-* updatedAt
-
-Allowed statuses:
-
-* ONLINE
-* OFFLINE
-* UNKNOWN
-
-Primary API:
-
-* GET `/api/v1/servers`
-* POST `/api/v1/servers`
-* GET `/api/v1/servers/{id}`
-* PUT `/api/v1/servers/{id}`
-* DELETE `/api/v1/servers/{id}`
-
-Frontend proxy:
-
-* GET `/api/server-inventory`
-* POST `/api/server-inventory`
-
 ## Local Development
 
 Typical commands from repo root:
