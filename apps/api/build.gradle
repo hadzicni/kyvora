@@ -7,7 +7,12 @@ plugins {
 group = 'dev.kyvora'
 
 def kyvoraVersionFile = file('../../VERSION')
-version = kyvoraVersionFile.exists() ? kyvoraVersionFile.text.trim() : '0.0.0-SNAPSHOT'
+
+if (!kyvoraVersionFile.exists()) {
+    throw new GradleException("VERSION file is missing")
+}
+
+version = kyvoraVersionFile.text.trim()
 
 java {
 	toolchain {
