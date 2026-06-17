@@ -164,3 +164,20 @@
 ### Fixed
 
 - Fixed Docker release builds by updating the web image Node.js base image and avoiding Alpine-related native dependency issues.
+
+## [0.6.2] - 2026-06-17
+
+### Added
+
+- Added JWT Bearer authentication support for the Swagger/OpenAPI UI.
+- Added production-ready API logging.
+- Added a custom startup banner for the API.
+
+### Changed
+
+- OpenAPI documentation now automatically displays the running Kyvora version.
+- Reduced API boilerplate through Lombok integration.
+
+### Fixed
+
+- Fixed logging-related issues caused by a missing SLF4J import.
