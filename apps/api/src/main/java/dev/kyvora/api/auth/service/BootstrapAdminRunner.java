@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import dev.kyvora.api.auth.entity.User;
 import dev.kyvora.api.auth.entity.PermissionPreset;
 import dev.kyvora.api.auth.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
