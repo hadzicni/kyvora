@@ -197,13 +197,17 @@ Logs go to journald.
 
 ## Connect To Kyvora
 
-In the Kyvora web UI, create or select a server inventory entry and configure
-an agent connection with:
+In the Kyvora web UI, open **Agents → Set up agent**, select or create the
+server inventory entry, and use the Agent Setup Wizard to configure:
 
 - scheme: `http`
 - host: the Linux host or private interface address reachable by the Kyvora API
 - port: the configured `listenPort`, default `9187`
 - secret: the contents of `/etc/kyvora/agent.secret`
+
+Use the wizard's backend connection test before saving. A successful test
+shows the agent version and capabilities. The browser never connects directly
+to the agent, and Kyvora never returns a saved secret.
 
 If the API runs on the same host as the agent, use:
 

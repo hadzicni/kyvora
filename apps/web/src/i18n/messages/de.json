@@ -400,7 +400,43 @@
     "emptyTitle": "Keine Agents gefunden",
     "emptyDescription": "Konfiguriere einen Agent über einen Server, um Hostdaten zu erfassen.",
     "errorTitle": "Agents konnten nicht geladen werden",
-    "unexpectedError": "Die Agent-Management-API hat einen unerwarteten Fehler zurückgegeben."
+    "unexpectedError": "Die Agent-Management-API hat einen unerwarteten Fehler zurückgegeben.",
+    "setupWizard": {
+      "trigger": "Agent einrichten",
+      "title": "Agent-Einrichtungsassistent",
+      "description": "Installiere den Linux-systemd-Agent und verbinde ihn mit einem Server.",
+      "progressLabel": "Einrichtungsfortschritt",
+      "steps": { "overview": "Übersicht", "install": "Installation", "configure": "Konfiguration", "connect": "Verbindung", "testSave": "Test & Speichern" },
+      "common": { "or": "oder" },
+      "actions": { "back": "Zurück", "next": "Weiter", "save": "Konfiguration speichern", "copyCommand": "Befehl kopieren" },
+      "toasts": { "commandCopied": "Befehl kopiert.", "saved": "Agent-Konfiguration gespeichert." },
+      "errors": { "actionFailed": "Aktion fehlgeschlagen", "testFailed": "Die Verbindung konnte nicht getestet werden.", "serverAssigned": "Dem ausgewählten Server ist bereits ein Agent zugewiesen.", "saveFailed": "Der Agent konnte nicht gespeichert werden." },
+      "validation": { "serverRequired": "Wähle einen Server aus.", "nameMin": "Der Name muss mindestens 2 Zeichen lang sein.", "nameMax": "Der Name darf höchstens 120 Zeichen lang sein.", "hostRequired": "Der Host ist erforderlich.", "hostMax": "Der Host darf höchstens 253 Zeichen lang sein.", "hostInvalid": "Gib nur einen Hostnamen oder eine IP-Adresse ein.", "portMin": "Der Port muss mindestens 1 sein.", "portMax": "Der Port darf höchstens 65535 sein.", "basePathMax": "Der Basispfad darf höchstens 200 Zeichen lang sein.", "basePathInvalid": "Verwende einen sicheren Pfad, der mit / beginnt.", "secretMin": "Das Shared Secret muss mindestens 12 Zeichen lang sein.", "secretMax": "Das Shared Secret darf höchstens 512 Zeichen lang sein." },
+      "overview": {
+        "linuxOnlyTitle": "Nur Linux mit systemd",
+        "linuxOnlyDescription": "Windows, macOS, Container ohne systemd und das alte Push-basierte Setup werden nicht unterstützt.",
+        "pullBasedTitle": "Pull-basiert",
+        "pullBasedDescription": "Die Kyvora API ruft die gesicherte lokale HTTP-API des Agents auf. Der Agent sendet keine Daten per Push.",
+        "reachabilityTitle": "Private Erreichbarkeit",
+        "reachabilityDescription": "Der API-Host muss die konfigurierte Agent-Adresse und den Port erreichen können.",
+        "privateTitle": "Nicht öffentlich freigeben",
+        "privateDescription": "Betreibe den Listener in einem vertrauenswürdigen privaten Netzwerk und verwende das Shared Secret.",
+        "serverLabel": "Server",
+        "serverPlaceholder": "Server auswählen",
+        "assigned": "zugewiesen",
+        "createPrefix": "Benötigst du einen neuen Inventareintrag?",
+        "createLink": "Erstelle zuerst den Server",
+        "createSuffix": " und öffne danach diesen Assistenten erneut."
+      },
+      "install": { "targetsTitle": "Unterstützte Ziele", "targetsPrefix": "Linux mit systemd auf", "description": "Der Installer lädt die passende Binärdatei aus den GitHub Releases herunter, erstellt die Konfigurations- und Secret-Dateien und installiert" },
+      "configure": { "configFile": "Konfigurationsdatei", "secretFile": "Shared-Secret-Datei", "listenerTitle": "Standard-Listener: 127.0.0.1:9187", "listenerPrefix": "Wenn die Kyvora API auf einem anderen Host läuft, ändere", "listenerSuffix": "auf eine private Interface-Adresse und erlaube in der Firewall nur den API-Host. Starte den Dienst nach der Änderung neu.", "logsPrefix": "Verwende", "logsSuffix": "um den Start zu prüfen und Konfigurationsfehler zu diagnostizieren." },
+      "connect": { "scheme": "Schema", "host": "Host", "port": "Port", "basePath": "Optionaler Basispfad", "agentName": "Agent-Name", "sharedSecret": "Shared Secret", "secretPrefix": "Muss exakt übereinstimmen mit", "secretSuffix": "Kyvora gibt das gespeicherte Secret niemals zurück.", "pullEnabled": "Geplante Pulls für diesen Agent aktivieren" },
+      "test": {
+        "connectionTarget": "Verbindungsziel", "action": "Verbindung von der Kyvora API testen", "hint": "Teste die Verbindung vor dem Speichern. Schlägt der Test fehl, kannst du die Konfiguration nach Prüfung der Warnung trotzdem speichern.", "successTitle": "Agent erreichbar und authentifiziert", "successMessage": "Die Kyvora API hat den Agent erfolgreich erreicht.", "failureMessage": "Die Kyvora API konnte den Verbindungstest nicht abschließen.", "version": "Version", "noCapabilities": "Keine Fähigkeiten gemeldet",
+        "errorCodes": { "unreachable": "Nicht erreichbar", "timeout": "Zeitüberschreitung", "unauthorized": "Nicht autorisiert", "invalid_response": "Ungültige Antwort", "tls_error": "TLS-Fehler", "configuration_invalid": "Ungültige Konfiguration", "unknown_error": "Unbekannter Fehler" }
+      },
+      "troubleshooting": { "title": "Fehlerbehebung", "secretPrefix": "Prüfe, ob das Secret übereinstimmt mit", "restartAfterSecret": "Starte den Agent nach dem Ändern des Secrets neu.", "verifyUrl": "Prüfe, ob die URL auf den Kyvora Agent zeigt.", "checkVersion": "Prüfe die installierte Agent-Version und die Service-Logs.", "checkPrefix": "Prüfe", "network": "Prüfe Listen-Adresse, Port und Firewall-Regeln.", "route": "Stelle sicher, dass die Kyvora API den Host erreichen kann.", "inspectPrefix": "Prüfe" }
+    }
   },
   "serviceCategories": {
     "MONITORING": "Monitoring",

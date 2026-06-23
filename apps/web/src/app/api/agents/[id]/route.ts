@@ -43,3 +43,21 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return agentApiUnavailableResponse();
   }
 }
+
+export async function PUT(request: NextRequest, context: RouteContext) {
+  try {
+    const { id } = await context.params;
+    const response = await backendFetch(
+      request,
+      new URL(`/api/v1/agents/${encodeURIComponent(id)}/connection`, apiBaseUrl),
+      {
+        method: "PUT",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: await request.text(),
+      }
+    );
+    return createBackendResponse(response, await response.text());
+  } catch {
+    return agentApiUnavailableResponse();
+  }
+}

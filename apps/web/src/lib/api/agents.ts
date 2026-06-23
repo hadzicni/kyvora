@@ -75,6 +75,17 @@ export type AgentPullResult = {
   error: string | null;
 };
 
+export type AgentConnectionTestResult = {
+  success: boolean;
+  status: string;
+  message: string;
+  agentVersion: string | null;
+  capabilities: string[];
+  responseTimeMs: number;
+  checkedAt: string;
+  errorCode: string | null;
+};
+
 export class AgentApiError extends ApiRequestError {
   constructor(
     message: string,
@@ -117,6 +128,28 @@ export async function registerAgent(
     headers: {
       "Content-Type": "application/json",
     },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function testAgentConnection(input: {
+  baseUrl: string;
+  sharedSecret: string;
+}): Promise<AgentConnectionTestResult> {
+  return request<AgentConnectionTestResult>("/api/agents/test-connection", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateAgentConnection(
+  id: string,
+  input: { baseUrl: string; sharedSecret?: string; pullEnabled: boolean }
+): Promise<Agent> {
+  return request<Agent>(`/api/agents/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
 }

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import dev.kyvora.api.agent.exception.AgentNotFoundException;
 import dev.kyvora.api.agent.exception.DuplicateAgentException;
+import dev.kyvora.api.agent.exception.AgentConfigurationException;
 import dev.kyvora.api.auth.service.InvalidCredentialsException;
 import dev.kyvora.api.auth.service.InvalidTokenException;
 import dev.kyvora.api.auth.exception.UserManagementException;
@@ -159,6 +160,13 @@ public class GlobalExceptionHandler {
 			HttpServletRequest request) {
 		log.warn("Duplicate agent value rejected for field {}", exception.getField());
 		return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request.getRequestURI(), List.of(exception.getField() + ": " + exception.getValue()));
+	}
+
+	@ExceptionHandler(AgentConfigurationException.class)
+	public ResponseEntity<ApiErrorResponse> handleAgentConfiguration(
+			AgentConfigurationException exception, HttpServletRequest request) {
+		log.warn("Invalid agent connection configuration for path {}", request.getRequestURI());
+		return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI(), exception.getDetails());
 	}
 
 	@ExceptionHandler(NotificationNotDismissibleException.class)

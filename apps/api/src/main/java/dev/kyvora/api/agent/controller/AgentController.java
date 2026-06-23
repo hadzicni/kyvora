@@ -10,11 +10,15 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import dev.kyvora.api.agent.dto.AgentPageResponse;
+import dev.kyvora.api.agent.dto.AgentConnectionTestRequest;
+import dev.kyvora.api.agent.dto.AgentConnectionTestResponse;
+import dev.kyvora.api.agent.dto.AgentConnectionUpdateRequest;
 import dev.kyvora.api.agent.dto.AgentPullResponse;
 import dev.kyvora.api.agent.dto.AgentRegisterRequest;
 import dev.kyvora.api.agent.dto.AgentResponse;
@@ -77,6 +81,23 @@ public class AgentController {
 	public ResponseEntity<AgentResponse> create(@Valid @RequestBody AgentRegisterRequest request) {
 		AgentResponse created = service.create(request);
 		return ResponseEntity.created(java.net.URI.create("/api/v1/agents/" + created.id())).body(created);
+	}
+
+	@PostMapping("/test-connection")
+	@PreAuthorize("@permissions.canPullAgents(authentication)")
+	@Operation(summary = "Test unsaved agent connection details from the Kyvora API")
+	public ResponseEntity<AgentConnectionTestResponse> testConnection(
+			@Valid @RequestBody AgentConnectionTestRequest request) {
+		return ResponseEntity.ok(service.testConnection(request));
+	}
+
+	@PutMapping("/{id}/connection")
+	@PreAuthorize("@permissions.canEnrollAgents(authentication)")
+	@Operation(summary = "Update an agent connection", description = "Omit the shared secret to retain the existing saved value.")
+	public ResponseEntity<AgentResponse> updateConnection(
+			@PathVariable UUID id,
+			@Valid @RequestBody AgentConnectionUpdateRequest request) {
+		return ResponseEntity.ok(service.updateConnection(id, request));
 	}
 
 	@PostMapping("/{id}/pull")

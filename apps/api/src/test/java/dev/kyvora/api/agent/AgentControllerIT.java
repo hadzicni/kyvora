@@ -89,4 +89,32 @@ class AgentControllerIT {
 						.with(user("viewer").authorities(new SimpleGrantedAuthority("PERMISSION_AGENT_READ"))))
 				.andExpect(status().isForbidden());
 	}
+
+	@Test
+	void testConnectionRequiresPullPermission() throws Exception {
+		mockMvc.perform(post("/api/v1/agents/test-connection")
+					.with(user("viewer").authorities(new SimpleGrantedAuthority("PERMISSION_AGENT_READ")))
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(Map.of(
+							"baseUrl", "http://127.0.0.1:9187",
+							"sharedSecret", "very-secret-value"))))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void configureAgentRejectsUnsafeScheme() throws Exception {
+		ServerInventory server = serverInventoryRepository.save(new ServerInventory(
+				"Node 02", "node02.example.com", "10.0.0.11", "", Set.of(), "Linux",
+				ServerStatus.UNKNOWN, Instant.now()));
+
+		mockMvc.perform(post("/api/v1/agents")
+					.with(user("operator").authorities(new SimpleGrantedAuthority("PERMISSION_AGENT_ENROLL")))
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(Map.of(
+							"serverId", server.getId(),
+							"baseUrl", "file://10.0.0.11:9187/etc/passwd",
+							"sharedSecret", "very-secret-value"))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.details[0]", is("baseUrl: scheme must be http or https")));
+	}
 }

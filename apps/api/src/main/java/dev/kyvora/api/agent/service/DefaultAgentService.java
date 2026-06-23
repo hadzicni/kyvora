@@ -13,6 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import dev.kyvora.api.agent.client.AgentPullClient;
 import dev.kyvora.api.agent.client.AgentPullException;
 import dev.kyvora.api.agent.dto.AgentHostFactsRequest;
+import dev.kyvora.api.agent.dto.AgentConnectionTestRequest;
+import dev.kyvora.api.agent.dto.AgentConnectionTestResponse;
+import dev.kyvora.api.agent.dto.AgentConnectionUpdateRequest;
 import dev.kyvora.api.agent.dto.AgentPullResponse;
 import dev.kyvora.api.agent.dto.AgentRegisterRequest;
 import dev.kyvora.api.agent.dto.AgentResponse;
@@ -49,6 +52,7 @@ public class DefaultAgentService implements AgentService {
 	private final ServerInventoryRepository serverInventoryRepository;
 	private final SettingsService settingsService;
 	private final AgentPullClient agentPullClient;
+	private final AgentConnectionValidator connectionValidator;
 	private final long fallbackOfflineThresholdSeconds;
 
 	public DefaultAgentService(
@@ -59,6 +63,7 @@ public class DefaultAgentService implements AgentService {
 			ServerInventoryRepository serverInventoryRepository,
 			SettingsService settingsService,
 			AgentPullClient agentPullClient,
+			AgentConnectionValidator connectionValidator,
 			@Value("${kyvora.agent.offline-threshold-seconds:90}") long offlineThresholdSeconds) {
 		this.repository = repository;
 		this.mapper = mapper;
@@ -67,6 +72,7 @@ public class DefaultAgentService implements AgentService {
 		this.serverInventoryRepository = serverInventoryRepository;
 		this.settingsService = settingsService;
 		this.agentPullClient = agentPullClient;
+		this.connectionValidator = connectionValidator;
 		this.fallbackOfflineThresholdSeconds = offlineThresholdSeconds;
 	}
 
@@ -84,6 +90,7 @@ public class DefaultAgentService implements AgentService {
 
 	@Override
 	public AgentResponse create(AgentRegisterRequest request) {
+		connectionValidator.validateAndNormalize(request.baseUrl());
 		ServerInventory server = serverInventoryRepository.findById(request.serverId())
 				.orElseThrow(() -> new ServerInventoryNotFoundException(request.serverId()));
 		if (repository.existsByServer(server)) {
@@ -104,6 +111,47 @@ public class DefaultAgentService implements AgentService {
 		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_CONFIGURED, saved));
 		log.info("Configured agent {} for server {}", saved.getId(), server.getId());
 		return mapper.toResponse(saved);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public AgentConnectionTestResponse testConnection(AgentConnectionTestRequest request) {
+		Instant checkedAt = Instant.now();
+		long startedAt = System.nanoTime();
+		try {
+			String baseUrl = connectionValidator.validateAndNormalize(request.baseUrl());
+			AgentPullClient.AgentConnectionSnapshot snapshot = agentPullClient.test(baseUrl, request.sharedSecret());
+			return new AgentConnectionTestResponse(true, "REACHABLE", "Kyvora API connected to the agent successfully",
+					snapshot.health().version(), snapshot.capabilities().supports(), elapsedMillis(startedAt), checkedAt, null);
+		}
+		catch (dev.kyvora.api.agent.exception.AgentConfigurationException exception) {
+			return new AgentConnectionTestResponse(false, "INVALID", exception.getDetails().getFirst(), null, List.of(),
+					elapsedMillis(startedAt), checkedAt, "CONFIGURATION_INVALID");
+		}
+		catch (AgentPullException exception) {
+			return new AgentConnectionTestResponse(false, "UNREACHABLE", exception.getMessage(), null, List.of(),
+					elapsedMillis(startedAt), checkedAt, exception.getErrorCode());
+		}
+	}
+
+	@Override
+	public AgentResponse updateConnection(UUID id, AgentConnectionUpdateRequest request) {
+		Agent agent = getRequiredEntity(id);
+		agent.setBaseUrl(connectionValidator.validateAndNormalize(request.baseUrl()));
+		if (request.sharedSecret() != null && !request.sharedSecret().isBlank()) {
+			agent.setSharedSecret(request.sharedSecret().trim());
+		}
+		agent.setPullEnabled(request.pullEnabled());
+		agent.setStatus(AgentStatus.UNKNOWN);
+		agent.setLastPullError(null);
+		Agent saved = repository.save(agent);
+		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_CONFIGURED, saved));
+		log.info("Updated connection configuration for agent {}", saved.getId());
+		return mapper.toResponse(saved);
+	}
+
+	private long elapsedMillis(long startedAt) {
+		return (System.nanoTime() - startedAt) / 1_000_000;
 	}
 
 	@Override

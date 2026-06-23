@@ -401,7 +401,43 @@
     "emptyTitle": "No agents found",
     "emptyDescription": "Configure an agent from a server to begin collecting host facts.",
     "errorTitle": "Unable to load agents",
-    "unexpectedError": "The agent management API returned an unexpected error."
+    "unexpectedError": "The agent management API returned an unexpected error.",
+    "setupWizard": {
+      "trigger": "Set up agent",
+      "title": "Agent Setup Wizard",
+      "description": "Install and connect the Linux systemd agent to a server.",
+      "progressLabel": "Setup progress",
+      "steps": { "overview": "Overview", "install": "Install", "configure": "Configure", "connect": "Connect", "testSave": "Test & save" },
+      "common": { "or": "or" },
+      "actions": { "back": "Back", "next": "Next", "save": "Save configuration", "copyCommand": "Copy command" },
+      "toasts": { "commandCopied": "Command copied.", "saved": "Agent configuration saved." },
+      "errors": { "actionFailed": "Action failed", "testFailed": "Unable to test the connection.", "serverAssigned": "The selected server already has an agent.", "saveFailed": "Unable to save the agent." },
+      "validation": { "serverRequired": "Select a server.", "nameMin": "Name must be at least 2 characters.", "nameMax": "Name must be 120 characters or fewer.", "hostRequired": "Host is required.", "hostMax": "Host must be 253 characters or fewer.", "hostInvalid": "Enter a hostname or IP address only.", "portMin": "Port must be at least 1.", "portMax": "Port must be 65535 or lower.", "basePathMax": "Base path must be 200 characters or fewer.", "basePathInvalid": "Use a safe path beginning with /.", "secretMin": "Shared secret must be at least 12 characters.", "secretMax": "Shared secret must be 512 characters or fewer." },
+      "overview": {
+        "linuxOnlyTitle": "Linux with systemd only",
+        "linuxOnlyDescription": "Windows, macOS, containers without systemd, and legacy push-based setup are not supported.",
+        "pullBasedTitle": "Pull-based",
+        "pullBasedDescription": "Kyvora API calls the agent’s secured local HTTP API. The agent does not push data.",
+        "reachabilityTitle": "Private reachability",
+        "reachabilityDescription": "The API host must reach the configured agent address and port.",
+        "privateTitle": "Do not expose publicly",
+        "privateDescription": "Keep the listener on a trusted private network and require the shared secret.",
+        "serverLabel": "Server",
+        "serverPlaceholder": "Select a server",
+        "assigned": "assigned",
+        "createPrefix": "Need a new inventory entry?",
+        "createLink": "Create the server first",
+        "createSuffix": ", then reopen this wizard."
+      },
+      "install": { "targetsTitle": "Supported targets", "targetsPrefix": "Linux with systemd on", "description": "The installer downloads the matching binary from GitHub Releases, creates the configuration and secret files, and installs" },
+      "configure": { "configFile": "Configuration file", "secretFile": "Shared secret file", "listenerTitle": "Default listener: 127.0.0.1:9187", "listenerPrefix": "If Kyvora API runs on another host, change", "listenerSuffix": "to a private interface address and allow only the API host through the firewall. Restart the service after editing.", "logsPrefix": "Use", "logsSuffix": "to confirm startup and diagnose configuration errors." },
+      "connect": { "scheme": "Scheme", "host": "Host", "port": "Port", "basePath": "Optional base path", "agentName": "Agent name", "sharedSecret": "Shared secret", "secretPrefix": "Must exactly match", "secretSuffix": "Kyvora never returns the saved secret.", "pullEnabled": "Enable scheduled pulls for this agent" },
+      "test": {
+        "connectionTarget": "Connection target", "action": "Test connection from Kyvora API", "hint": "Test before saving. If it fails, you may still save the configuration after reviewing the warning.", "successTitle": "Agent reachable and authenticated", "successMessage": "Kyvora API connected to the agent successfully.", "failureMessage": "Kyvora API could not complete the connection test.", "version": "Version", "noCapabilities": "No capabilities reported",
+        "errorCodes": { "unreachable": "Unreachable", "timeout": "Timeout", "unauthorized": "Unauthorized", "invalid_response": "Invalid response", "tls_error": "TLS error", "configuration_invalid": "Invalid configuration", "unknown_error": "Unknown error" }
+      },
+      "troubleshooting": { "title": "Troubleshooting", "secretPrefix": "Verify the secret matches", "restartAfterSecret": "Restart the agent after rotating the secret.", "verifyUrl": "Verify the URL points to Kyvora Agent.", "checkVersion": "Check the installed agent version and service logs.", "checkPrefix": "Check", "network": "Verify the listen address, port, and firewall rules.", "route": "Confirm Kyvora API can route to the host.", "inspectPrefix": "Inspect" }
+    }
   },
   "serviceCategories": {
     "MONITORING": "Monitoring",

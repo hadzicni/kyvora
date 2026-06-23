@@ -11,8 +11,10 @@ Both stacks run:
 - Spring Boot API
 - Next.js web dashboard
 
-The Go agent is not containerized in this setup. Enroll an agent in the UI and
-run it on the host separately.
+The Go agent is not containerized in this setup. Open **Agents → Set up agent**
+and follow the Linux/systemd Agent Setup Wizard to install it on the host and
+test the pull-based connection from the Kyvora API. Windows, macOS, and legacy
+push-based setup are not supported.
 
 ## Development
 

@@ -384,13 +384,16 @@ The agent does not initiate registration, status, or metrics writes to the
 Kyvora API. The backend records `lastPullAt`, `lastSuccessfulPullAt`,
 `lastPullError`, capabilities, and agent status from pull attempts.
 
-1. Install the agent as a Linux systemd service, or run it locally for
-   development with `KYVORA_AGENT_LISTEN_ADDRESS`,
-   `KYVORA_AGENT_LISTEN_PORT`, and `KYVORA_AGENT_SHARED_SECRET`.
-2. Log in to the web dashboard.
-3. Create or select an existing server inventory entry.
-4. Configure the agent connection with its base URL and shared secret.
-5. Use Pull now to test the connection and update operational data.
+Open **Agents → Set up agent** in the web dashboard. The Agent Setup Wizard
+guides operators through selecting a server, installing the agent, checking
+the systemd service, configuring network reachability, and entering the
+scheme, host, port, optional base path, and shared secret. The secret must
+match `/etc/kyvora/agent.secret`; saved secrets are never displayed again.
+
+Use **Test connection from Kyvora API** before saving. The test is performed by
+the backend, not the browser, and reports authentication, timeout, TLS,
+reachability, and invalid-response failures. After saving, use **Pull now** on
+the agent detail page to refresh capabilities, host facts, and status.
 
 Successful pulls update the assigned agent status and the linked server status
 and last-seen timestamp. Failed pulls record the error and mark the agent and
@@ -401,14 +404,22 @@ The agent port is sensitive. Bind it to localhost or a trusted private network
 interface by default, and do not expose it publicly without stronger transport
 security such as mTLS and network policy.
 
-Connected agents can be decommissioned from the server detail Agent Setup
-section or the Agents page. Decommissioning disables pulls and unlinks the
+Connected agents can be decommissioned from the agent detail page.
+Decommissioning disables pulls and unlinks the
 agent from the server without deleting the server inventory record.
 
 Activity tracks lifecycle transitions such as configuration, manual pulls,
 pull failures, decommissioning, and offline detection. Shared secrets,
 authorization headers, and cookies are never logged or returned in API
 responses.
+
+The wizard and backend support only this pull-based model. Registration
+tokens, heartbeats, metrics push, and agent-to-API credentials are not
+supported. For timeout or unreachable errors, verify the service, private
+listen address, port, firewall, API-to-host route, and
+`journalctl -u kyvora-agent -f`. For unauthorized errors, verify or rotate the
+secret and restart the service. For invalid responses, verify the URL points
+to a compatible Kyvora Agent and inspect its logs.
 
 ## Development
 

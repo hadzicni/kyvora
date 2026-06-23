@@ -17,6 +17,7 @@ import {
   listAgents,
   pullAgent,
   registerAgent,
+  testAgentConnection,
   type ListAgentsParams,
   type Agent,
   type RegisterAgentInput,
@@ -65,6 +66,12 @@ export function useRegisterAgent() {
         queryClient.invalidateQueries({ queryKey: serverKeys.all }),
       ]);
     },
+  });
+}
+
+export function useTestAgentConnection() {
+  return useMutation({
+    mutationFn: testAgentConnection,
   });
 }
 
