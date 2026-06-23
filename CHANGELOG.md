@@ -181,3 +181,18 @@
 ### Fixed
 
 - Fixed logging-related issues caused by a missing SLF4J import.
+
+## [0.7.0] - 2026-06-23
+
+### Added
+
+- Added an interactive setup wizard for the Kyvora Agent.
+
+### Changed
+
+- Replaced the agent decommission flow with a clearer remove flow.
+- Updated agent management terminology and behavior to better match the new pull-based agent model.
+
+### Fixed
+
+- Updated the Hono dependency from `4.12.23` to `4.12.26`.
