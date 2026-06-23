@@ -404,12 +404,22 @@ The agent port is sensitive. Bind it to localhost or a trusted private network
 interface by default, and do not expose it publicly without stronger transport
 security such as mTLS and network policy.
 
-Connected agents can be decommissioned from the agent detail page.
-Decommissioning disables pulls and unlinks the
-agent from the server without deleting the server inventory record.
+Connected agents can be removed from Kyvora on the agent detail page. Removing
+an agent stops pulls and deletes its agent record without deleting the server
+inventory record. It does not uninstall anything from the managed Linux host.
+
+To uninstall the Linux systemd agent manually while preserving its
+configuration and secret, run this on the managed host:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/uninstall-agent.sh | sudo bash
+```
+
+With a repository checkout, `sudo ./scripts/uninstall-agent.sh --purge-config`
+also removes the configuration and secret files and is therefore destructive.
 
 Activity tracks lifecycle transitions such as configuration, manual pulls,
-pull failures, decommissioning, and offline detection. Shared secrets,
+pull failures, removal, and offline detection. Shared secrets,
 authorization headers, and cookies are never logged or returned in API
 responses.
 

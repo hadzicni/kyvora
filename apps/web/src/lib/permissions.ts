@@ -21,7 +21,7 @@ export const permissions = [
   "AGENT_READ",
   "AGENT_ENROLL",
   "AGENT_PULL",
-  "AGENT_DECOMMISSION",
+  "AGENT_REMOVE",
 ] as const;
 
 export type UserPermission = (typeof permissions)[number];
@@ -44,7 +44,7 @@ export const permissionPresets: Record<PermissionPreset, UserPermission[]> = {
     "AGENT_READ",
     "AGENT_ENROLL",
     "AGENT_PULL",
-    "AGENT_DECOMMISSION",
+    "AGENT_REMOVE",
   ],
   VIEWER: [
     "DASHBOARD_READ",
@@ -157,10 +157,10 @@ export function canPullAgents(assigned: readonly string[] | null | undefined) {
   return can(assigned, "AGENT_PULL");
 }
 
-export function canDecommissionAgents(
+export function canRemoveAgents(
   assigned: readonly string[] | null | undefined
 ) {
-  return can(assigned, "AGENT_DECOMMISSION");
+  return can(assigned, "AGENT_REMOVE");
 }
 
 export function canViewOnly(assigned: readonly string[] | null | undefined) {

@@ -20,7 +20,7 @@ public enum PermissionPreset {
 			UserPermission.AGENT_READ,
 			UserPermission.AGENT_ENROLL,
 			UserPermission.AGENT_PULL,
-			UserPermission.AGENT_DECOMMISSION)),
+			UserPermission.AGENT_REMOVE)),
 	VIEWER(EnumSet.of(
 			UserPermission.DASHBOARD_READ,
 			UserPermission.AUDIT_LOG_READ,

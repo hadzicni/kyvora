@@ -146,7 +146,7 @@ public class DefaultAuditLogService implements AuditLogService {
 			case AGENT_PULL_FAILED -> "Agent pull failed: " + agentDisplayName(event);
 			case AGENT_MARKED_ONLINE -> "Agent marked online";
 			case AGENT_MARKED_OFFLINE -> "Agent marked offline: " + event.hostname();
-			case AGENT_DECOMMISSIONED -> "Agent decommissioned: " + agentDisplayName(event);
+			case AGENT_REMOVED -> "Agent removed from Kyvora; Linux host uninstall is manual: " + agentDisplayName(event);
 		};
 	}
 

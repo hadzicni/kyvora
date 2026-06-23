@@ -12,7 +12,7 @@ import { auditLogKeys } from "@/lib/api/audit-logs";
 import {
   agentKeys,
   AgentApiError,
-  decommissionAgent,
+  removeAgent,
   getAgent,
   listAgents,
   pullAgent,
@@ -91,11 +91,11 @@ export function usePullAgent() {
   });
 }
 
-export function useDecommissionAgent() {
+export function useRemoveAgent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => decommissionAgent(id),
+    mutationFn: (id: string) => removeAgent(id),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: agentKeys.all }),

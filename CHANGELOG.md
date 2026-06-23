@@ -26,7 +26,7 @@
 ### Changed
 
 - Improved the web sidebar with collapsible behavior.
-- Improved agent decommissioning by supporting connected agents.
+- Improved agent removal by supporting connected agents.
 - Removed the development hint from the backend health gate.
 
 ## [0.1.3] - 2026-06-09

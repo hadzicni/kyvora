@@ -12,6 +12,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import dev.kyvora.api.agent.exception.AgentNotFoundException;
 import dev.kyvora.api.agent.exception.DuplicateAgentException;
@@ -31,6 +32,14 @@ import lombok.extern.slf4j.Slf4j;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ApiErrorResponse> handleNoResource(
+			NoResourceFoundException exception,
+			HttpServletRequest request) {
+		log.debug("No API resource found for path {}", request.getRequestURI());
+		return buildResponse(HttpStatus.NOT_FOUND, "Resource not found", request.getRequestURI(), List.of());
+	}
 
 	@ExceptionHandler(ServerInventoryNotFoundException.class)
 	public ResponseEntity<ApiErrorResponse> handleNotFound(

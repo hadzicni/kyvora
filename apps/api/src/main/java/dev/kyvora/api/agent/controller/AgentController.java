@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -111,12 +112,15 @@ public class AgentController {
 		return ResponseEntity.ok(service.pull(id));
 	}
 
-	@PostMapping("/{id}/decommission")
-	@PreAuthorize("@permissions.canDecommissionAgents(authentication)")
-	@Operation(summary = "Decommission an agent target")
-	public ResponseEntity<AgentResponse> decommission(
+	@DeleteMapping("/{id}")
+	@PreAuthorize("@permissions.canRemoveAgents(authentication)")
+	@Operation(
+			summary = "Remove an agent from Kyvora",
+			description = "Stops pulls and removes the agent record from Kyvora. This does not uninstall the Linux systemd service from the managed host.")
+	public ResponseEntity<Void> remove(
 			@Parameter(description = "Agent identifier.", example = "00000000-0000-0000-0000-000000000001")
 			@PathVariable UUID id) {
-		return ResponseEntity.ok(service.decommission(id));
+		service.remove(id);
+		return ResponseEntity.noContent().build();
 	}
 }

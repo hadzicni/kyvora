@@ -160,13 +160,10 @@ export async function pullAgent(id: string): Promise<AgentPullResult> {
   });
 }
 
-export async function decommissionAgent(id: string): Promise<Agent> {
-  return request<Agent>(
-    `/api/agents/${encodeURIComponent(id)}/decommission`,
-    {
-      method: "POST",
-    }
-  );
+export async function removeAgent(id: string): Promise<void> {
+  return request<void>(`/api/agents/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 export const agentKeys = {

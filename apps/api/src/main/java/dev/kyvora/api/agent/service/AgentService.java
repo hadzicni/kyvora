@@ -26,7 +26,7 @@ public interface AgentService {
 
 	AgentPullResponse pull(UUID id);
 
-	AgentResponse decommission(UUID id);
+	void remove(UUID id);
 
 	int markStaleOnlineAgentsOffline();
 }

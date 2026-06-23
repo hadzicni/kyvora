@@ -16,6 +16,18 @@ and follow the Linux/systemd Agent Setup Wizard to install it on the host and
 test the pull-based connection from the Kyvora API. Windows, macOS, and legacy
 push-based setup are not supported.
 
+Removing an agent from Kyvora stops pulls and removes only its Kyvora record.
+To uninstall the Linux systemd service manually while preserving its
+configuration and secret, run on the managed host:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/uninstall-agent.sh | sudo bash
+```
+
+With a repository checkout, `sudo ./scripts/uninstall-agent.sh --purge-config`
+also removes `/etc/kyvora/agent.yaml` and `/etc/kyvora/agent.secret`; this mode
+is destructive.
+
 ## Development
 
 From the repository root:

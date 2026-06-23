@@ -138,7 +138,7 @@ const permissionGroups = [
       "AGENT_READ",
       "AGENT_ENROLL",
       "AGENT_PULL",
-      "AGENT_DECOMMISSION",
+      "AGENT_REMOVE",
     ],
   },
 ] satisfies Array<{ key: string; permissions: UserPermission[] }>

@@ -21,7 +21,7 @@ export type UserPermission =
   | "AGENT_READ"
   | "AGENT_ENROLL"
   | "AGENT_PULL"
-  | "AGENT_DECOMMISSION";
+  | "AGENT_REMOVE";
 
 export type PermissionPreset = "ADMIN" | "OPERATOR" | "VIEWER";
 

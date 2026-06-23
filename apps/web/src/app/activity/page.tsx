@@ -369,8 +369,8 @@ function formatActivityMessage(auditLog: AuditLog) {
       return "Server marked online by agent";
     case "SERVER_MARKED_OFFLINE_BY_AGENT":
       return "Server marked offline by agent";
-    case "AGENT_DECOMMISSIONED":
-      return `Agent decommissioned${serverName ? ` from server ${serverName}` : ""}`;
+    case "AGENT_REMOVED":
+      return `Agent removed from Kyvora${serverName ? ` from server ${serverName}` : ""}`;
     default:
       return auditLog.message;
   }

@@ -192,7 +192,7 @@
       "AGENT_READ": "Agents anzeigen",
       "AGENT_ENROLL": "Agents konfigurieren",
       "AGENT_PULL": "Agent-Daten abrufen",
-      "AGENT_DECOMMISSION": "Agents außer Betrieb nehmen"
+      "AGENT_REMOVE": "Agents entfernen"
     }
   },
   "dashboard": {
@@ -391,12 +391,17 @@
     "pullSucceededToast": "Agent-Pull abgeschlossen.",
     "pullFailedToast": "Agent-Pull fehlgeschlagen.",
     "pullFailedDescription": "Vom Agent können gerade keine Daten abgerufen werden.",
-    "decommissionAgent": "Agent außer Betrieb nehmen",
-    "decommissionTitle": "Agent außer Betrieb nehmen?",
-    "decommissionDescription": "Dies deaktiviert Pulls und trennt den Agent von diesem Server. Der Server bleibt im Inventar und du kannst später einen neuen Agent konfigurieren.",
-    "decommissionedToast": "Agent außer Betrieb genommen.",
-    "decommissionFailedToast": "Agent konnte nicht außer Betrieb genommen werden.",
-    "decommissionFailedDescription": "Der Agent kann gerade nicht außer Betrieb genommen werden.",
+    "removeAgent": "Agent entfernen",
+    "removeTitle": "Agent aus Kyvora entfernen?",
+    "removeDescription": "Dadurch wird der Agent-Eintrag aus Kyvora entfernt und alle Pulls werden beendet. Der Server bleibt im Inventar. Der Linux-systemd-Dienst wird dadurch nicht vom Host deinstalliert.",
+    "removedToast": "Agent aus Kyvora entfernt.",
+    "removeFailedToast": "Agent konnte nicht entfernt werden.",
+    "removeFailedDescription": "Der Agent kann derzeit nicht entfernt werden.",
+    "uninstallHostTitle": "Optionale Deinstallation auf dem Host",
+    "uninstallHostDescription": "Führe diesen Befehl manuell auf dem verwalteten Linux-Server aus, um den Kyvora Agent zu deinstallieren. Kyvora verwendet dafür weder SSH noch eine Remote-Deinstallation.",
+    "uninstallPreservesConfig": "Die Standard-Deinstallation behält /etc/kyvora/agent.yaml und /etc/kyvora/agent.secret bei.",
+    "copyUninstallCommand": "Deinstallationsbefehl kopieren",
+    "uninstallCommandCopied": "Deinstallationsbefehl kopiert.",
     "emptyTitle": "Keine Agents gefunden",
     "emptyDescription": "Konfiguriere einen Agent über einen Server, um Hostdaten zu erfassen.",
     "errorTitle": "Agents konnten nicht geladen werden",

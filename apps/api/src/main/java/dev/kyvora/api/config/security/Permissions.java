@@ -107,8 +107,8 @@ public class Permissions {
 		return hasPermission(authentication, UserPermission.AGENT_PULL);
 	}
 
-	public boolean canDecommissionAgents(Authentication authentication) {
-		return hasPermission(authentication, UserPermission.AGENT_DECOMMISSION);
+	public boolean canRemoveAgents(Authentication authentication) {
+		return hasPermission(authentication, UserPermission.AGENT_REMOVE);
 	}
 
 	private boolean hasPermission(Authentication authentication, UserPermission permission) {

@@ -62,26 +62,6 @@ public record AgentChangedEvent(
 		return withActor(type, agent, "system:agent-monitor");
 	}
 
-	public static AgentChangedEvent decommissioned(
-			Agent agent,
-			AgentStatus previousStatus,
-			UUID serverId,
-			String serverName) {
-		return new AgentChangedEvent(
-				AgentEventType.AGENT_DECOMMISSIONED,
-				agent.getId(),
-				agent.getName(),
-				agent.getHostname(),
-				agent.getVersion(),
-				agent.getStatus(),
-				previousStatus,
-				agent.getLastSeenAt(),
-				serverId,
-				serverName,
-				null,
-				Instant.now());
-	}
-
 	private static AgentChangedEvent withActor(AgentEventType type, Agent agent, String actor) {
 		return new AgentChangedEvent(
 				type,

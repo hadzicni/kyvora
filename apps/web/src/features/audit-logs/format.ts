@@ -11,14 +11,14 @@ export const auditEventTypes = [
   "AGENT_PULL_FAILED",
   "AGENT_MARKED_ONLINE",
   "AGENT_MARKED_OFFLINE",
-  "AGENT_DECOMMISSIONED",
+  "AGENT_REMOVED",
 ] as const satisfies AuditEventType[];
 
 const auditEventLabels: Partial<Record<AuditEventType, string>> = {
   AGENT_CONFIGURED: "Agent configured",
   AGENT_PULL_SUCCEEDED: "Agent pull succeeded",
   AGENT_PULL_FAILED: "Agent pull failed",
-  AGENT_DECOMMISSIONED: "Agent decommissioned",
+  AGENT_REMOVED: "Agent removed",
 };
 
 export const aggregateTypes = ["SERVER", "AGENT"] as const;

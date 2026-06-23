@@ -190,30 +190,17 @@ public class DefaultAgentService implements AgentService {
 	}
 
 	@Override
-	public AgentResponse decommission(UUID id) {
+	public void remove(UUID id) {
 		Agent agent = getRequiredEntity(id);
-		AgentStatus previousStatus = agent.getStatus();
 		ServerInventory server = agent.getServer();
-		UUID previousServerId = server == null ? null : server.getId();
-		String previousServerName = server == null ? null : server.getName();
-
-		agent.setPullEnabled(false);
-		agent.setStatus(AgentStatus.UNKNOWN);
-		agent.setServer(null);
-		agent.setSharedSecret("");
 
 		if (server != null) {
 			server.setStatus(ServerStatus.UNKNOWN);
 		}
 
-		Agent saved = repository.save(agent);
-		auditLogService.recordAgentChange(AgentChangedEvent.decommissioned(
-				saved,
-				previousStatus,
-				previousServerId,
-				previousServerName));
-		log.info("Decommissioned agent {}", saved.getId());
-		return mapper.toResponse(saved);
+		auditLogService.recordAgentChange(AgentChangedEvent.from(AgentEventType.AGENT_REMOVED, agent));
+		repository.delete(agent);
+		log.info("Removed agent {} from Kyvora", agent.getId());
 	}
 
 	@Override

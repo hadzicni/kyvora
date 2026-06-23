@@ -17,12 +17,12 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AgentStatusBadge } from "@/features/agents/agent-status-badge";
-import { DecommissionAgentDialog } from "@/features/agents/decommission-agent-dialog";
+import { RemoveAgentDialog } from "@/features/agents/remove-agent-dialog";
 import { AgentErrorState } from "@/features/agents/agent-error-state";
 import { useAgent, usePullAgent } from "@/features/agents/use-agents";
 import { formatBytes, formatDateTime, formatUptime } from "@/features/servers/format";
 import { AgentApiError } from "@/lib/api/agents";
-import { canDecommissionAgents, canPullAgents } from "@/lib/permissions";
+import { canRemoveAgents, canPullAgents } from "@/lib/permissions";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -127,8 +127,8 @@ export default function AgentDetailPage() {
                   Pull now
                 </Button>
               ) : null}
-              {canDecommissionAgents(session?.user.permissions) ? (
-                <DecommissionAgentDialog agent={agent} />
+              {canRemoveAgents(session?.user.permissions) ? (
+                <RemoveAgentDialog agent={agent} redirectTo="/agents" />
               ) : null}
             </div>
           ) : null}

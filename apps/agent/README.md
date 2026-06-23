@@ -256,17 +256,31 @@ usernames, or file contents.
 Remove the service and binary while preserving config and secrets:
 
 ```bash
-sudo scripts/uninstall-agent.sh
+sudo ./scripts/uninstall-agent.sh
 ```
 
 Remove config and secret files explicitly:
 
 ```bash
-sudo scripts/uninstall-agent.sh --purge-config
+sudo ./scripts/uninstall-agent.sh --purge-config
 ```
 
 The uninstaller only targets the Kyvora Agent service unit, binary, and
 optionally `/etc/kyvora/agent.yaml` plus `/etc/kyvora/agent.secret`.
+
+From a host without a repository checkout, run the official script directly:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadzicni/kyvora/main/scripts/uninstall-agent.sh | sudo bash
+```
+
+The default uninstall preserves `/etc/kyvora/agent.yaml` and
+`/etc/kyvora/agent.secret`. Purging those files is destructive and requires
+the explicit local `--purge-config` command shown above.
+
+Removing an agent in the Kyvora web UI is separate: it stops pulls and removes
+the Kyvora database record, but it never connects to the host or uninstalls the
+Linux service remotely.
 
 ## Troubleshooting
 

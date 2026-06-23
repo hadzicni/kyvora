@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AgentStatusBadge } from "@/features/agents/agent-status-badge";
-import { DecommissionAgentDialog } from "@/features/agents/decommission-agent-dialog";
+import { RemoveAgentDialog } from "@/features/agents/remove-agent-dialog";
 import { RegisterAgentDialog } from "@/features/agents/register-agent-dialog";
 import { useAgents, usePullAgent } from "@/features/agents/use-agents";
 import { DeleteServerDialog } from "@/features/servers/delete-server-dialog";
@@ -43,7 +43,7 @@ import type { Agent } from "@/lib/api/agents";
 import { ApiError, type ServerInventoryItem } from "@/lib/api/servers";
 import {
   canDeleteServers,
-  canDecommissionAgents,
+  canRemoveAgents,
   canEnrollAgents,
   canPullAgents,
   canUpdateServers,
@@ -370,7 +370,7 @@ function AgentSection({
   server,
 }: {
   actions: {
-    canDecommission: boolean;
+    canRemove: boolean;
     canEnroll: boolean;
     canPull: boolean;
   };
@@ -462,8 +462,8 @@ function AgentSection({
                     {t("agents.pullNow")}
                   </Button>
                 ) : null}
-                {actions.canDecommission && agent ? (
-                  <DecommissionAgentDialog agent={agent} />
+                {actions.canRemove && agent ? (
+                  <RemoveAgentDialog agent={agent} />
                 ) : null}
                 <Button asChild type="button" variant="outline">
                   <Link href={`/agents/${agent.id}`}>
@@ -528,7 +528,7 @@ function ServerDetails({
 }: {
   canDelete: boolean;
   agentActions: {
-    canDecommission: boolean;
+    canRemove: boolean;
     canEnroll: boolean;
     canPull: boolean;
   };
@@ -732,7 +732,7 @@ export default function ServerDetailPage() {
           <ServerDetails
             canDelete={canDeleteServers(session?.user.permissions)}
             agentActions={{
-              canDecommission: canDecommissionAgents(session?.user.permissions),
+              canRemove: canRemoveAgents(session?.user.permissions),
               canEnroll: canEnrollAgents(session?.user.permissions),
               canPull: canPullAgents(session?.user.permissions),
             }}

@@ -193,7 +193,7 @@
       "AGENT_READ": "View agents",
       "AGENT_ENROLL": "Configure agents",
       "AGENT_PULL": "Pull agent data",
-      "AGENT_DECOMMISSION": "Decommission agents"
+      "AGENT_REMOVE": "Remove agents"
     }
   },
   "dashboard": {
@@ -392,12 +392,17 @@
     "pullSucceededToast": "Agent pull completed.",
     "pullFailedToast": "Agent pull failed.",
     "pullFailedDescription": "Unable to pull data from the agent right now.",
-    "decommissionAgent": "Decommission agent",
-    "decommissionTitle": "Decommission agent?",
-    "decommissionDescription": "This disables pulling and unlinks the agent from this server. The server will remain in inventory and you can configure a new agent later.",
-    "decommissionedToast": "Agent decommissioned.",
-    "decommissionFailedToast": "Unable to decommission agent.",
-    "decommissionFailedDescription": "Unable to decommission the agent right now.",
+    "removeAgent": "Remove agent",
+    "removeTitle": "Remove agent from Kyvora?",
+    "removeDescription": "This removes the agent record from Kyvora and stops all pulls. The server remains in inventory. This does not uninstall the Linux systemd service from the host.",
+    "removedToast": "Agent removed from Kyvora.",
+    "removeFailedToast": "Unable to remove agent.",
+    "removeFailedDescription": "Unable to remove the agent right now.",
+    "uninstallHostTitle": "Optional host uninstall",
+    "uninstallHostDescription": "To uninstall Kyvora Agent, run this command manually on the managed Linux server. Kyvora does not connect through SSH or uninstall it remotely.",
+    "uninstallPreservesConfig": "The default uninstall preserves /etc/kyvora/agent.yaml and /etc/kyvora/agent.secret.",
+    "copyUninstallCommand": "Copy uninstall command",
+    "uninstallCommandCopied": "Uninstall command copied.",
     "emptyTitle": "No agents found",
     "emptyDescription": "Configure an agent from a server to begin collecting host facts.",
     "errorTitle": "Unable to load agents",

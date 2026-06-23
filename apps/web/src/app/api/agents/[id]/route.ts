@@ -61,3 +61,16 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     return agentApiUnavailableResponse();
   }
 }
+
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  try {
+    const response = await backendFetch(
+      request,
+      await createBackendUrl(request, context),
+      { method: "DELETE", headers: { Accept: "application/json" } }
+    );
+    return createBackendResponse(response, await response.text());
+  } catch {
+    return agentApiUnavailableResponse();
+  }
+}

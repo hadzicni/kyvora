@@ -29,7 +29,7 @@ public enum UserPermission {
 	AGENT_READ,
 	AGENT_ENROLL,
 	AGENT_PULL,
-	AGENT_DECOMMISSION;
+	AGENT_REMOVE;
 
 	public String authority() {
 		return "PERMISSION_" + name();
