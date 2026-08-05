@@ -196,3 +196,16 @@
 ### Fixed
 
 - Updated the Hono dependency from `4.12.23` to `4.12.26`.
+
+## [0.7.1] - 2026-08-05
+
+### Changed
+
+- Updated Hono to `4.13.0`.
+- Updated Next.js to `16.2.11`.
+- Updated NextAuth.js to `4.24.15`.
+- Updated project dependencies to their latest compatible versions.
+
+### Fixed
+
+- Applied the latest dependency and security updates across the project.
