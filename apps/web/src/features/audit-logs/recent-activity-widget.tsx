@@ -3,14 +3,8 @@
 import { CirclePlus, History, Pencil, Radio, Trash2, WifiOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { SectionCard } from "@/components/app/section-card";
 import { SectionState } from "@/components/app/section-state";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ServerErrorState } from "@/features/servers/server-error-state";
 import type { AuditEventType } from "@/lib/api/audit-logs";
@@ -44,15 +38,13 @@ export function RecentActivityWidget() {
   const auditLogs = auditLogsQuery.data?.content ?? [];
 
   return (
-    <Card>
-      <CardHeader className="border-b">
-        <CardTitle className="flex items-center gap-2">
-          <History className="size-4" />
-          {t("dashboard.recentActivity")}
-        </CardTitle>
-        <CardDescription>{t("dashboard.recentActivityDescription")}</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <SectionCard
+      description={t("dashboard.recentActivityDescription")}
+      flush
+      icon={<History />}
+      title={t("dashboard.recentActivity")}
+    >
+      <div className="px-4 py-3">
         {auditLogsQuery.isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-12 w-full" />
@@ -81,16 +73,16 @@ export function RecentActivityWidget() {
         ) : null}
 
         {auditLogsQuery.isSuccess && auditLogs.length > 0 ? (
-          <div className="space-y-3">
+          <div className="divide-y divide-border">
             {auditLogs.map((auditLog) => {
               const Icon = eventIcons[auditLog.eventType];
 
               return (
                 <div
-                  className="grid grid-cols-[2rem_1fr] gap-3 rounded-md border bg-muted/20 p-3"
+                  className="grid grid-cols-[1.25rem_1fr] gap-3 py-2.5 first:pt-0 last:pb-0"
                   key={auditLog.id}
                 >
-                  <div className="flex size-8 items-center justify-center rounded-md bg-background">
+                  <div className="flex size-5 items-center justify-center">
                     <Icon className="size-4 text-muted-foreground" />
                   </div>
                   <div className="min-w-0">
@@ -102,7 +94,7 @@ export function RecentActivityWidget() {
                         {formatTimestamp(auditLog.createdAt)}
                       </span>
                     </div>
-                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                    <p className="mt-0.5 line-clamp-2 text-sm leading-6 text-muted-foreground">
                       {auditLog.message}
                     </p>
                   </div>
@@ -111,7 +103,7 @@ export function RecentActivityWidget() {
             })}
           </div>
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   );
 }

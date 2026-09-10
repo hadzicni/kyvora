@@ -35,6 +35,10 @@
     "settings": "Einstellungen",
     "help": "Hilfe",
     "profile": "Profil",
+    "groupOverview": "Überblick",
+    "groupInfrastructure": "Infrastruktur",
+    "groupOperations": "Betrieb",
+    "groupSystem": "System",
     "openNavigation": "Navigation öffnen",
     "navigation": "Navigation",
     "expandSidebar": "Seitenleiste ausklappen",
@@ -80,6 +84,7 @@
   },
   "actions": {
     "refresh": "Aktualisieren",
+    "viewAll": "Alle anzeigen",
     "retry": "Erneut versuchen",
     "clear": "Zurücksetzen",
     "cancel": "Abbrechen",

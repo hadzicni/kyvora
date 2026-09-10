@@ -1,6 +1,7 @@
 "use client"
 
 import { AlertCircle, Bot, CheckCircle2, Radio, Server, WifiOff } from "lucide-react"
+import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { useLocale, useTranslations } from "next-intl"
 
@@ -9,8 +10,9 @@ import { HealthBar, type HealthSegment } from "@/components/app/health-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { SectionCard } from "@/components/app/section-card"
 import { SectionState } from "@/components/app/section-state"
+import { Stat, StatRow } from "@/components/app/stat-row"
 import { StatusBadge, StatusDot } from "@/components/app/status-badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AgentEmptyState } from "@/features/agents/agent-empty-state"
 import { AgentErrorState } from "@/features/agents/agent-error-state"
@@ -28,90 +30,54 @@ import { canDeleteServers, canUpdateServers } from "@/lib/permissions"
 import { type Tone, toneClass } from "@/lib/tone"
 import { cn } from "@/lib/utils"
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
+// ─── Health panel ─────────────────────────────────────────────────────────────
 
-function StatCard({
-  description,
-  icon: Icon,
-  loading,
-  title,
-  tone,
-  value,
-}: {
-  description: string
-  icon: React.ComponentType<{ className?: string }>
-  loading?: boolean
-  title: string
+type HealthRow = {
+  count: number
+  helper: string
+  label: string
   tone: Tone
-  value: string
-}) {
-  return (
-    <Card
-      className={cn(
-        "gap-0 transition-colors duration-200 hover:border-border-strong",
-        toneClass(tone),
-      )}
-    >
-      {/* A single hairline of colour carries the tone — no wash, no glow. */}
-      <span aria-hidden="true" className="-mt-4 h-0.5 w-full tone-fill" />
-      <CardHeader className="pt-4">
-        <div className="flex items-center gap-2">
-          <Icon className="size-3.5 shrink-0 tone-text" />
-          <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {title}
-          </CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-2">
-        {loading ? (
-          <>
-            <Skeleton className="h-8 w-16" />
-            <Skeleton className="mt-2 h-3.5 w-36" />
-          </>
-        ) : (
-          <>
-            <div className="text-3xl font-semibold leading-none tracking-tight tabular-nums">
-              {value}
-            </div>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  )
 }
 
-// ─── Health summary ───────────────────────────────────────────────────────────
-
-function HealthSummary({
-  description,
+/**
+ * One half of the health panel. Servers and agents share a shape, so they share
+ * a card and sit side by side instead of competing as two separate panels.
+ */
+function HealthColumn({
+  caption,
   empty,
   error,
-  items,
   loading,
-  segments,
+  rows,
   title,
   total,
 }: {
-  description: string
+  caption: string
   empty: React.ReactNode
   error?: React.ReactNode
-  items: React.ReactNode
   loading?: boolean
-  segments: HealthSegment[]
+  rows: HealthRow[]
   title: string
   total: number
 }) {
+  const locale = useLocale()
+  const segments: HealthSegment[] = rows.map((row) => ({
+    label: row.label,
+    tone: row.tone,
+    value: row.count,
+  }))
+
   return (
-    <SectionCard contentClassName="space-y-4 pt-4" description={description} title={title}>
+    <div className="min-w-0 space-y-3 px-4 py-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="text-sm font-medium">{title}</h3>
+        <span className="truncate text-xs text-muted-foreground">{caption}</span>
+      </div>
+
       {loading ? (
         <>
           <Skeleton className="h-1.5 w-full rounded-full" />
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
+          <Skeleton className="h-24 w-full" />
         </>
       ) : error ? (
         error
@@ -120,36 +86,22 @@ function HealthSummary({
       ) : (
         <>
           <HealthBar segments={segments} total={total} />
-          <div className="grid gap-5 sm:grid-cols-3">{items}</div>
+          <dl className="space-y-2">
+            {rows.map((row) => (
+              <div className={cn("flex items-baseline gap-2", toneClass(row.tone))} key={row.label}>
+                <StatusDot className="self-center" tone={row.tone} />
+                <dt className="text-xs font-medium text-foreground">{row.label}</dt>
+                <span className="truncate text-xs text-muted-foreground">
+                  {row.helper}
+                </span>
+                <dd className="ml-auto text-sm font-semibold tabular-nums">
+                  {formatNumber(row.count, locale)}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </>
       )}
-    </SectionCard>
-  )
-}
-
-function HealthMetric({
-  count,
-  helper,
-  label,
-  tone,
-}: {
-  count: number
-  helper: string
-  label: string
-  tone: Tone
-}) {
-  const locale = useLocale()
-
-  return (
-    <div className={cn("min-w-0", toneClass(tone))}>
-      <div className="flex items-baseline gap-2">
-        <StatusDot className="self-center" tone={tone} />
-        <span className="truncate text-xs font-medium text-foreground">{label}</span>
-        <span className="ml-auto text-sm font-semibold tabular-nums">
-          {formatNumber(count, locale)}
-        </span>
-      </div>
-      <p className="mt-1 pl-3.5 text-xs leading-5 text-muted-foreground">{helper}</p>
     </div>
   )
 }
@@ -182,15 +134,28 @@ export default function DashboardOverviewPage() {
   const attentionServers = offlineCount + unknownCount
   const attentionAgents = offlineAgents + unknownAgents
 
-  const statusSegments = (
-    online: number,
-    offline: number,
-    unknown: number,
-  ): HealthSegment[] => [
-    { label: t("statuses.ONLINE"), tone: "success", value: online },
-    { label: t("statuses.OFFLINE"), tone: "danger", value: offline },
-    { label: t("statuses.UNKNOWN"), tone: "warning", value: unknown },
-  ]
+  function statusRows(online: number, offline: number, unknown: number): HealthRow[] {
+    return [
+      {
+        count: online,
+        helper: t("dashboard.acceptingHeartbeats"),
+        label: t("statuses.ONLINE"),
+        tone: "success",
+      },
+      {
+        count: offline,
+        helper: t("dashboard.noRecentHeartbeat"),
+        label: t("statuses.OFFLINE"),
+        tone: "danger",
+      },
+      {
+        count: unknown,
+        helper: t("dashboard.noClearState"),
+        label: t("statuses.UNKNOWN"),
+        tone: "warning",
+      },
+    ]
+  }
 
   return (
     <AppShell>
@@ -210,164 +175,134 @@ export default function DashboardOverviewPage() {
           title={instance.name}
         />
 
-        {/* ── Stat cards ── */}
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            description={t("dashboard.serversTracked")}
+        {/* ── Headline figures ── */}
+        <StatRow>
+          <Stat
+            hint={t("dashboard.serversTracked")}
             icon={Server}
+            label={t("navigation.servers")}
             loading={summaryQuery.isLoading}
-            title={t("navigation.servers")}
             tone="info"
             value={formatNumber(totalServers, locale)}
           />
-          <StatCard
-            description={t("dashboard.serversOnline")}
+          <Stat
+            hint={t("dashboard.serversOnline")}
             icon={CheckCircle2}
+            label={t("dashboard.onlineServers")}
             loading={summaryQuery.isLoading}
-            title={t("dashboard.onlineServers")}
             tone="success"
             value={formatNumber(onlineCount, locale)}
           />
-          <StatCard
-            description={t("dashboard.needsAttentionDescription")}
+          <Stat
+            hint={t("dashboard.needsAttentionDescription")}
             icon={WifiOff}
+            label={t("dashboard.needsAttention")}
             loading={summaryQuery.isLoading}
-            title={t("dashboard.needsAttention")}
             tone={attentionServers > 0 ? "danger" : "neutral"}
             value={formatNumber(attentionServers, locale)}
           />
-          <StatCard
-            description={t("dashboard.registeredAgentsDescription")}
+          <Stat
+            hint={t("dashboard.registeredAgentsDescription")}
             icon={Bot}
+            label={t("navigation.agents")}
             loading={agentsQuery.isLoading}
-            title={t("navigation.agents")}
             tone="brand"
             value={formatNumber(totalAgents, locale)}
           />
-        </div>
-
-        {/* ── Health summaries ── */}
-        <div className="grid gap-4 xl:grid-cols-2">
-          <HealthSummary
-            description={
-              summary?.generatedAt
-                ? t("dashboard.generatedAt", {
-                    date: new Date(summary.generatedAt).toLocaleString(locale),
-                  })
-                : t("dashboard.inventoryHealth")
-            }
-            empty={<ServerEmptyState />}
-            error={
-              summaryQuery.isError ? (
-                <ServerErrorState
-                  message={
-                    summaryQuery.error instanceof Error
-                      ? summaryQuery.error.message
-                      : t("errors.unexpected")
-                  }
-                  onRetry={() => void summaryQuery.refetch()}
-                />
-              ) : undefined
-            }
-            items={
-              <>
-                <HealthMetric
-                  count={onlineCount}
-                  helper={t("dashboard.acceptingHeartbeats")}
-                  label={t("statuses.ONLINE")}
-                  tone="success"
-                />
-                <HealthMetric
-                  count={offlineCount}
-                  helper={t("dashboard.noRecentHeartbeat")}
-                  label={t("statuses.OFFLINE")}
-                  tone="danger"
-                />
-                <HealthMetric
-                  count={unknownCount}
-                  helper={t("dashboard.noClearState")}
-                  label={t("statuses.UNKNOWN")}
-                  tone="warning"
-                />
-              </>
-            }
-            loading={summaryQuery.isLoading}
-            segments={statusSegments(onlineCount, offlineCount, unknownCount)}
-            title={t("dashboard.serverHealth")}
-            total={totalServers}
-          />
-
-          <HealthSummary
-            description={t("dashboard.agentHealthDescription")}
-            empty={<AgentEmptyState />}
-            error={
-              agentsQuery.isError ? (
-                <AgentErrorState
-                  message={
-                    agentsQuery.error instanceof Error
-                      ? agentsQuery.error.message
-                      : t("agents.unexpectedError")
-                  }
-                  onRetry={() => void agentsQuery.refetch()}
-                />
-              ) : undefined
-            }
-            items={
-              <>
-                <HealthMetric
-                  count={onlineAgents}
-                  helper={t("dashboard.agentsReporting")}
-                  label={t("statuses.ONLINE")}
-                  tone="success"
-                />
-                <HealthMetric
-                  count={offlineAgents}
-                  helper={t("dashboard.agentsMissing")}
-                  label={t("statuses.OFFLINE")}
-                  tone="danger"
-                />
-                <HealthMetric
-                  count={unknownAgents}
-                  helper={t("dashboard.pendingUnknownAgents")}
-                  label={t("statuses.UNKNOWN")}
-                  tone="warning"
-                />
-              </>
-            }
-            loading={agentsQuery.isLoading}
-            segments={statusSegments(onlineAgents, offlineAgents, unknownAgents)}
-            title={t("dashboard.agentHealth")}
-            total={totalAgents}
-          />
-        </div>
+        </StatRow>
 
         {/* ── Attention banner ── */}
         {attentionServers > 0 || attentionAgents > 0 ? (
-          <div className="tone-warning flex items-start gap-3 rounded-xl border tone-surface p-4 tone-text">
-            <AlertCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-sm font-medium">
-                {t("dashboard.operationalAttention")}
-              </p>
-              <p className="mt-0.5 text-sm leading-6 text-muted-foreground">
+          <div className="tone-warning flex flex-wrap items-center gap-3 rounded-xl border tone-surface px-4 py-3">
+            <AlertCircle aria-hidden="true" className="size-4 shrink-0 tone-text" />
+            <p className="min-w-0 flex-1 text-sm">
+              <span className="font-medium">{t("dashboard.operationalAttention")}</span>{" "}
+              <span className="text-muted-foreground">
                 {t("dashboard.attentionSummary", {
                   agents: formatNumber(attentionAgents, locale),
                   servers: formatNumber(attentionServers, locale),
                 })}
-              </p>
-            </div>
+              </span>
+            </p>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/servers">{t("actions.viewAll")}</Link>
+            </Button>
           </div>
         ) : null}
 
-        {/* ── Recent servers + agents ── */}
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
-          <SectionCard
-            description={t("dashboard.recentServersDescription")}
-            icon={<Server />}
-            title={t("dashboard.recentServers")}
-          >
-            {serversQuery.isLoading ? <Skeleton className="h-64 w-full" /> : null}
-            {serversQuery.isError ? (
+        {/* ── Health ── */}
+        <SectionCard
+          description={t("dashboard.inventoryHealth")}
+          flush
+          title={t("dashboard.serverHealth")}
+        >
+          <div className="grid divide-y divide-border md:grid-cols-2 md:divide-x md:divide-y-0">
+            <HealthColumn
+              caption={
+                summary?.generatedAt
+                  ? new Date(summary.generatedAt).toLocaleTimeString(locale)
+                  : ""
+              }
+              empty={<ServerEmptyState />}
+              error={
+                summaryQuery.isError ? (
+                  <ServerErrorState
+                    message={
+                      summaryQuery.error instanceof Error
+                        ? summaryQuery.error.message
+                        : t("errors.unexpected")
+                    }
+                    onRetry={() => void summaryQuery.refetch()}
+                  />
+                ) : undefined
+              }
+              loading={summaryQuery.isLoading}
+              rows={statusRows(onlineCount, offlineCount, unknownCount)}
+              title={t("navigation.servers")}
+              total={totalServers}
+            />
+            <HealthColumn
+              caption={t("dashboard.agentHealthDescription")}
+              empty={<AgentEmptyState />}
+              error={
+                agentsQuery.isError ? (
+                  <AgentErrorState
+                    message={
+                      agentsQuery.error instanceof Error
+                        ? agentsQuery.error.message
+                        : t("agents.unexpectedError")
+                    }
+                    onRetry={() => void agentsQuery.refetch()}
+                  />
+                ) : undefined
+              }
+              loading={agentsQuery.isLoading}
+              rows={statusRows(onlineAgents, offlineAgents, unknownAgents)}
+              title={t("navigation.agents")}
+              total={totalAgents}
+            />
+          </div>
+        </SectionCard>
+
+        {/* ── Recent servers ── */}
+        <SectionCard
+          action={
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/servers">{t("actions.viewAll")}</Link>
+            </Button>
+          }
+          description={t("dashboard.recentServersDescription")}
+          flush
+          icon={<Server />}
+          title={t("dashboard.recentServers")}
+        >
+          {serversQuery.isLoading ? (
+            <div className="px-4 py-3">
+              <Skeleton className="h-56 w-full" />
+            </div>
+          ) : null}
+          {serversQuery.isError ? (
+            <div className="px-4 py-3">
               <ServerErrorState
                 message={
                   serversQuery.error instanceof Error
@@ -376,48 +311,69 @@ export default function DashboardOverviewPage() {
                 }
                 onRetry={() => void serversQuery.refetch()}
               />
-            ) : null}
-            {serversQuery.isSuccess && servers.length === 0 ? <ServerEmptyState /> : null}
-            {serversQuery.isSuccess && servers.length > 0 ? (
-              <ServerTable
-                canDelete={canDeleteServers(session?.user.permissions)}
-                canEdit={canUpdateServers(session?.user.permissions)}
-                servers={servers.slice(0, 5)}
-              />
-            ) : null}
-          </SectionCard>
+            </div>
+          ) : null}
+          {serversQuery.isSuccess && servers.length === 0 ? (
+            <div className="px-4 py-3">
+              <ServerEmptyState />
+            </div>
+          ) : null}
+          {serversQuery.isSuccess && servers.length > 0 ? (
+            <ServerTable
+              canDelete={canDeleteServers(session?.user.permissions)}
+              canEdit={canUpdateServers(session?.user.permissions)}
+              servers={servers.slice(0, 5)}
+            />
+          ) : null}
+        </SectionCard>
 
+        {/* ── Recent agents + activity ── */}
+        <div className="grid items-start gap-6 xl:grid-cols-2">
           <SectionCard
+            action={
+              <Button asChild size="sm" variant="ghost">
+                <Link href="/agents">{t("actions.viewAll")}</Link>
+              </Button>
+            }
             description={t("dashboard.recentAgentsDescription")}
+            flush
             icon={<Bot />}
             title={t("dashboard.recentAgents")}
           >
-            {agentsQuery.isLoading ? <Skeleton className="h-64 w-full" /> : null}
+            {agentsQuery.isLoading ? (
+              <div className="px-4 py-3">
+                <Skeleton className="h-48 w-full" />
+              </div>
+            ) : null}
             {agentsQuery.isError ? (
-              <AgentErrorState
-                message={
-                  agentsQuery.error instanceof Error
-                    ? agentsQuery.error.message
-                    : t("agents.unexpectedError")
-                }
-                onRetry={() => void agentsQuery.refetch()}
-              />
+              <div className="px-4 py-3">
+                <AgentErrorState
+                  message={
+                    agentsQuery.error instanceof Error
+                      ? agentsQuery.error.message
+                      : t("agents.unexpectedError")
+                  }
+                  onRetry={() => void agentsQuery.refetch()}
+                />
+              </div>
             ) : null}
             {agentsQuery.isSuccess && agents.length === 0 ? (
-              <SectionState
-                description={t("dashboard.noAgentsEnrolledDescription")}
-                icon={<Bot className="size-5" />}
-                size="sm"
-                title={t("dashboard.noAgentsEnrolled")}
-              />
+              <div className="px-4 py-3">
+                <SectionState
+                  description={t("dashboard.noAgentsEnrolledDescription")}
+                  icon={<Bot className="size-5" />}
+                  size="sm"
+                  title={t("dashboard.noAgentsEnrolled")}
+                />
+              </div>
             ) : null}
             {agentsQuery.isSuccess && agents.length > 0 ? (
               <AgentTable agents={agents.slice(0, 5)} compact />
             ) : null}
           </SectionCard>
-        </div>
 
-        <RecentActivityWidget />
+          <RecentActivityWidget />
+        </div>
       </div>
     </AppShell>
   )

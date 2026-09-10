@@ -1,18 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  BadgeInfo,
-  Check,
-  CircleAlert,
-  HeartPulse,
-  Info,
-  Loader2,
-  MonitorCog,
-  RotateCcw,
-  Save,
-  Settings,
-} from "lucide-react";
+import { Check, CircleAlert, Loader2, Save } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo } from "react";
@@ -21,17 +10,17 @@ import { toast } from "@/lib/toast";
 import { z } from "zod";
 
 import { AppShell } from "@/components/app/app-shell";
+import { DetailLayout } from "@/components/app/detail-layout";
 import { NotAuthorized } from "@/components/app/not-authorized";
 import { PageHeader } from "@/components/app/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  InfoList,
+  InfoRow,
+  PageSection,
+} from "@/components/app/page-section";
+import { RetryButton, SectionState } from "@/components/app/section-state";
+import { StatusBadge } from "@/components/app/status-badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -154,32 +143,22 @@ function Toggle({
 
 function SettingsSkeleton() {
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="space-y-4">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="space-y-8">
         {[0, 1, 2].map((item) => (
-          <Card key={item}>
-            <CardHeader className="border-b">
-              <Skeleton className="h-5 w-44" />
-              <Skeleton className="h-4 w-72" />
-            </CardHeader>
-            <CardContent className="pt-4 space-y-3">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-          </Card>
+          <div className="space-y-4" key={item}>
+            <Skeleton className="h-5 w-44" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
         ))}
       </div>
-      <Card>
-        <CardHeader className="border-b">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-4 w-48" />
-        </CardHeader>
-        <CardContent className="pt-4 space-y-3">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
     </div>
   );
 }
@@ -188,38 +167,13 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   const t = useTranslations();
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-4 py-10 text-center">
-        <CircleAlert className="mx-auto size-8 text-destructive" />
-        <div>
-          <h2 className="text-base font-medium">{t("settings.unavailableTitle")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t("settings.unavailableDescription")}
-          </p>
-        </div>
-        <Button className="mx-auto" onClick={onRetry} variant="outline">
-          <RotateCcw className="size-4" />
-          {t("actions.retry")}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-md border bg-muted/20 px-3 py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="min-w-0 truncate text-right text-sm font-medium">
-        {value}
-      </span>
-    </div>
+    <SectionState
+      action={<RetryButton label={t("actions.retry")} onRetry={onRetry} />}
+      description={t("settings.unavailableDescription")}
+      icon={<CircleAlert className="size-5" />}
+      title={t("settings.unavailableTitle")}
+      tone="danger"
+    />
   );
 }
 
@@ -310,17 +264,28 @@ export default function SettingsPage() {
     <AppShell>
       <div className="space-y-6">
         <PageHeader
-          badge={
-            <Badge className="w-fit" variant="outline">
-              <MonitorCog className="size-3" />
-              {t("common.system")}
-            </Badge>
+          actions={
+            <Button
+              disabled={!mayUpdateSettings || !isDirty || saving}
+              form="settings-form"
+              type="submit"
+            >
+              {saving ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : isDirty ? (
+                <Save className="size-4" />
+              ) : (
+                <Check className="size-4" />
+              )}
+              {t("actions.save")}
+            </Button>
           }
-          eyebrow={
-            <>
-              <Settings className="size-4" />
-              {t("common.administration")}
-            </>
+          badge={
+            isDirty ? (
+              <StatusBadge tone="warning">{t("settings.unsavedChanges")}</StatusBadge>
+            ) : settingsQuery.isSuccess ? (
+              <StatusBadge tone="neutral">{t("settings.noChanges")}</StatusBadge>
+            ) : null
           }
           subtitle={t("settings.subtitle")}
           title={t("settings.title")}
@@ -333,69 +298,97 @@ export default function SettingsPage() {
         ) : null}
 
         {settingsQuery.isSuccess ? (
-          <form
-            className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]"
-            onSubmit={(event) => void handleSubmit(onSubmit)(event)}
-          >
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle>{t("settings.instance")}</CardTitle>
-                  <CardDescription>
-                    {t("settings.instanceDescription")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 pt-4">
+          <form id="settings-form" onSubmit={(event) => void handleSubmit(onSubmit)(event)}>
+            <DetailLayout
+              aside={
+                <>
+                  <PageSection description={t("settings.aboutDescription")} title={t("settings.about")}>
+                    <InfoList>
+                      <InfoRow label={t("help.product")} value="Kyvora" />
+                      <InfoRow
+                        label={t("help.version")}
+                        mono
+                        value={
+                          statusQuery.isLoading
+                            ? `${t("common.loading")}...`
+                            : status?.version && status.version !== "unknown"
+                              ? status.version
+                              : t("common.unavailable")
+                        }
+                      />
+                      <InfoRow
+                        label="API"
+                        value={
+                          statusQuery.isError
+                            ? t("common.unavailable")
+                            : t("common.healthy")
+                        }
+                      />
+                      <InfoRow label="Service" value={status?.service ?? "API"} />
+                    </InfoList>
+                  </PageSection>
+
+                  <PageSection
+                    description={t("settings.storagePolicyDescription")}
+                    title={t("settings.storagePolicy")}
+                  >
+                    <div className="space-y-3 text-sm leading-6 text-muted-foreground">
+                      <p>{t("settings.storagePolicyText1")}</p>
+                      <p>{t("settings.storagePolicyText2")}</p>
+                    </div>
+                  </PageSection>
+                </>
+              }
+            >
+              <PageSection
+                description={t("settings.instanceDescription")}
+                title={t("settings.instance")}
+              >
+                <div className="grid max-w-xl gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="instance-name">{t("settings.instanceName")}</Label>
                     <Input
-                      id="instance-name"
                       aria-invalid={Boolean(errors.instanceName)}
                       disabled={!mayUpdateSettings || saving}
+                      id="instance-name"
                       {...register("instanceName")}
                     />
                     {fieldError(errors.instanceName)}
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="instance-description">{t("forms.description")}</Label>
+                    <Label htmlFor="instance-description">
+                      {t("forms.description")}
+                    </Label>
                     <Textarea
-                      id="instance-description"
                       aria-invalid={Boolean(errors.instanceDescription)}
                       className="min-h-24"
                       disabled={!mayUpdateSettings || saving}
+                      id="instance-description"
                       {...register("instanceDescription")}
                     />
                     {fieldError(errors.instanceDescription)}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </PageSection>
 
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle className="flex items-center gap-2">
-                    <HeartPulse className="size-4" />
-                    {t("settings.agentMonitoring")}
-                  </CardTitle>
-                  <CardDescription>
-                    {t("settings.agentMonitoringDescription")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+              <PageSection
+                description={t("settings.agentMonitoringDescription")}
+                title={t("settings.agentMonitoring")}
+              >
+                <div className="grid max-w-xl gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
                     <Label htmlFor="offline-threshold">
                       {t("settings.offlineThreshold")}
                     </Label>
                     <Input
-                      id="offline-threshold"
-                      inputMode="numeric"
-                      min={30}
-                      max={86400}
-                      type="number"
                       aria-invalid={Boolean(errors.offlineThresholdSeconds)}
                       disabled={!mayUpdateSettings || saving}
-                      {...register("offlineThresholdSeconds", {
-                        valueAsNumber: true,
-                      })}
+                      id="offline-threshold"
+                      inputMode="numeric"
+                      max={86400}
+                      min={30}
+                      type="number"
+                      {...register("offlineThresholdSeconds", { valueAsNumber: true })}
                     />
                     {fieldError(errors.offlineThresholdSeconds)}
                   </div>
@@ -404,132 +397,49 @@ export default function SettingsPage() {
                       {t("settings.offlineCheckInterval")}
                     </Label>
                     <Input
-                      id="offline-check-interval"
-                      inputMode="numeric"
-                      min={5}
-                      max={3600}
-                      type="number"
                       aria-invalid={Boolean(errors.offlineCheckIntervalSeconds)}
                       disabled={!mayUpdateSettings || saving}
+                      id="offline-check-interval"
+                      inputMode="numeric"
+                      max={3600}
+                      min={5}
+                      type="number"
                       {...register("offlineCheckIntervalSeconds", {
                         valueAsNumber: true,
                       })}
                     />
                     {fieldError(errors.offlineCheckIntervalSeconds)}
                   </div>
-                  <div className="rounded-md border bg-muted/20 p-3 text-sm leading-6 text-muted-foreground sm:col-span-2">
+                  <p className="text-sm leading-6 text-muted-foreground sm:col-span-2">
                     {t("settings.thresholdHelp")}
-                  </div>
-                </CardContent>
-              </Card>
+                  </p>
+                </div>
+              </PageSection>
 
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle>{t("settings.ui")}</CardTitle>
-                  <CardDescription>
-                    {t("settings.uiDescription")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between gap-4 rounded-md border bg-muted/20 p-3">
-                    <div>
-                      <Label className="text-sm font-medium">
-                        {t("settings.showDevHints")}
-                      </Label>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {t("settings.showDevHintsDescription")}
-                      </p>
-                    </div>
-                    <Toggle
-                      checked={showDevHints}
-                      disabled={!mayUpdateSettings || saving}
-                      onCheckedChange={(checked) =>
-                        setValue("showDevHints", checked, {
-                          shouldDirty: true,
-                          shouldTouch: true,
-                          shouldValidate: true,
-                        })
-                      }
-                    />
+              <PageSection description={t("settings.uiDescription")} title={t("settings.ui")}>
+                <div className="flex max-w-xl items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <Label className="text-sm font-medium">
+                      {t("settings.showDevHints")}
+                    </Label>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {t("settings.showDevHintsDescription")}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle className="flex items-center gap-2">
-                    <BadgeInfo className="size-4" />
-                    {t("settings.about")}
-                  </CardTitle>
-                  <CardDescription>
-                    {t("settings.aboutDescription")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-3">
-                  <InfoRow label={t("help.product")} value="Kyvora" />
-                  <InfoRow
-                    label={t("help.version")}
-                    value={
-                      statusQuery.isLoading
-                        ? `${t("common.loading")}...`
-                        : status?.version && status.version !== "unknown"
-                          ? status.version
-                          : t("common.unavailable")
+                  <Toggle
+                    checked={showDevHints}
+                    disabled={!mayUpdateSettings || saving}
+                    onCheckedChange={(checked) =>
+                      setValue("showDevHints", checked, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      })
                     }
                   />
-                  <InfoRow
-                    label="API"
-                    value={statusQuery.isError ? t("common.unavailable") : t("common.healthy")}
-                  />
-                  <InfoRow label="Service" value={status?.service ?? "API"} />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle className="flex items-center gap-2">
-                    <Info className="size-4" />
-                    {t("settings.storagePolicy")}
-                  </CardTitle>
-                  <CardDescription>
-                    {t("settings.storagePolicyDescription")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-3 text-sm leading-6 text-muted-foreground">
-                  <p>
-                    {t("settings.storagePolicyText1")}
-                  </p>
-                  <p>
-                    {t("settings.storagePolicyText2")}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="flex items-center justify-between gap-3 pt-4">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium">
-                      {isDirty ? t("settings.unsavedChanges") : t("settings.noChanges")}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {t("settings.saveDescription")}
-                    </div>
-                  </div>
-                  <Button disabled={!mayUpdateSettings || !isDirty || saving} type="submit">
-                    {saving ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : isDirty ? (
-                      <Save className="size-4" />
-                    ) : (
-                      <Check className="size-4" />
-                    )}
-                    {t("actions.save")}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </PageSection>
+            </DetailLayout>
           </form>
         ) : null}
       </div>

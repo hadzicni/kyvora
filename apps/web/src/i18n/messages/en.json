@@ -36,6 +36,10 @@
     "settings": "Settings",
     "help": "Help",
     "profile": "Profile",
+    "groupOverview": "Overview",
+    "groupInfrastructure": "Infrastructure",
+    "groupOperations": "Operations",
+    "groupSystem": "System",
     "openNavigation": "Open navigation",
     "navigation": "Navigation",
     "expandSidebar": "Expand sidebar",
@@ -81,6 +85,7 @@
   },
   "actions": {
     "refresh": "Refresh",
+    "viewAll": "View all",
     "retry": "Retry",
     "clear": "Clear",
     "cancel": "Cancel",

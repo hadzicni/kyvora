@@ -3,35 +3,24 @@
 import {
   ArrowLeft,
   Cable,
-  CalendarClock,
   Copy,
   ExternalLink,
-  Fingerprint,
   LinkIcon,
-  Network,
   RefreshCw,
-  Server,
-  TagsIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
 import { toast } from "@/lib/toast";
 
 import { AppShell } from "@/components/app/app-shell";
+import { DetailLayout } from "@/components/app/detail-layout";
 import { PageHeader, PageHeaderBackLink } from "@/components/app/page-header";
+import { InfoList, InfoRow, PageSection } from "@/components/app/page-section";
 import { SectionState } from "@/components/app/section-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteServiceDialog } from "@/features/services/delete-service-dialog";
 import { EditServiceDialog } from "@/features/services/edit-service-dialog";
@@ -48,62 +37,6 @@ import { cn } from "@/lib/utils";
 
 function getParamId(id: string | string[] | undefined) {
   return Array.isArray(id) ? id[0] : (id ?? "");
-}
-
-function Field({
-  label,
-  mono,
-  muted,
-  value,
-}: {
-  label: string;
-  mono?: boolean;
-  muted?: boolean;
-  value: ReactNode;
-}) {
-  return (
-    <div className="rounded-md border bg-muted/20 p-3">
-      <dt className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
-        {label}
-      </dt>
-      <dd
-        className={cn(
-          "mt-2 min-h-5 break-words text-sm text-foreground",
-          mono && "font-mono text-xs",
-          muted && "text-muted-foreground"
-        )}
-      >
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-function DetailSection({
-  children,
-  description,
-  icon,
-  title,
-}: {
-  children: ReactNode;
-  description: string;
-  icon: ReactNode;
-  title: string;
-}) {
-  return (
-    <Card>
-      <CardHeader className="border-b">
-        <CardTitle className="flex items-center gap-2 text-base">
-          {icon}
-          {title}
-        </CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="pt-4">
-        <dl className="grid gap-3 sm:grid-cols-2">{children}</dl>
-      </CardContent>
-    </Card>
-  );
 }
 
 function ServiceUrl({ service }: { service: ManagedServiceItem }) {
@@ -178,39 +111,18 @@ function hostEndpoint(service: ManagedServiceItem, fallback: string) {
 
 function ServiceDetailSkeleton() {
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="border-b">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-3">
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-9 w-72 max-w-full" />
-              <Skeleton className="h-4 w-96 max-w-full" />
-            </div>
-            <div className="flex gap-2">
-              <Skeleton className="h-9 w-24" />
-              <Skeleton className="h-9 w-24" />
-            </div>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="space-y-8">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div className="space-y-4" key={index}>
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-24 w-full" />
           </div>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <Skeleton className="h-5 w-full max-w-2xl" />
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Card key={index}>
-            <CardHeader className="border-b">
-              <Skeleton className="h-5 w-36" />
-              <Skeleton className="h-4 w-56" />
-            </CardHeader>
-            <CardContent className="grid gap-3 pt-4 sm:grid-cols-2">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-          </Card>
         ))}
+      </div>
+      <div className="space-y-4">
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="h-40 w-full" />
       </div>
     </div>
   );
@@ -236,155 +148,129 @@ function NotFoundState() {
   );
 }
 
-function ServiceDetail({
-  canDelete,
-  canUpdate,
-  service,
-  servers,
-}: {
-  canDelete: boolean;
-  canUpdate: boolean;
-  service: ManagedServiceItem;
-  servers: Parameters<typeof EditServiceDialog>[0]["servers"];
-}) {
+function ServiceDetail({ service }: { service: ManagedServiceItem }) {
   const t = useTranslations();
-  const router = useRouter();
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="border-b">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0 space-y-3">
-              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <Cable className="size-4" />
-                {t("services.managedService")}
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="break-words text-3xl font-semibold tracking-tight">
-                  {service.name}
-                </h1>
-                <Badge variant="secondary">
-                  {t(`serviceCategories.${service.category}`)}
-                </Badge>
-                <Badge variant="outline">{service.protocol}</Badge>
-              </div>
-              <CardDescription className="break-words">
-                {service.description || t("services.noDescriptionProvided")}
-              </CardDescription>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              {service.url ? (
-                <Button asChild variant="outline">
-                  <a href={service.url} rel="noreferrer" target="_blank">
-                    <ExternalLink className="size-4" />
-                    {t("actions.open")}
-                  </a>
-                </Button>
-              ) : null}
-              {canUpdate ? <EditServiceDialog service={service} servers={servers} /> : null}
-              {canDelete ? (
-                <DeleteServiceDialog
-                  onDeleted={() => router.push("/services")}
-                  service={service}
-                />
-              ) : null}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <p className="text-sm leading-6 text-muted-foreground">
-            {t("services.detailIntro")}
-          </p>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        <DetailSection
-          description={t("services.identityDescription")}
-          icon={<Fingerprint className="size-4 text-muted-foreground" />}
-          title={t("services.identity")}
-        >
-          <Field label={t("services.serviceId")} value={service.id} mono />
-          <Field label={t("forms.name")} value={service.name} />
-          <Field
-            label={t("services.category")}
-            value={t(`serviceCategories.${service.category}`)}
-          />
-          <Field label={t("services.protocol")} value={<Badge variant="secondary">{service.protocol}</Badge>} />
-          <Field label={t("activity.created")} value={formatDateTime(service.createdAt)} />
-          <Field label={t("services.updated")} value={formatDateTime(service.updatedAt)} />
-        </DetailSection>
-
-        <DetailSection
-          description={t("services.endpointDescription")}
-          icon={<Network className="size-4 text-muted-foreground" />}
-          title={t("services.endpoint")}
-        >
-          <Field label={t("services.url")} value={<ServiceUrl service={service} />} muted={!service.url} />
-          <Field label={t("services.hostEndpoint")} value={hostEndpoint(service, t("common.unassigned"))} mono muted={!service.hostname && !service.ipAddress} />
-          <Field label={t("forms.hostname")} value={service.hostname ?? t("common.unassigned")} mono muted={!service.hostname} />
-          <Field label={t("forms.ipAddress")} value={service.ipAddress ?? t("common.unassigned")} mono muted={!service.ipAddress} />
-          <Field label={t("services.port")} value={service.port ?? t("common.unassigned")} mono muted={!service.port} />
-        </DetailSection>
-
-        <DetailSection
-          description={t("services.linkedServerDescription")}
-          icon={<Server className="size-4 text-muted-foreground" />}
-          title={t("services.linkedServer")}
-        >
-          {service.linkedServer ? (
-            <>
-              <Field label={t("services.serverName")} value={service.linkedServer.name} />
-              <Field label={t("forms.hostname")} value={service.linkedServer.hostname} mono />
-              <Field label={t("forms.ipAddress")} value={service.linkedServer.ipAddress} mono />
-              <Field
-                label={t("services.serverLink")}
-                value={
-                  <Link
-                    className="inline-flex items-center gap-2 underline-offset-4 hover:text-foreground hover:underline"
-                    href={`/servers/${service.linkedServer.id}`}
-                  >
-                    <LinkIcon className="size-4" />
-                    {t("services.viewLinkedServer")}
-                  </Link>
-                }
+    <DetailLayout
+      aside={
+        <>
+          <PageSection
+            description={t("services.endpointDescription")}
+            title={t("services.endpoint")}
+          >
+            <InfoList>
+              <InfoRow label={t("services.url")} value={<ServiceUrl service={service} />} />
+              <InfoRow
+                label={t("services.hostEndpoint")}
+                mono
+                value={hostEndpoint(service, t("common.unassigned"))}
               />
-            </>
-          ) : (
-            <Field label={t("services.assignment")} value={t("services.noLinkedServer")} muted />
-          )}
-        </DetailSection>
+              <InfoRow
+                label={t("services.port")}
+                mono
+                value={service.port ?? t("common.unassigned")}
+              />
+            </InfoList>
+          </PageSection>
 
-        <DetailSection
-          description={t("services.metadataDescription")}
-          icon={<TagsIcon className="size-4 text-muted-foreground" />}
-          title={t("services.metadata")}
-        >
-          <Field label={t("forms.tags")} value={<Tags service={service} />} />
-          <Field
-            label={t("services.notes")}
-            value={
-              service.notes ? (
-                <span className="whitespace-pre-wrap">{service.notes}</span>
-              ) : (
-                t("common.none")
-              )
-            }
-            muted={!service.notes}
-          />
-        </DetailSection>
+          <PageSection
+            description={t("services.linkedServerDescription")}
+            title={t("services.linkedServer")}
+          >
+            {service.linkedServer ? (
+              <InfoList>
+                <InfoRow
+                  label={t("services.serverName")}
+                  value={
+                    <Link
+                      className="inline-flex items-center gap-1.5 underline-offset-4 hover:underline"
+                      href={`/servers/${service.linkedServer.id}`}
+                    >
+                      {service.linkedServer.name}
+                      <LinkIcon className="size-3.5" />
+                    </Link>
+                  }
+                />
+                <InfoRow
+                  label={t("forms.hostname")}
+                  mono
+                  value={service.linkedServer.hostname}
+                />
+                <InfoRow
+                  label={t("forms.ipAddress")}
+                  mono
+                  value={service.linkedServer.ipAddress}
+                />
+              </InfoList>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t("services.noLinkedServer")}
+              </p>
+            )}
+          </PageSection>
 
-        <DetailSection
-          description={t("services.operationsDescription")}
-          icon={<CalendarClock className="size-4 text-muted-foreground" />}
-          title={t("services.operations")}
-        >
-          <Field label={t("services.healthChecks")} value={t("services.notConfigured")} muted />
-          <Field label={t("services.lastCheck")} value={t("common.never")} muted />
-        </DetailSection>
-      </div>
-    </div>
+          <PageSection
+            description={t("services.operationsDescription")}
+            title={t("services.operations")}
+          >
+            <InfoList>
+              <InfoRow
+                label={t("services.healthChecks")}
+                value={t("services.notConfigured")}
+              />
+              <InfoRow label={t("services.lastCheck")} value={t("common.never")} />
+            </InfoList>
+          </PageSection>
+        </>
+      }
+    >
+      <PageSection
+        description={t("services.identityDescription")}
+        title={t("services.identity")}
+      >
+        <div className="space-y-4">
+          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+            {service.description || t("services.detailIntro")}
+          </p>
+          <InfoList className="max-w-2xl">
+            <InfoRow label={t("forms.name")} value={service.name} />
+            <InfoRow
+              label={t("services.category")}
+              value={t(`serviceCategories.${service.category}`)}
+            />
+            <InfoRow
+              label={t("services.protocol")}
+              value={<Badge variant="secondary">{service.protocol}</Badge>}
+            />
+            <InfoRow label={t("services.serviceId")} mono value={service.id} />
+            <InfoRow
+              label={t("activity.created")}
+              value={formatDateTime(service.createdAt)}
+            />
+            <InfoRow
+              label={t("services.updated")}
+              value={formatDateTime(service.updatedAt)}
+            />
+          </InfoList>
+        </div>
+      </PageSection>
+
+      <PageSection
+        description={t("services.metadataDescription")}
+        title={t("services.metadata")}
+      >
+        <div className="space-y-4">
+          <Tags service={service} />
+          <div>
+            <div className="text-sm text-muted-foreground">{t("services.notes")}</div>
+            <p className="mt-1 max-w-2xl whitespace-pre-wrap text-sm leading-6">
+              {service.notes || t("common.none")}
+            </p>
+          </div>
+        </div>
+      </PageSection>
+    </DetailLayout>
   );
 }
 
@@ -396,6 +282,8 @@ export default function ServiceDetailPage() {
   const serviceQuery = useService(id);
   const serversQuery = useServers({ size: 100, sort: "name,asc" });
   const servers = serversQuery.data?.content ?? [];
+  const router = useRouter();
+  const service = serviceQuery.data;
   const isNotFound =
     serviceQuery.error instanceof ServiceApiError && serviceQuery.error.status === 404;
 
@@ -404,24 +292,54 @@ export default function ServiceDetailPage() {
       <div className="space-y-6">
         <PageHeader
           actions={
-            <Button
-              disabled={serviceQuery.isFetching}
-              onClick={() => void serviceQuery.refetch()}
-              variant="outline"
-            >
-              <RefreshCw
-                className={cn("size-4", serviceQuery.isFetching && "animate-spin")}
-              />
-              {t("actions.refresh")}
-            </Button>
+            <>
+              <Button
+                disabled={serviceQuery.isFetching}
+                onClick={() => void serviceQuery.refetch()}
+                variant="outline"
+              >
+                <RefreshCw
+                  className={cn("size-4", serviceQuery.isFetching && "animate-spin")}
+                />
+                {t("actions.refresh")}
+              </Button>
+              {service?.url ? (
+                <Button asChild variant="outline">
+                  <a href={service.url} rel="noreferrer" target="_blank">
+                    <ExternalLink className="size-4" />
+                    {t("actions.open")}
+                  </a>
+                </Button>
+              ) : null}
+              {service && canUpdateServices(session?.user.permissions) ? (
+                <EditServiceDialog servers={servers} service={service} />
+              ) : null}
+              {service && canDeleteServices(session?.user.permissions) ? (
+                <DeleteServiceDialog
+                  onDeleted={() => router.push("/services")}
+                  service={service}
+                />
+              ) : null}
+            </>
+          }
+          badge={
+            service ? (
+              <Badge variant="secondary">
+                {t(`serviceCategories.${service.category}`)}
+              </Badge>
+            ) : null
           }
           eyebrow={
             <PageHeaderBackLink href="/services">
               {t("services.title")}
             </PageHeaderBackLink>
           }
-          subtitle={t("services.detailSubtitle", { id: id || "[id]" })}
-          title={t("services.detailTitle")}
+          subtitle={
+            service
+              ? hostEndpoint(service, t("common.unassigned"))
+              : t("services.detailSubtitle", { id: id || "[id]" })
+          }
+          title={service?.name ?? t("services.detailTitle")}
         />
 
         {serviceQuery.isLoading ? <ServiceDetailSkeleton /> : null}
@@ -436,14 +354,7 @@ export default function ServiceDetailPage() {
             onRetry={() => void serviceQuery.refetch()}
           />
         ) : null}
-        {serviceQuery.isSuccess ? (
-          <ServiceDetail
-            canDelete={canDeleteServices(session?.user.permissions)}
-            canUpdate={canUpdateServices(session?.user.permissions)}
-            service={serviceQuery.data}
-            servers={servers}
-          />
-        ) : null}
+        {serviceQuery.isSuccess ? <ServiceDetail service={serviceQuery.data} /> : null}
       </div>
     </AppShell>
   );

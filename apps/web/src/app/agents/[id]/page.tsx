@@ -1,20 +1,14 @@
 "use client";
 
-import { Cpu, HardDrive, Network, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { type ReactNode } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
+import { DetailLayout } from "@/components/app/detail-layout";
 import { PageHeader, PageHeaderBackLink } from "@/components/app/page-header";
+import { InfoList, InfoRow, PageSection } from "@/components/app/page-section";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AgentStatusBadge } from "@/features/agents/agent-status-badge";
 import { RemoveAgentDialog } from "@/features/agents/remove-agent-dialog";
@@ -28,35 +22,6 @@ import { cn } from "@/lib/utils";
 
 function getParamId(id: string | string[] | undefined) {
   return Array.isArray(id) ? id[0] : (id ?? "");
-}
-
-function Field({
-  label,
-  value,
-  mono,
-  muted,
-}: {
-  label: string;
-  value: ReactNode;
-  mono?: boolean;
-  muted?: boolean;
-}) {
-  return (
-    <div className="rounded-md border bg-muted/20 p-3">
-      <dt className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
-        {label}
-      </dt>
-      <dd
-        className={cn(
-          "mt-2 min-h-5 break-words text-sm text-foreground",
-          mono && "font-mono text-xs",
-          muted && "text-muted-foreground"
-        )}
-      >
-        {value}
-      </dd>
-    </div>
-  );
 }
 
 export default function AgentDetailPage() {
@@ -118,6 +83,7 @@ export default function AgentDetailPage() {
           eyebrow={
             <PageHeaderBackLink href="/agents">Back to agents</PageHeaderBackLink>
           }
+          badge={agent ? <AgentStatusBadge status={agent.status} /> : null}
           subtitle="Pull-based agent connection and latest collected host facts."
           title={agent?.name ?? (agentQuery.isLoading ? "Loading agent..." : "Agent")}
         />
@@ -134,101 +100,126 @@ export default function AgentDetailPage() {
         ) : null}
 
         {agent ? (
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle>Connection</CardTitle>
-                  <CardDescription>
-                    Kyvora pulls agent data over the configured secured HTTP endpoint.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-3 pt-4 sm:grid-cols-2">
-                  <Field label="Status" value={<AgentStatusBadge status={agent.status} />} />
-                  <Field label="Base URL" value={agent.baseUrl} mono />
-                  <Field label="Pull enabled" value={agent.pullEnabled ? "Enabled" : "Disabled"} />
-                  <Field label="Agent version" value={agent.version} mono />
-                  <Field label="Last pull" value={formatDateTime(agent.lastPullAt)} muted={!agent.lastPullAt} />
-                  <Field label="Last successful pull" value={formatDateTime(agent.lastSuccessfulPullAt)} muted={!agent.lastSuccessfulPullAt} />
-                  <Field label="Last seen" value={formatDateTime(agent.lastSeenAt)} muted={!agent.lastSeenAt} />
-                  <Field label="Last error" value={agent.lastPullError ?? "None"} muted={!agent.lastPullError} />
-                </CardContent>
-              </Card>
+          <DetailLayout
+            aside={
+              <>
+                <PageSection title="Metrics">
+                  <InfoList>
+                    <InfoRow
+                      label="CPU count"
+                      value={agent.hostFacts?.cpuCount ?? "Unknown"}
+                    />
+                    <InfoRow
+                      label="Memory"
+                      value={formatBytes(agent.hostFacts?.memoryTotalBytes)}
+                    />
+                    <InfoRow
+                      label="Disk total"
+                      value={formatBytes(agent.hostFacts?.diskTotalBytes)}
+                    />
+                    <InfoRow
+                      label="Disk free"
+                      value={formatBytes(agent.hostFacts?.diskFreeBytes)}
+                    />
+                    <InfoRow
+                      label="Uptime"
+                      value={formatUptime(agent.hostFacts?.uptimeSeconds)}
+                    />
+                  </InfoList>
+                </PageSection>
 
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle>System</CardTitle>
-                  <CardDescription>Latest host facts collected from the agent.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-3 pt-4 sm:grid-cols-2">
-                  <Field label="Hostname" value={agent.hostFacts?.hostname ?? agent.hostname} mono />
-                  <Field label="Operating system" value={agent.hostFacts?.operatingSystem ?? "Unknown"} />
-                  <Field label="Platform" value={agent.hostFacts?.platform ?? "Unknown"} />
-                  <Field label="Architecture" value={agent.hostFacts?.architecture ?? "Unknown"} />
-                  <Field label="Kernel" value={agent.hostFacts?.kernelVersion ?? "Unknown"} mono muted={!agent.hostFacts?.kernelVersion} />
-                  <Field label="Collected at" value={formatDateTime(agent.hostFacts?.collectedAt)} muted={!agent.hostFacts?.collectedAt} />
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle className="flex items-center gap-2">
-                    <Cpu className="size-4" />
-                    Metrics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-3 pt-4">
-                  <Field label="CPU count" value={agent.hostFacts?.cpuCount ?? "Unknown"} />
-                  <Field label="Memory" value={formatBytes(agent.hostFacts?.memoryTotalBytes)} muted={!agent.hostFacts?.memoryTotalBytes} />
-                  <Field label="Disk total" value={formatBytes(agent.hostFacts?.diskTotalBytes)} muted={!agent.hostFacts?.diskTotalBytes} />
-                  <Field label="Disk free" value={formatBytes(agent.hostFacts?.diskFreeBytes)} muted={!agent.hostFacts?.diskFreeBytes} />
-                  <Field label="Uptime" value={formatUptime(agent.hostFacts?.uptimeSeconds)} muted={!agent.hostFacts?.uptimeSeconds} />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle className="flex items-center gap-2">
-                    <Network className="size-4" />
-                    Network
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-2 pt-4">
+                <PageSection title="Network">
                   {(agent.hostFacts?.ipAddresses ?? []).length > 0 ? (
-                    agent.hostFacts?.ipAddresses.map((address) => (
-                      <div key={address} className="rounded-md border bg-muted/20 px-3 py-2 font-mono text-xs">
-                        {address}
-                      </div>
-                    ))
+                    <div className="flex flex-wrap gap-1.5">
+                      {agent.hostFacts?.ipAddresses.map((address) => (
+                        <span
+                          className="rounded-md border border-border px-2 py-1 font-mono text-xs text-muted-foreground"
+                          key={address}
+                        >
+                          {address}
+                        </span>
+                      ))}
+                    </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No IP addresses reported.</p>
+                    <p className="text-sm text-muted-foreground">
+                      No IP addresses reported.
+                    </p>
                   )}
-                </CardContent>
-              </Card>
+                </PageSection>
 
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle className="flex items-center gap-2">
-                    <HardDrive className="size-4" />
-                    Capabilities
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2 pt-4">
+                <PageSection title="Capabilities">
                   {agent.capabilities.length > 0 ? (
-                    agent.capabilities.map((capability) => (
-                      <span key={capability} className="rounded-md border bg-muted/20 px-2 py-1 text-xs">
-                        {capability}
-                      </span>
-                    ))
+                    <div className="flex flex-wrap gap-1.5">
+                      {agent.capabilities.map((capability) => (
+                        <span
+                          className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground"
+                          key={capability}
+                        >
+                          {capability}
+                        </span>
+                      ))}
+                    </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No capabilities reported yet.</p>
+                    <p className="text-sm text-muted-foreground">
+                      No capabilities reported yet.
+                    </p>
                   )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                </PageSection>
+              </>
+            }
+          >
+            <PageSection
+              description="Kyvora pulls agent data over the configured secured HTTP endpoint."
+              title="Connection"
+            >
+              <InfoList className="max-w-2xl">
+                <InfoRow label="Base URL" mono value={agent.baseUrl} />
+                <InfoRow
+                  label="Pull enabled"
+                  value={agent.pullEnabled ? "Enabled" : "Disabled"}
+                />
+                <InfoRow label="Agent version" mono value={agent.version} />
+                <InfoRow label="Last pull" value={formatDateTime(agent.lastPullAt)} />
+                <InfoRow
+                  label="Last successful pull"
+                  value={formatDateTime(agent.lastSuccessfulPullAt)}
+                />
+                <InfoRow label="Last seen" value={formatDateTime(agent.lastSeenAt)} />
+                <InfoRow label="Last error" value={agent.lastPullError ?? "None"} />
+              </InfoList>
+            </PageSection>
+
+            <PageSection
+              description="Latest host facts collected from the agent."
+              title="System"
+            >
+              <InfoList className="max-w-2xl">
+                <InfoRow
+                  label="Hostname"
+                  mono
+                  value={agent.hostFacts?.hostname ?? agent.hostname}
+                />
+                <InfoRow
+                  label="Operating system"
+                  value={agent.hostFacts?.operatingSystem ?? "Unknown"}
+                />
+                <InfoRow label="Platform" value={agent.hostFacts?.platform ?? "Unknown"} />
+                <InfoRow
+                  label="Architecture"
+                  value={agent.hostFacts?.architecture ?? "Unknown"}
+                />
+                <InfoRow
+                  label="Kernel"
+                  mono
+                  value={agent.hostFacts?.kernelVersion ?? "Unknown"}
+                />
+                <InfoRow
+                  label="Collected at"
+                  value={formatDateTime(agent.hostFacts?.collectedAt)}
+                />
+              </InfoList>
+            </PageSection>
+          </DetailLayout>
         ) : null}
       </div>
     </AppShell>

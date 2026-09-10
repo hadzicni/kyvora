@@ -13,7 +13,6 @@ import {
   Search,
   Server,
   Settings,
-  UserCircle,
   Users,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
@@ -59,7 +58,10 @@ import {
 } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 
+type NavGroupKey = "overview" | "infrastructure" | "operations" | "system"
+
 type NavItem = {
+  group: NavGroupKey
   href: string
   labelKey:
     | "overview"
@@ -71,61 +73,81 @@ type NavItem = {
     | "users"
     | "settings"
     | "help"
-    | "profile"
   icon: React.ComponentType<{ className?: string }>
   requiredPermission?: (permissions: readonly string[] | undefined) => boolean
 }
 
+/**
+ * Ten flat links read as one undifferentiated list. Grouping them by what the
+ * operator is doing — looking, running infrastructure, operating it, tending
+ * the install — gives the sidebar a scannable shape.
+ */
+const navGroups: { key: NavGroupKey; labelKey: string }[] = [
+  { key: "overview", labelKey: "navigation.groupOverview" },
+  { key: "infrastructure", labelKey: "navigation.groupInfrastructure" },
+  { key: "operations", labelKey: "navigation.groupOperations" },
+  { key: "system", labelKey: "navigation.groupSystem" },
+]
+
 const navItems: NavItem[] = [
   {
+    group: "overview",
     href: "/",
-    labelKey: "overview",
     icon: LayoutDashboard,
+    labelKey: "overview",
     requiredPermission: canReadDashboard,
   },
   {
+    group: "infrastructure",
     href: "/servers",
-    labelKey: "servers",
     icon: Server,
+    labelKey: "servers",
     requiredPermission: canReadServers,
   },
   {
+    group: "infrastructure",
     href: "/services",
-    labelKey: "services",
     icon: Cable,
+    labelKey: "services",
     requiredPermission: canReadServices,
   },
   {
+    group: "infrastructure",
     href: "/network-map",
-    labelKey: "networkMap",
     icon: Network,
+    labelKey: "networkMap",
     requiredPermission: canReadNetworkMap,
   },
-  { href: "/agents", labelKey: "agents", icon: Bot, requiredPermission: canReadAgents },
   {
+    group: "infrastructure",
+    href: "/agents",
+    icon: Bot,
+    labelKey: "agents",
+    requiredPermission: canReadAgents,
+  },
+  {
+    group: "operations",
     href: "/activity",
-    labelKey: "activity",
     icon: Activity,
+    labelKey: "activity",
     requiredPermission: canReadAuditLogs,
   },
   {
+    group: "operations",
     href: "/users",
-    labelKey: "users",
     icon: Users,
+    labelKey: "users",
     requiredPermission: canAccessUserManagement,
   },
   {
+    group: "system",
     href: "/settings",
-    labelKey: "settings",
     icon: Settings,
+    labelKey: "settings",
     requiredPermission: canReadSettings,
   },
-  { href: "/help", labelKey: "help", icon: CircleHelp },
-  { href: "/profile", labelKey: "profile", icon: UserCircle },
+  { group: "system", href: "/help", icon: CircleHelp, labelKey: "help" },
 ]
-
-// ─── Bottom nav items (rendered separately below divider) ────────────────────
-const bottomNavKeys = new Set(["settings", "help", "profile"])
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "kyvora.sidebar.collapsed"
 const sidebarListeners = new Set<() => void>()
@@ -238,8 +260,6 @@ function SidebarContent({
     (item) =>
       !item.requiredPermission || item.requiredPermission(session?.user.permissions),
   )
-  const mainItems = visibleNavItems.filter((i) => !bottomNavKeys.has(i.labelKey))
-  const secondaryItems = visibleNavItems.filter((i) => bottomNavKeys.has(i.labelKey))
 
   return (
     <div className="flex h-full flex-col border-r border-sidebar-border bg-sidebar">
@@ -296,42 +316,42 @@ function SidebarContent({
         <CommandPalette collapsed={collapsed} />
       </div>
 
-      {/* Main nav */}
+      {/* Grouped nav */}
       <nav
-        className={cn("flex flex-1 flex-col gap-0.5 p-3", collapsed && "px-2")}
-        aria-label="Main"
+        aria-label={t("navigation.navigation")}
+        className={cn("flex-1 overflow-y-auto p-3", collapsed && "px-2")}
       >
-        {mainItems.map((item) => (
-          <NavLink
-            key={item.href}
-            item={item}
-            collapsed={collapsed}
-            pathname={pathname}
-            label={t(`navigation.${item.labelKey}`)}
-          />
-        ))}
-      </nav>
+        {navGroups.map((group, groupIndex) => {
+          const items = visibleNavItems.filter((item) => item.group === group.key)
+          if (items.length === 0) return null
 
-      {/* Secondary nav */}
-      {secondaryItems.length > 0 && (
-        <>
-          <div className="mx-3 h-px bg-sidebar-border" />
-          <nav
-            className={cn("flex flex-col gap-0.5 p-3", collapsed && "px-2")}
-            aria-label="Secondary"
-          >
-            {secondaryItems.map((item) => (
-              <NavLink
-                key={item.href}
-                item={item}
-                collapsed={collapsed}
-                pathname={pathname}
-                label={t(`navigation.${item.labelKey}`)}
-              />
-            ))}
-          </nav>
-        </>
-      )}
+          return (
+            <div className="mb-4 last:mb-0" key={group.key}>
+              {collapsed ? (
+                // Collapsed rail has no room for labels; a rule marks the seam.
+                groupIndex > 0 ? (
+                  <div aria-hidden="true" className="mx-2 mb-2 h-px bg-sidebar-border" />
+                ) : null
+              ) : (
+                <div className="mb-1 px-3 text-[10px] font-medium uppercase tracking-[0.09em] text-sidebar-foreground/35">
+                  {t(group.labelKey)}
+                </div>
+              )}
+              <div className="flex flex-col gap-0.5">
+                {items.map((item) => (
+                  <NavLink
+                    collapsed={collapsed}
+                    item={item}
+                    key={item.href}
+                    label={t(`navigation.${item.labelKey}`)}
+                    pathname={pathname}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </nav>
       {userMenu && (
         <>
           <div className="mx-3 h-px bg-sidebar-border" />

@@ -2,16 +2,9 @@
 
 import {
   ArrowLeft,
-  Bot,
-  CalendarClock,
-  Cpu,
-  Fingerprint,
   HardDrive,
-  Network,
   RefreshCw,
-  Server,
   ServerOff,
-  TagsIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -21,17 +14,12 @@ import { type ReactNode } from "react";
 import { toast } from "@/lib/toast";
 
 import { AppShell } from "@/components/app/app-shell";
+import { DetailLayout } from "@/components/app/detail-layout";
 import { PageHeader, PageHeaderBackLink } from "@/components/app/page-header";
+import { InfoList, InfoRow, PageSection } from "@/components/app/page-section";
 import { SectionState } from "@/components/app/section-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AgentStatusBadge } from "@/features/agents/agent-status-badge";
 import { RemoveAgentDialog } from "@/features/agents/remove-agent-dialog";
@@ -105,66 +93,34 @@ function TimestampValue({ value }: { value: string | null | undefined }) {
 function DetailSection({
   children,
   description,
-  icon,
   title,
 }: {
   children: ReactNode;
-  description: string;
-  icon: ReactNode;
+  description?: string;
+  icon?: ReactNode;
   title: string;
 }) {
   return (
-    <Card>
-      <CardHeader className="border-b">
-        <CardTitle className="flex items-center gap-2">
-          {icon}
-          {title}
-        </CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="pt-4">
-        <dl className="grid gap-3 sm:grid-cols-2">{children}</dl>
-      </CardContent>
-    </Card>
+    <PageSection description={description} title={title}>
+      <dl className="grid gap-3 sm:grid-cols-2">{children}</dl>
+    </PageSection>
   );
 }
 
 function ServerDetailSkeleton() {
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="border-b">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-3">
-              <Skeleton className="h-5 w-28" />
-              <Skeleton className="h-8 w-64 max-w-full" />
-              <Skeleton className="h-4 w-80 max-w-full" />
-            </div>
-            <div className="flex gap-2">
-              <Skeleton className="h-8 w-20" />
-              <Skeleton className="h-8 w-20" />
-              <Skeleton className="h-8 w-32" />
-            </div>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="space-y-8">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div className="space-y-4" key={index}>
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-24 w-full" />
           </div>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <Skeleton className="h-4 w-full max-w-2xl" />
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <Card key={index}>
-            <CardHeader className="border-b">
-              <Skeleton className="h-5 w-36" />
-              <Skeleton className="h-4 w-56" />
-            </CardHeader>
-            <CardContent className="grid gap-3 pt-4 sm:grid-cols-2">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-          </Card>
         ))}
+      </div>
+      <div className="space-y-4">
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="h-40 w-full" />
       </div>
     </div>
   );
@@ -252,22 +208,14 @@ function HostFactsSection({ server }: { server: ServerInventoryItem }) {
 
   if (!facts) {
     return (
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle className="flex items-center gap-2">
-            <HardDrive className="size-4" />
-            {t("hostFacts.title")}
-          </CardTitle>
-          <CardDescription>
-            {t("hostFacts.description")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <div className="rounded-lg border bg-muted/20 p-4 text-sm leading-6 text-muted-foreground">
-            {t("hostFacts.emptyDescription")}
-          </div>
-        </CardContent>
-      </Card>
+      <PageSection description={t("hostFacts.description")} title={t("hostFacts.title")}>
+        <SectionState
+          description={t("hostFacts.emptyDescription")}
+          icon={<HardDrive className="size-5" />}
+          size="sm"
+          title={t("hostFacts.title")}
+        />
+      </PageSection>
     );
   }
 
@@ -410,17 +358,8 @@ function AgentSection({
   }
 
   return (
-    <Card>
-      <CardHeader className="border-b">
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="size-4" />
-          {t("help.agentSetup")}
-        </CardTitle>
-        <CardDescription>
-          {t("agents.setupDescription")}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pt-4">
+    <PageSection description={t("agents.setupDescription")} title={t("help.agentSetup")}>
+      <div>
         {isLoading ? (
           <div className="grid gap-3 sm:grid-cols-2">
             <Skeleton className="h-20 w-full" />
@@ -513,26 +452,22 @@ function AgentSection({
             ) : null}
           </div>
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </PageSection>
   );
 }
 
 function ServerDetails({
-  canDelete,
   agentActions,
-  canUpdateServer,
   linkedAgent,
   linkedAgentLoading,
   server,
 }: {
-  canDelete: boolean;
   agentActions: {
-    canRemove: boolean;
     canEnroll: boolean;
     canPull: boolean;
+    canRemove: boolean;
   };
-  canUpdateServer: boolean;
   linkedAgent?: Agent;
   linkedAgentLoading: boolean;
   server: ServerInventoryItem;
@@ -541,135 +476,74 @@ function ServerDetails({
   const description = server.description.trim();
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="border-b">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0 space-y-3">
-              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <Server className="size-4" />
-                {t("servers.inventoryRecord")}
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="break-words text-3xl font-semibold tracking-tight">
-                  {server.name}
-                </h1>
-                <ServerStatusBadge status={server.status} />
-              </div>
-              <CardDescription className="break-words font-mono text-xs">
-                {server.hostname} / {server.ipAddress}
-              </CardDescription>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              {canUpdateServer ? (
-                <EditServerDialog server={server} triggerLabel={t("actions.edit")} />
-              ) : null}
-              {canDelete ? (
-                <DeleteServerDialog server={server} triggerLabel={t("actions.delete")} />
-              ) : null}
-              <Button asChild variant="outline">
-                <Link href="/servers">
-                  <ArrowLeft className="size-4" />
-                  {t("servers.backToServers")}
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <p className="text-sm leading-6 text-muted-foreground">
+    <DetailLayout
+      aside={
+        <>
+          <PageSection
+            action={<ServerStatusBadge status={server.status} />}
+            description={t("servers.statusManagedByAgent")}
+            title={t("forms.status")}
+          >
+            <InfoList>
+              <InfoRow
+                label={t("servers.lastSeenHeader")}
+                value={<TimestampValue value={server.lastSeenAt} />}
+              />
+              <InfoRow label={t("forms.hostname")} mono value={server.hostname} />
+              <InfoRow label={t("forms.ipAddress")} mono value={server.ipAddress} />
+            </InfoList>
+          </PageSection>
+
+          <PageSection
+            description={t("servers.timestampsDescription")}
+            title={t("servers.timestamps")}
+          >
+            <InfoList>
+              <InfoRow
+                label={t("activity.created")}
+                value={formatDetailDateTime(server.createdAt)}
+              />
+              <InfoRow
+                label={t("services.updated")}
+                value={formatDetailDateTime(server.updatedAt)}
+              />
+              <InfoRow label={t("servers.recordId")} mono value={server.id} />
+            </InfoList>
+          </PageSection>
+
+          <PageSection description={t("servers.tagsDescription")} title={t("forms.tags")}>
+            <Tags server={server} />
+          </PageSection>
+        </>
+      }
+    >
+      <PageSection
+        description={t("servers.identityDescription")}
+        title={t("servers.identity")}
+      >
+        <div className="space-y-4">
+          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
             {description || t("servers.noDescriptionProvided")}
           </p>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        <DetailSection
-          title={t("servers.identity")}
-          description={t("servers.identityDescription")}
-          icon={<Fingerprint className="size-4 text-muted-foreground" />}
-        >
-          <Field label={t("forms.name")} value={server.name} />
-          <Field
-            label={t("forms.status")}
-            value={
-              <div className="grid gap-2">
-                <ServerStatusBadge status={server.status} />
-                <span className="text-xs text-muted-foreground">
-                  {t("servers.statusManagedByAgent")}
-                </span>
-              </div>
-            }
-          />
-          <Field
-            label={t("forms.description")}
-            value={description || t("servers.noDescription")}
-            muted={!description}
-          />
-        </DetailSection>
-
-        <DetailSection
-          title={t("servers.network")}
-          description={t("servers.networkDescription")}
-          icon={<Network className="size-4 text-muted-foreground" />}
-        >
-          <Field label={t("forms.hostname")} value={server.hostname} mono />
-          <Field label={t("forms.ipAddress")} value={server.ipAddress} mono />
-        </DetailSection>
-
-        <DetailSection
-          title={t("forms.operatingSystem")}
-          description={t("servers.operatingSystemDescription")}
-          icon={<Cpu className="size-4 text-muted-foreground" />}
-        >
-          <Field
-            label={t("forms.operatingSystem")}
-            value={server.operatingSystem || t("common.unknown")}
-            muted={!server.operatingSystem}
-          />
-        </DetailSection>
-
-        <AgentSection
-          actions={agentActions}
-          agent={linkedAgent}
-          isLoading={linkedAgentLoading}
-          server={server}
-        />
-
-        <HostFactsSection server={server} />
-
-        <DetailSection
-          title={t("forms.tags")}
-          description={t("servers.tagsDescription")}
-          icon={<TagsIcon className="size-4 text-muted-foreground" />}
-        >
-          <Field label={t("forms.tags")} value={<Tags server={server} />} />
-        </DetailSection>
-
-        <div className="xl:col-span-2">
-          <DetailSection
-            title={t("servers.timestamps")}
-            description={t("servers.timestampsDescription")}
-            icon={<CalendarClock className="size-4 text-muted-foreground" />}
-          >
-            <Field
-              label={t("servers.lastSeenHeader")}
-              value={<TimestampValue value={server.lastSeenAt} />}
-              muted={!server.lastSeenAt}
+          <InfoList className="max-w-2xl">
+            <InfoRow label={t("forms.name")} value={server.name} />
+            <InfoRow
+              label={t("forms.operatingSystem")}
+              value={server.operatingSystem || t("common.unknown")}
             />
-            <Field
-              label={t("activity.created")}
-              value={formatDetailDateTime(server.createdAt)}
-            />
-            <Field
-              label={t("services.updated")}
-              value={formatDetailDateTime(server.updatedAt)}
-            />
-            <Field label={t("servers.recordId")} value={server.id} mono />
-          </DetailSection>
+          </InfoList>
         </div>
-      </div>
-    </div>
+      </PageSection>
+
+      <AgentSection
+        actions={agentActions}
+        agent={linkedAgent}
+        isLoading={linkedAgentLoading}
+        server={server}
+      />
+
+      <HostFactsSection server={server} />
+    </DetailLayout>
   );
 }
 
@@ -683,6 +557,7 @@ export default function ServerDetailPage() {
   const linkedAgent = agentsQuery.data?.content.find(
     (agent) => agent.serverId === id
   );
+  const server = serverQuery.data;
   const isNotFound =
     serverQuery.error instanceof ApiError && serverQuery.error.status === 404;
 
@@ -691,24 +566,41 @@ export default function ServerDetailPage() {
       <div className="space-y-6">
         <PageHeader
           actions={
-            <Button
-              disabled={serverQuery.isFetching}
-              onClick={() => void serverQuery.refetch()}
-              variant="outline"
-            >
-              <RefreshCw
-                className={cn("size-4", serverQuery.isFetching && "animate-spin")}
-              />
-              {t("actions.refresh")}
-            </Button>
+            <>
+              <Button
+                disabled={serverQuery.isFetching}
+                onClick={() => void serverQuery.refetch()}
+                variant="outline"
+              >
+                <RefreshCw
+                  className={cn("size-4", serverQuery.isFetching && "animate-spin")}
+                />
+                {t("actions.refresh")}
+              </Button>
+              {server && canUpdateServers(session?.user.permissions) ? (
+                <EditServerDialog server={server} triggerLabel={t("actions.edit")} />
+              ) : null}
+              {server && canDeleteServers(session?.user.permissions) ? (
+                <DeleteServerDialog server={server} triggerLabel={t("actions.delete")} />
+              ) : null}
+            </>
           }
+          badge={server ? <ServerStatusBadge status={server.status} /> : null}
           eyebrow={
             <PageHeaderBackLink href="/servers">
               {t("navigation.servers")}
             </PageHeaderBackLink>
           }
-          subtitle={t("servers.detailSubtitle", { id: id || "[id]" })}
-          title={t("servers.detailTitle")}
+          subtitle={
+            server ? (
+              <span className="font-mono text-xs">
+                {server.hostname} · {server.ipAddress}
+              </span>
+            ) : (
+              t("servers.detailSubtitle", { id: id || "[id]" })
+            )
+          }
+          title={server?.name ?? t("servers.detailTitle")}
         />
 
         {serverQuery.isLoading ? <ServerDetailSkeleton /> : null}
@@ -725,13 +617,11 @@ export default function ServerDetailPage() {
         ) : null}
         {serverQuery.isSuccess ? (
           <ServerDetails
-            canDelete={canDeleteServers(session?.user.permissions)}
             agentActions={{
-              canRemove: canRemoveAgents(session?.user.permissions),
               canEnroll: canEnrollAgents(session?.user.permissions),
               canPull: canPullAgents(session?.user.permissions),
+              canRemove: canRemoveAgents(session?.user.permissions),
             }}
-            canUpdateServer={canUpdateServers(session?.user.permissions)}
             linkedAgent={linkedAgent}
             linkedAgentLoading={agentsQuery.isLoading}
             server={serverQuery.data}
