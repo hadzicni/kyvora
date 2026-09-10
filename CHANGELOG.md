@@ -209,3 +209,21 @@
 ### Fixed
 
 - Applied the latest dependency and security updates across the project.
+
+## [0.8.0] - 2026-09-10
+
+### Added
+
+- Added H2 in-memory database support for local development.
+- Added CLAUDE.md project documentation file for development guidance.
+
+### Changed
+
+- Unified the web UI on shared design tokens and primitive components.
+- Deepened surface hierarchy and flattened list cards for a cleaner visual structure.
+- Redesigned pages around sections and a two-column detail layout.
+
+### Fixed
+
+- Fixed a security vulnerability.
+- Resolved Tailwind CSS warnings.
