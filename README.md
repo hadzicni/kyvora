@@ -71,7 +71,7 @@ Kyvora is built as a monorepo with a modular backend, a modern web UI, and a lig
 | Web Auth | Auth.js / NextAuth |
 | Backend | Java 21, Spring Boot 4 |
 | API Auth | JWT access tokens, refresh tokens |
-| Database | PostgreSQL |
+| Database | PostgreSQL (production), embedded H2 (local development) |
 | Migrations | Flyway |
 | Backend Persistence | Spring Data JPA |
 | Agent | Go |
@@ -102,7 +102,7 @@ Kyvora is built as a monorepo with a modular backend, a modern web UI, and a lig
 - Java 21
 - Gradle
 - Go 1.26+
-- Docker or a reachable PostgreSQL database
+- Docker or a reachable PostgreSQL database, only for production-like runs
 
 ## Installation
 
@@ -182,11 +182,15 @@ cd kyvora
 npm install
 ```
 
-### 3. Start PostgreSQL
+### 3. Database
 
-Run PostgreSQL locally or on a reachable host. The backend expects a PostgreSQL database named `kyvora` by default.
+Local development needs no database server. The default `local` profile runs
+the API on an embedded H2 database in PostgreSQL compatibility mode, stored at
+`apps/api/.data/kyvora-local.mv.db`. Flyway applies the same migrations as in
+production. Delete that file to start from an empty database.
 
-Example with Docker:
+To develop against a real PostgreSQL instead, start one and activate the
+`postgres` profile:
 
 ```bash
 docker run --name kyvora-postgres \
@@ -195,6 +199,10 @@ docker run --name kyvora-postgres \
   -e POSTGRES_PASSWORD=kyvora \
   -p 5432:5432 \
   -d postgres:17-alpine
+```
+
+```bash
+SPRING_PROFILES_ACTIVE=postgres npm run dev:api
 ```
 
 ### 4. Start the project
@@ -238,7 +246,7 @@ For service installation on Linux with systemd, use
 On a fresh local database, the API creates the first admin automatically and
 prints the generated temporary password in the API startup logs. The password is
 shown only once; delete and recreate the database if you need a new first-admin
-bootstrap.
+bootstrap. With the default embedded database, delete `apps/api/.data/`.
 
 ## Configuration
 

@@ -80,7 +80,7 @@ Backend:
 * Spring Boot 4
 * Spring Security
 * Spring Data JPA
-* PostgreSQL
+* PostgreSQL (production), embedded H2 (local development and tests)
 * Flyway
 * OpenAPI / Swagger
 
@@ -175,7 +175,9 @@ Expected local URLs:
 * Web: `http://localhost:3000`
 * API health: `http://localhost:8080/actuator/health`
 * Swagger/OpenAPI: check README after OpenAPI setup
-* PostgreSQL: configured via `apps/api/src/main/resources/application.yml`
+* Database: local development uses an embedded H2 database in PostgreSQL mode
+  (profile `local`, file `apps/api/.data/kyvora-local.mv.db`). No PostgreSQL server
+  is needed. Use profile `postgres` to develop against a real PostgreSQL.
 
 Local web proxy env example:
 

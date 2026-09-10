@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: ${KYVORA_DATASOURCE_URL:jdbc:h2:file:./.data/kyvora-local;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${KYVORA_DATASOURCE_USERNAME:sa}
+    password: ${KYVORA_DATASOURCE_PASSWORD:}

@@ -68,3 +68,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Local embedded development database
+apps/api/.data/

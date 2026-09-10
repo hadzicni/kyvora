@@ -5,11 +5,6 @@ spring:
   profiles:
     default: local
 
-  datasource:
-    url: ${KYVORA_DATASOURCE_URL:jdbc:postgresql://ictnikhadlk01:5432/kyvora}
-    username: ${KYVORA_DATASOURCE_USERNAME:kyvora}
-    password: ${KYVORA_DATASOURCE_PASSWORD:kyvora}
-
   jpa:
     hibernate:
       ddl-auto: validate

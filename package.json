@@ -12,7 +12,7 @@
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "dev:web": "NODE_OPTIONS='--max-old-space-size=8192' npm run dev -w apps/web",
-    "dev:api": "cd apps/api && bash -lc 'set -a && source .env.local && set +a && gradle bootRun'",
+    "dev:api": "cd apps/api && bash -lc 'set -a; if [ -f .env.local ]; then . ./.env.local; fi; set +a; gradle bootRun'",
     "dev:agent": "cd apps/agent && go run ./cmd/kyvora-agent",
     "db:up": "docker compose -f infrastructure/docker-compose.yml up -d",
     "db:down": "docker compose -f infrastructure/docker-compose.yml down",
