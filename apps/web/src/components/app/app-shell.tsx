@@ -171,21 +171,22 @@ function NavLink({
       href={item.href}
       title={collapsed ? label : undefined}
       className={cn(
-        "group relative flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition-all duration-150",
+        "group relative flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition-colors duration-150",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/60",
         collapsed && "justify-center px-0",
         isActive
-          ? "bg-white/10 text-white"
-          : "text-white/45 hover:bg-white/6 hover:text-white/80",
+          ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+          : "text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-foreground",
       )}
     >
       {/* Active indicator bar */}
       {isActive && (
         <span
-          className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-violet-400"
+          className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-sidebar-primary"
           aria-hidden="true"
         />
       )}
-      <Icon className={cn("size-4 shrink-0", isActive ? "text-violet-400" : "")} />
+      <Icon className={cn("size-4 shrink-0", isActive && "text-sidebar-primary")} />
       {!collapsed ? label : <span className="sr-only">{label}</span>}
     </Link>
   )
@@ -221,13 +222,7 @@ function SidebarContent({
   const secondaryItems = visibleNavItems.filter((i) => bottomNavKeys.has(i.labelKey))
 
   return (
-    <div
-      className="flex h-full flex-col"
-      style={{
-        background: "#0d0f14",
-        borderRight: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
+    <div className="flex h-full flex-col border-r border-sidebar-border bg-sidebar">
       {/* Logo row */}
       <div
         className={cn(
@@ -250,10 +245,12 @@ function SidebarContent({
         )}
         {!collapsed && (
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold leading-tight text-white">
+            <div className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">
               {instance.name}
             </div>
-            <div className="truncate text-xs text-white/35">{instance.description}</div>
+            <div className="truncate text-xs text-sidebar-foreground/45">
+              {instance.description}
+            </div>
           </div>
         )}
         {onToggleCollapsed && (
@@ -262,7 +259,7 @@ function SidebarContent({
             title={toggleLabel}
             onClick={onToggleCollapsed}
             className={cn(
-              "hidden size-7 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/8 hover:text-white/70 md:flex",
+              "hidden size-7 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground md:flex",
               collapsed && "ml-0",
             )}
           >
@@ -272,7 +269,7 @@ function SidebarContent({
       </div>
 
       {/* Divider */}
-      <div className="mx-3 h-px bg-white/6" />
+      <div className="mx-3 h-px bg-sidebar-border" />
 
       {/* Search bar */}
       <div className={cn("px-3 pt-3", collapsed && "px-2")}>
@@ -298,7 +295,7 @@ function SidebarContent({
       {/* Secondary nav */}
       {secondaryItems.length > 0 && (
         <>
-          <div className="mx-3 h-px bg-white/6" />
+          <div className="mx-3 h-px bg-sidebar-border" />
           <nav
             className={cn("flex flex-col gap-0.5 p-3", collapsed && "px-2")}
             aria-label="Secondary"
@@ -317,7 +314,7 @@ function SidebarContent({
       )}
       {userMenu && (
         <>
-          <div className="mx-3 h-px bg-white/6" />
+          <div className="mx-3 h-px bg-sidebar-border" />
           <div className={cn("p-3", collapsed && "px-2")}>{userMenu}</div>
         </>
       )}
@@ -364,16 +361,17 @@ function CommandPalette({ collapsed = false }: { collapsed?: boolean }) {
         onClick={() => setOpen(true)}
         title={collapsed ? t("forms.search") : undefined}
         className={cn(
-          "flex h-9 w-full items-center gap-3 rounded-lg px-3 text-sm transition-all duration-150",
+          "flex h-9 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors duration-150",
+          "text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/60",
           collapsed && "justify-center px-0",
-          "text-white/45 hover:bg-white/6 hover:text-white/80",
         )}
       >
         <Search className="size-4 shrink-0" />
         {!collapsed ? (
           <>
             <span className="flex-1 text-left">{t("forms.search")}</span>
-            <kbd className="rounded border border-white/10 bg-white/6 px-1.5 py-0.5 text-[10px] leading-none text-white/30">
+            <kbd className="rounded border border-sidebar-border bg-sidebar-accent px-1.5 py-0.5 text-[10px] leading-none text-sidebar-foreground/45">
               ⌘K
             </kbd>
           </>
@@ -588,15 +586,7 @@ export function AppShell({
         )}
       >
         {/* ── Header ── */}
-        <header
-          className="sticky top-0 z-10 flex h-14 items-center gap-3 px-4 md:px-5"
-          style={{
-            background: "rgba(9, 10, 15, 0.85)",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-          }}
-        >
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl md:px-5">
           {/* Mobile hamburger */}
           <Sheet>
             <SheetTrigger asChild>
@@ -619,7 +609,7 @@ export function AppShell({
 
           {/* Instance name — mobile only */}
           <div className="min-w-0 flex-1 md:hidden">
-            <div className="truncate text-sm font-semibold text-white">
+            <div className="truncate text-sm font-semibold text-foreground">
               {instance.name}
             </div>
           </div>
@@ -630,7 +620,7 @@ export function AppShell({
 
         {/* ── Page content ── */}
         <main
-          className={cn("mx-auto w-full max-w-7xl px-4 py-6 md:px-6", contentClassName)}
+          className={cn("mx-auto w-full max-w-7xl px-4 py-6 md:px-6 lg:py-8", contentClassName)}
         >
           {children}
         </main>

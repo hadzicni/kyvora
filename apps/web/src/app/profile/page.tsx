@@ -77,11 +77,11 @@ function ProfileLoadingState() {
         </div>
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <Card>
-            <CardHeader>
+            <CardHeader className="border-b">
               <Skeleton className="h-5 w-32" />
               <Skeleton className="h-4 w-64" />
             </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
+            <CardContent className="pt-4 grid gap-3 sm:grid-cols-2">
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
@@ -89,11 +89,11 @@ function ProfileLoadingState() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
+            <CardHeader className="border-b">
               <Skeleton className="h-5 w-24" />
               <Skeleton className="h-4 w-56" />
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="pt-4 space-y-3">
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
@@ -138,7 +138,7 @@ export default function ProfilePage() {
     return (
       <AppShell>
         <Card>
-          <CardHeader>
+          <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="size-4 text-destructive" />
               Authentication required
@@ -205,7 +205,7 @@ export default function ProfilePage() {
               </CardTitle>
               <CardDescription>{t("profile.userInformationDescription")}</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
+            <CardContent className="pt-4 grid gap-3 sm:grid-cols-2">
               <ProfileField
                 label={t("forms.displayName")}
                 value={user.displayName || t("common.notProvided")}
@@ -230,16 +230,16 @@ export default function ProfilePage() {
 
           <div className="space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle className="flex items-center gap-2">
                   <ShieldCheck className="size-4" />
                   {t("profile.security")}
                 </CardTitle>
                 <CardDescription>{t("profile.securityDescription")}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="pt-4 space-y-3">
                 <div className="flex items-start gap-3 rounded-md border bg-muted/20 p-3">
-                  <BadgeCheck className="mt-0.5 size-4 text-emerald-400" />
+                  <BadgeCheck className="tone-success tone-text mt-0.5 size-4" />
                   <div>
                     <div className="text-sm font-medium">
                       {t("profile.sessionStatus")}
@@ -283,7 +283,7 @@ export default function ProfilePage() {
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle className="flex items-center gap-2">
                   <ShieldCheck className="size-4" />
                   {t("auth.changePassword")}
@@ -292,7 +292,7 @@ export default function ProfilePage() {
                   {t("profile.changePasswordDescription")}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 <form
                   className="space-y-4"
                   onSubmit={passwordForm.handleSubmit(onChangePassword)}
@@ -345,7 +345,7 @@ export default function ProfilePage() {
             </Card>
 
             <Card className="border-destructive/30">
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="size-4 text-destructive" />
                   {t("profile.accountActions")}
@@ -354,7 +354,7 @@ export default function ProfilePage() {
                   {t("profile.accountActionsDescription")}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 <Button
                   className="w-full justify-center"
                   onClick={() => {

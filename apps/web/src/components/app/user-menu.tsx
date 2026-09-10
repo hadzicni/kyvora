@@ -48,30 +48,25 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
           aria-label="Open user menu"
           title={collapsed ? session?.user.displayName || session?.user.email : undefined}
           className={cn(
-            "flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left transition-colors hover:bg-white/6",
+            "flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left transition-colors hover:bg-sidebar-accent",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/60",
             collapsed && "justify-center px-0",
           )}
         >
-          <span
-            className="flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white"
-            style={{
-              background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-              boxShadow: "0 0 12px rgba(99,102,241,0.35)",
-            }}
-          >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand text-[11px] font-semibold text-brand-foreground">
             {initials}
           </span>
 
           {!collapsed && (
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-xs font-medium text-white/80">
+              <span className="block truncate text-xs font-medium text-sidebar-foreground">
                 {status === "loading"
                   ? t("common.loadingSession")
                   : session?.user.displayName ||
                     session?.user.email ||
                     t("common.signedIn")}
               </span>
-              <span className="block truncate text-xs text-white/35">
+              <span className="block truncate text-xs text-sidebar-foreground/45">
                 {session?.user.email || t("common.authenticatedSession")}
               </span>
             </span>

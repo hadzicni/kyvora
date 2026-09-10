@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Clipboard,
   Loader2,
   Plus,
   Server,
@@ -19,6 +18,7 @@ import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
+import { CodeCommand } from "@/components/app/code-command";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -373,12 +373,7 @@ export function RegisterAgentDialog({
               </p>
               <div className="space-y-2">
                 {serviceCommands.map((command) => (
-                  <Command
-                    key={command}
-                    value={command}
-                    onCopy={copy}
-                    compact
-                  />
+                  <Command key={command} onCopy={copy} value={command} />
                 ))}
               </div>
             </div>
@@ -598,8 +593,8 @@ function Notice({
       className={cn(
         "flex gap-3 rounded-md border p-4 text-sm",
         tone === "error"
-          ? "border-destructive/40 bg-destructive/10"
-          : "border-amber-500/40 bg-amber-500/10"
+          ? "tone-danger tone-surface"
+          : "tone-warning tone-surface"
       )}
     >
       <Icon className="mt-0.5 size-4 shrink-0" />
@@ -613,34 +608,13 @@ function Notice({
 function Command({
   value,
   onCopy,
-  compact = false,
 }: {
   value: string;
   onCopy: (value: string) => void;
-  compact?: boolean;
 }) {
   const t = useTranslations("agents.setupWizard");
   return (
-    <div className="flex items-center gap-2 rounded-md border bg-zinc-950 p-2 text-zinc-100">
-      <code
-        className={cn(
-          "min-w-0 flex-1 overflow-x-auto text-xs",
-          !compact && "p-2"
-        )}
-      >
-        {value}
-      </code>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="shrink-0 text-zinc-100 hover:bg-zinc-800 hover:text-white"
-        aria-label={t("actions.copyCommand")}
-        onClick={() => void onCopy(value)}
-      >
-        <Clipboard className="size-4" />
-      </Button>
-    </div>
+    <CodeCommand copyLabel={t("actions.copyCommand")} onCopy={onCopy} value={value} />
   );
 }
 function TestResult({ result }: { result: AgentConnectionTestResult }) {
@@ -651,9 +625,7 @@ function TestResult({ result }: { result: AgentConnectionTestResult }) {
     <div
       className={cn(
         "rounded-md border p-4",
-        result.success
-          ? "border-emerald-500/40 bg-emerald-500/10"
-          : "border-destructive/40 bg-destructive/10"
+        result.success ? "tone-success tone-surface" : "tone-danger tone-surface"
       )}
     >
       <div className="flex items-center gap-2 font-medium">

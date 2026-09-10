@@ -8,9 +8,9 @@ import {
   KeyRound,
   Pencil,
   Plus,
-  RefreshCw,
   ShieldCheck,
   UserCheck,
+  Users,
   UserX,
 } from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
@@ -22,16 +22,12 @@ import { z } from "zod"
 
 import { AppShell } from "@/components/app/app-shell"
 import { NotAuthorized } from "@/components/app/not-authorized"
-import { PageHeader } from "@/components/app/page-header"
+import { PageHeader, PageHeaderCount } from "@/components/app/page-header"
+import { SectionCard } from "@/components/app/section-card"
+import { RetryButton, SectionState } from "@/components/app/section-state"
+import { StatusBadge } from "@/components/app/status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -341,9 +337,9 @@ export default function UsersPage() {
         <PageHeader
           badge={
             usersQuery.data ? (
-              <span className="text-sm text-muted-foreground">
+              <PageHeaderCount>
                 {t("users.accounts", { count: users.length })}
-              </span>
+              </PageHeaderCount>
             ) : null
           }
           subtitle={t("users.subtitle")}
@@ -368,165 +364,157 @@ export default function UsersPage() {
           }
         />
 
-        <Card>
-          <CardHeader className="border-b">
-            <CardTitle>{t("users.accountsTitle")}</CardTitle>
-            <CardDescription>{t("users.accountsDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            {usersQuery.isLoading ? <UserTableSkeleton /> : null}
+        <SectionCard
+          description={t("users.accountsDescription")}
+          icon={<Users />}
+          title={t("users.accountsTitle")}
+        >
+          {usersQuery.isLoading ? <UserTableSkeleton /> : null}
 
-            {usersQuery.isError ? (
-              <div className="flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm">
-                <AlertTriangle className="mt-0.5 size-4 text-destructive" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{t("users.unableToLoad")}</div>
-                  <div className="mt-1 text-muted-foreground">
-                    {errorMessage(usersQuery.error)}
-                  </div>
-                </div>
-                <Button
-                  disabled={usersQuery.isFetching}
-                  onClick={() => void usersQuery.refetch()}
-                  size="sm"
-                  variant="outline"
-                >
-                  <RefreshCw className="size-4" />
-                  {t("actions.retry")}
-                </Button>
-              </div>
-            ) : null}
+          {usersQuery.isError ? (
+            <SectionState
+              action={
+                <RetryButton
+                  label={t("actions.retry")}
+                  onRetry={() => void usersQuery.refetch()}
+                />
+              }
+              description={errorMessage(usersQuery.error)}
+              icon={<AlertTriangle className="size-5" />}
+              title={t("users.unableToLoad")}
+              tone="danger"
+            />
+          ) : null}
 
-            {usersQuery.isSuccess && users.length === 0 ? (
-              <div className="rounded-md border border-dashed p-8 text-center">
-                <div className="font-medium">{t("users.emptyTitle")}</div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {t("users.emptyDescription")}
-                </div>
-              </div>
-            ) : null}
+          {usersQuery.isSuccess && users.length === 0 ? (
+            <SectionState
+              description={t("users.emptyDescription")}
+              icon={<Users className="size-5" />}
+              title={t("users.emptyTitle")}
+            />
+          ) : null}
 
-            {usersQuery.isSuccess && users.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("forms.displayName")}</TableHead>
-                      <TableHead>{t("users.email")}</TableHead>
-                      <TableHead>{t("permissions.title")}</TableHead>
-                      <TableHead>{t("forms.status")}</TableHead>
-                      <TableHead>{t("users.lastLogin")}</TableHead>
-                      <TableHead>{t("users.created")}</TableHead>
-                      <TableHead className="text-right">
-                        {t("servers.actionsHeader")}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user) => {
-                      const isLastEnabledUserManager =
-                        user.enabled &&
-                        canUpdateUsers(user.permissions) &&
-                        enabledUserManagerCount <= 1
+          {usersQuery.isSuccess && users.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("forms.displayName")}</TableHead>
+                    <TableHead>{t("users.email")}</TableHead>
+                    <TableHead>{t("permissions.title")}</TableHead>
+                    <TableHead>{t("forms.status")}</TableHead>
+                    <TableHead>{t("users.lastLogin")}</TableHead>
+                    <TableHead>{t("users.created")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("servers.actionsHeader")}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => {
+                    const isLastEnabledUserManager =
+                      user.enabled &&
+                      canUpdateUsers(user.permissions) &&
+                      enabledUserManagerCount <= 1
 
-                      return (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">
-                            {user.displayName}
-                          </TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {user.permissions.map((permission) => (
-                                <Badge key={permission} variant="outline">
-                                  {t(`permissions.items.${permission}`)}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={user.enabled ? "default" : "secondary"}>
-                              {user.enabled ? t("common.enabled") : t("common.disabled")}
-                            </Badge>
-                            {user.mustChangePassword ? (
-                              <Badge
-                                className="ml-2 border-amber-500/30 text-amber-300"
-                                variant="outline"
-                              >
-                                {t("users.passwordChangeRequired")}
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          {user.displayName}
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {user.permissions.map((permission) => (
+                              <Badge key={permission} variant="outline">
+                                {t(`permissions.items.${permission}`)}
                               </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <StatusBadge tone={user.enabled ? "success" : "neutral"}>
+                              {user.enabled
+                                ? t("common.enabled")
+                                : t("common.disabled")}
+                            </StatusBadge>
+                            {user.mustChangePassword ? (
+                              <StatusBadge tone="warning">
+                                {t("users.passwordChangeRequired")}
+                              </StatusBadge>
                             ) : null}
-                          </TableCell>
-                          <TableCell>
-                            {user.lastLoginAt
-                              ? new Intl.DateTimeFormat(locale, {
-                                  dateStyle: "medium",
-                                  timeStyle: "short",
-                                }).format(new Date(user.lastLoginAt))
-                              : t("common.never")}
-                          </TableCell>
-                          <TableCell>
-                            {new Intl.DateTimeFormat(locale, {
-                              dateStyle: "medium",
-                              timeStyle: "short",
-                            }).format(new Date(user.createdAt))}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                aria-label={`Edit ${user.email}`}
-                                onClick={() => setEditingUser(user)}
-                                size="icon"
-                                variant="outline"
-                              >
-                                <Pencil className="size-4" />
-                              </Button>
-                              <Button
-                                aria-label={`Reset password for ${user.email}`}
-                                onClick={() => {
-                                  resetForm.reset({
-                                    newTemporaryPassword: generateTemporaryPassword(),
-                                  })
-                                  setResetUser(user)
-                                }}
-                                size="icon"
-                                variant="outline"
-                              >
-                                <KeyRound className="size-4" />
-                              </Button>
-                              <Button
-                                aria-label={
-                                  user.enabled
-                                    ? `Disable ${user.email}`
-                                    : `Enable ${user.email}`
-                                }
-                                disabled={isLastEnabledUserManager}
-                                onClick={() => setToggleUser(user)}
-                                size="icon"
-                                title={
-                                  isLastEnabledUserManager
-                                    ? t("users.lastUserManager")
-                                    : undefined
-                                }
-                                variant={user.enabled ? "destructive" : "outline"}
-                              >
-                                {user.enabled ? (
-                                  <UserX className="size-4" />
-                                ) : (
-                                  <UserCheck className="size-4" />
-                                )}
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {user.lastLoginAt
+                            ? new Intl.DateTimeFormat(locale, {
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                              }).format(new Date(user.lastLoginAt))
+                            : t("common.never")}
+                        </TableCell>
+                        <TableCell>
+                          {new Intl.DateTimeFormat(locale, {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          }).format(new Date(user.createdAt))}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              aria-label={`Edit ${user.email}`}
+                              onClick={() => setEditingUser(user)}
+                              size="icon"
+                              variant="outline"
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button
+                              aria-label={`Reset password for ${user.email}`}
+                              onClick={() => {
+                                resetForm.reset({
+                                  newTemporaryPassword: generateTemporaryPassword(),
+                                })
+                                setResetUser(user)
+                              }}
+                              size="icon"
+                              variant="outline"
+                            >
+                              <KeyRound className="size-4" />
+                            </Button>
+                            <Button
+                              aria-label={
+                                user.enabled
+                                  ? `Disable ${user.email}`
+                                  : `Enable ${user.email}`
+                              }
+                              disabled={isLastEnabledUserManager}
+                              onClick={() => setToggleUser(user)}
+                              size="icon"
+                              title={
+                                isLastEnabledUserManager
+                                  ? t("users.lastUserManager")
+                                  : undefined
+                              }
+                              variant={user.enabled ? "destructive" : "outline"}
+                            >
+                              {user.enabled ? (
+                                <UserX className="size-4" />
+                              ) : (
+                                <UserCheck className="size-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          ) : null}
+        </SectionCard>
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -575,7 +563,7 @@ export default function UsersPage() {
                 {...createForm.register("mustChangePassword")}
               />
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                <Check className="size-4 text-emerald-400" />
+                <Check className="tone-success tone-text size-4" />
                 {t("users.requirePasswordChange")}
               </span>
             </label>
@@ -896,7 +884,7 @@ function PermissionGroup({
               />
               <span className="flex min-w-0 flex-1 items-center gap-2">
                 {checked ? (
-                  <Check className="size-4 text-emerald-400" />
+                  <Check className="tone-success tone-text size-4" />
                 ) : (
                   <Circle className="size-4 text-muted-foreground" />
                 )}

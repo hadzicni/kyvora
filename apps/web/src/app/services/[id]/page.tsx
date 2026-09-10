@@ -21,6 +21,8 @@ import type { ReactNode } from "react";
 import { toast } from "@/lib/toast";
 
 import { AppShell } from "@/components/app/app-shell";
+import { PageHeader, PageHeaderBackLink } from "@/components/app/page-header";
+import { SectionState } from "@/components/app/section-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -218,18 +220,19 @@ function NotFoundState() {
   const t = useTranslations("services");
 
   return (
-    <div className="flex min-h-72 flex-col items-center justify-center rounded-md border border-dashed bg-muted/20 p-8 text-center">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-muted">
-        <Cable className="size-5 text-muted-foreground" />
-      </div>
-      <h2 className="text-base font-medium">{t("notFoundTitle")}</h2>
-      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        {t("notFoundDescription")}
-      </p>
-      <Button asChild className="mt-5" variant="outline">
-        <Link href="/services">{t("backToServices")}</Link>
-      </Button>
-    </div>
+    <SectionState
+      action={
+        <Button asChild variant="outline">
+          <Link href="/services">
+            <ArrowLeft className="size-4" />
+            {t("backToServices")}
+          </Link>
+        </Button>
+      }
+      description={t("notFoundDescription")}
+      icon={<Cable className="size-5" />}
+      title={t("notFoundTitle")}
+    />
   );
 }
 
@@ -399,32 +402,27 @@ export default function ServiceDetailPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <Button asChild className="-ml-2 mb-2" size="sm" variant="ghost">
-              <Link href="/services">
-                <ArrowLeft className="size-4" />
-                {t("services.title")}
-              </Link>
+        <PageHeader
+          actions={
+            <Button
+              disabled={serviceQuery.isFetching}
+              onClick={() => void serviceQuery.refetch()}
+              variant="outline"
+            >
+              <RefreshCw
+                className={cn("size-4", serviceQuery.isFetching && "animate-spin")}
+              />
+              {t("actions.refresh")}
             </Button>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {t("services.detailTitle")}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("services.detailSubtitle", { id: id || "[id]" })}
-            </p>
-          </div>
-          <Button
-            disabled={serviceQuery.isFetching}
-            onClick={() => void serviceQuery.refetch()}
-            variant="outline"
-          >
-            <RefreshCw
-              className={cn("size-4", serviceQuery.isFetching && "animate-spin")}
-            />
-            {t("actions.refresh")}
-          </Button>
-        </div>
+          }
+          eyebrow={
+            <PageHeaderBackLink href="/services">
+              {t("services.title")}
+            </PageHeaderBackLink>
+          }
+          subtitle={t("services.detailSubtitle", { id: id || "[id]" })}
+          title={t("services.detailTitle")}
+        />
 
         {serviceQuery.isLoading ? <ServiceDetailSkeleton /> : null}
         {serviceQuery.isError && isNotFound ? <NotFoundState /> : null}

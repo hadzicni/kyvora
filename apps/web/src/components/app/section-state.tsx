@@ -1,52 +1,74 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from "react"
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button"
+import { type Tone, toneClass } from "@/lib/tone"
+import { cn } from "@/lib/utils"
 
+/**
+ * The one empty / error / not-found surface in the product.
+ *
+ * Every feature renders its blank and failure states through this component so
+ * they share the same height, icon treatment, type scale and action placement.
+ */
 export function SectionState({
   action,
   className,
   description,
   icon,
+  size = "default",
   title,
-  tone = "muted",
+  tone = "neutral",
 }: {
-  action?: ReactNode;
-  className?: string;
-  description: ReactNode;
-  icon: ReactNode;
-  title: ReactNode;
-  tone?: "muted" | "destructive";
+  action?: ReactNode
+  className?: string
+  description?: ReactNode
+  icon: ReactNode
+  size?: "default" | "sm"
+  title: ReactNode
+  tone?: Tone
 }) {
   return (
     <div
       className={cn(
-        "flex min-h-56 flex-col items-center justify-center rounded-md border border-dashed bg-muted/20 p-8 text-center",
-        tone === "destructive" && "border-destructive/30 bg-destructive/5",
-        className
+        "flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-subtle/40 px-6 text-center",
+        size === "sm" ? "min-h-44 py-8" : "min-h-64 py-12",
+        // A toned state tints its own frame, but the copy and action stay neutral.
+        tone !== "neutral" && cn("border-solid tone-surface", toneClass(tone)),
+        className,
       )}
     >
       <div
         className={cn(
-          "mb-4 flex size-12 items-center justify-center rounded-md bg-muted text-muted-foreground",
-          tone === "destructive" && "bg-destructive/10 text-destructive"
+          "mb-4 flex items-center justify-center rounded-xl border",
+          size === "sm" ? "size-10" : "size-12",
+          tone === "neutral"
+            ? "border-border bg-muted text-muted-foreground"
+            : cn("tone-surface tone-text", toneClass(tone)),
         )}
       >
         {icon}
       </div>
-      <h2 className="text-base font-medium">{title}</h2>
-      <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-        {description}
-      </p>
+      <h2 className="text-sm font-medium text-foreground">{title}</h2>
+      {description ? (
+        <p className="mt-1.5 max-w-md text-sm leading-6 text-muted-foreground">
+          {description}
+        </p>
+      ) : null}
       {action ? <div className="mt-5">{action}</div> : null}
     </div>
-  );
+  )
 }
 
-export function RetryButton({ onRetry }: { onRetry: () => void }) {
+export function RetryButton({
+  label = "Retry",
+  onRetry,
+}: {
+  label?: string
+  onRetry: () => void
+}) {
   return (
     <Button onClick={onRetry} variant="outline">
-      Retry
+      {label}
     </Button>
-  );
+  )
 }

@@ -10,6 +10,7 @@ import {
   Network,
   RefreshCw,
   Server,
+  ServerOff,
   TagsIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -20,6 +21,8 @@ import { type ReactNode } from "react";
 import { toast } from "@/lib/toast";
 
 import { AppShell } from "@/components/app/app-shell";
+import { PageHeader, PageHeaderBackLink } from "@/components/app/page-header";
+import { SectionState } from "@/components/app/section-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -171,22 +174,19 @@ function NotFoundState() {
   const t = useTranslations("servers");
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("notFoundTitle")}</CardTitle>
-        <CardDescription>
-          {t("notFoundDescription")}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <SectionState
+      action={
         <Button asChild variant="outline">
           <Link href="/servers">
             <ArrowLeft className="size-4" />
             {t("backToServers")}
           </Link>
         </Button>
-      </CardContent>
-    </Card>
+      }
+      description={t("notFoundDescription")}
+      icon={<ServerOff className="size-5" />}
+      title={t("notFoundTitle")}
+    />
   );
 }
 
@@ -689,32 +689,27 @@ export default function ServerDetailPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <Button asChild className="-ml-2 mb-2" size="sm" variant="ghost">
-              <Link href="/servers">
-                <ArrowLeft className="size-4" />
-                {t("navigation.servers")}
-              </Link>
+        <PageHeader
+          actions={
+            <Button
+              disabled={serverQuery.isFetching}
+              onClick={() => void serverQuery.refetch()}
+              variant="outline"
+            >
+              <RefreshCw
+                className={cn("size-4", serverQuery.isFetching && "animate-spin")}
+              />
+              {t("actions.refresh")}
             </Button>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {t("servers.detailTitle")}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("servers.detailSubtitle", { id: id || "[id]" })}
-            </p>
-          </div>
-          <Button
-            disabled={serverQuery.isFetching}
-            onClick={() => void serverQuery.refetch()}
-            variant="outline"
-          >
-            <RefreshCw
-              className={cn("size-4", serverQuery.isFetching && "animate-spin")}
-            />
-            {t("actions.refresh")}
-          </Button>
-        </div>
+          }
+          eyebrow={
+            <PageHeaderBackLink href="/servers">
+              {t("navigation.servers")}
+            </PageHeaderBackLink>
+          }
+          subtitle={t("servers.detailSubtitle", { id: id || "[id]" })}
+          title={t("servers.detailTitle")}
+        />
 
         {serverQuery.isLoading ? <ServerDetailSkeleton /> : null}
         {serverQuery.isError && isNotFound ? <NotFoundState /> : null}

@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   AlertTriangle,
@@ -7,74 +7,70 @@ import {
   Info,
   OctagonAlert,
   type LucideIcon,
-} from "lucide-react";
+} from "lucide-react"
 
-import type { NotificationSeverity } from "@/features/notifications/types/notification";
-import { cn } from "@/lib/utils";
+import { StatusBadge } from "@/components/app/status-badge"
+import type { NotificationSeverity } from "@/features/notifications/types/notification"
+import { type Tone, toneClass } from "@/lib/tone"
+import { cn } from "@/lib/utils"
 
 const severityLabels: Record<NotificationSeverity, string> = {
+  CRITICAL: "Critical",
+  ERROR: "Error",
   INFO: "Info",
   SUCCESS: "Success",
   WARNING: "Warning",
-  ERROR: "Error",
-  CRITICAL: "Critical",
-};
+}
 
-const severityClasses: Record<NotificationSeverity, string> = {
-  INFO: "border-sky-400/25 bg-sky-400/10 text-sky-300",
-  SUCCESS: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
-  WARNING: "border-amber-400/25 bg-amber-400/10 text-amber-300",
-  ERROR: "border-rose-400/25 bg-rose-400/10 text-rose-300",
-  CRITICAL: "border-red-400/35 bg-red-400/15 text-red-200",
-};
+const severityTones: Record<NotificationSeverity, Tone> = {
+  CRITICAL: "danger",
+  ERROR: "danger",
+  INFO: "info",
+  SUCCESS: "success",
+  WARNING: "warning",
+}
 
 const severityIcons: Record<NotificationSeverity, LucideIcon> = {
+  CRITICAL: OctagonAlert,
+  ERROR: CircleAlert,
   INFO: Info,
   SUCCESS: CheckCircle2,
   WARNING: AlertTriangle,
-  ERROR: CircleAlert,
-  CRITICAL: OctagonAlert,
-};
+}
 
 export function NotificationSeverityBadge({
   severity,
 }: {
-  severity: NotificationSeverity;
+  severity: NotificationSeverity
 }) {
-  const Icon = severityIcons[severity];
+  const Icon = severityIcons[severity]
 
   return (
-    <span
-      className={cn(
-        "inline-flex h-5 items-center gap-1 rounded-full border px-2 text-[11px] font-medium",
-        severityClasses[severity]
-      )}
-    >
-      <Icon className="size-3" />
+    <StatusBadge icon={<Icon />} tone={severityTones[severity]}>
       {severityLabels[severity]}
-    </span>
-  );
+    </StatusBadge>
+  )
 }
 
 export function NotificationSeverityIcon({
-  severity,
   className,
+  severity,
 }: {
-  severity: NotificationSeverity;
-  className?: string;
+  className?: string
+  severity: NotificationSeverity
 }) {
-  const Icon = severityIcons[severity];
+  const Icon = severityIcons[severity]
 
   return (
     <span
-      className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-md border",
-        severityClasses[severity],
-        className
-      )}
       aria-hidden="true"
+      className={cn(
+        "flex size-8 shrink-0 items-center justify-center rounded-lg border tone-surface tone-text",
+        toneClass(severityTones[severity]),
+        className,
+      )}
     >
       <Icon className="size-4" />
     </span>
-  );
+  )
 }

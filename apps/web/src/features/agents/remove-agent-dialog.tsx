@@ -1,11 +1,12 @@
 "use client";
 
-import { Clipboard, RefreshCw, Trash2 } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 
+import { CodeCommand } from "@/components/app/code-command";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -95,21 +96,11 @@ export function RemoveAgentDialog({
           <p className="text-sm text-muted-foreground">
             {t("agents.uninstallHostDescription")}
           </p>
-          <div className="flex items-center gap-2 rounded-md border bg-zinc-950 p-2 text-zinc-100">
-            <code className="min-w-0 flex-1 overflow-x-auto p-1 text-xs">
-              {uninstallCommand}
-            </code>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="shrink-0 text-zinc-100 hover:bg-zinc-800 hover:text-white"
-              aria-label={t("agents.copyUninstallCommand")}
-              onClick={() => void copyUninstallCommand()}
-            >
-              <Clipboard className="size-4" />
-            </Button>
-          </div>
+          <CodeCommand
+            copyLabel={t("agents.copyUninstallCommand")}
+            onCopy={() => void copyUninstallCommand()}
+            value={uninstallCommand}
+          />
           <p className="text-xs text-muted-foreground">
             {t("agents.uninstallPreservesConfig")}
           </p>

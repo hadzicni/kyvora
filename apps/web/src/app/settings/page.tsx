@@ -135,9 +135,7 @@ function Toggle({
         "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
         "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
         "disabled:pointer-events-none disabled:opacity-50",
-        checked
-          ? "border-emerald-500/50 bg-emerald-500/80"
-          : "border-border bg-muted"
+        checked ? "border-brand/60 bg-brand" : "border-border bg-muted"
       )}
       disabled={disabled}
       onClick={() => onCheckedChange(!checked)}
@@ -160,11 +158,11 @@ function SettingsSkeleton() {
       <div className="space-y-4">
         {[0, 1, 2].map((item) => (
           <Card key={item}>
-            <CardHeader>
+            <CardHeader className="border-b">
               <Skeleton className="h-5 w-44" />
               <Skeleton className="h-4 w-72" />
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="pt-4 space-y-3">
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-20 w-full" />
             </CardContent>
@@ -172,11 +170,11 @@ function SettingsSkeleton() {
         ))}
       </div>
       <Card>
-        <CardHeader>
+        <CardHeader className="border-b">
           <Skeleton className="h-5 w-32" />
           <Skeleton className="h-4 w-48" />
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="pt-4 space-y-3">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
@@ -460,7 +458,7 @@ export default function SettingsPage() {
 
             <div className="space-y-4">
               <Card>
-                <CardHeader>
+                <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2">
                     <BadgeInfo className="size-4" />
                     {t("settings.about")}
@@ -469,7 +467,7 @@ export default function SettingsPage() {
                     {t("settings.aboutDescription")}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="pt-4 space-y-3">
                   <InfoRow label={t("help.product")} value="Kyvora" />
                   <InfoRow
                     label={t("help.version")}
@@ -490,7 +488,7 @@ export default function SettingsPage() {
               </Card>
 
               <Card>
-                <CardHeader>
+                <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2">
                     <Info className="size-4" />
                     {t("settings.storagePolicy")}
@@ -499,7 +497,7 @@ export default function SettingsPage() {
                     {t("settings.storagePolicyDescription")}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm leading-6 text-muted-foreground">
+                <CardContent className="pt-4 space-y-3 text-sm leading-6 text-muted-foreground">
                   <p>
                     {t("settings.storagePolicyText1")}
                   </p>

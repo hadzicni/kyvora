@@ -85,12 +85,12 @@ export function ServerTable({
               <div className="grid gap-1">
                 <ServerStatusBadge status={server.status} />
                 {server.status === "OFFLINE" ? (
-                  <span className="text-xs text-red-300/90">
+                  <span className="tone-danger tone-text text-xs">
                     {t("servers.noRecentHeartbeat")}
                   </span>
                 ) : null}
                 {server.status === "UNKNOWN" ? (
-                  <span className="text-xs text-amber-300/90">
+                  <span className="tone-warning tone-text text-xs">
                     {t("servers.awaitingSignal")}
                   </span>
                 ) : null}

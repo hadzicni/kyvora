@@ -39,6 +39,21 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* Brand accent — the single hue Kyvora is allowed to use for emphasis. */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-muted: var(--brand-muted);
+
+  /* Semantic status hues — every status badge, bar and tile resolves here. */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -46,6 +61,11 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --animate-aurora: aurora 8s ease-in-out infinite alternate;
+  --animate-card-in: card-in 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-shimmer: shimmer 2.8s infinite 1.2s;
+  --animate-shake: shake 0.4s ease;
 }
 
 :root {
@@ -67,54 +87,87 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+
+  --brand: oklch(0.55 0.22 285);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-muted: oklch(0.55 0.22 285 / 10%);
+
+  --success: oklch(0.6 0.15 162);
+  --warning: oklch(0.68 0.16 74);
+  --danger: oklch(0.6 0.22 18);
+  --info: oklch(0.6 0.15 233);
+
+  --surface: oklch(0.985 0 0);
+  --surface-subtle: oklch(0.97 0 0);
+
+  --chart-1: var(--brand);
+  --chart-2: var(--info);
+  --chart-3: var(--success);
+  --chart-4: var(--warning);
+  --chart-5: var(--danger);
+
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: var(--brand);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: var(--brand);
+
+  /* Auth / gate surfaces — the full-bleed dark canvas behind sign-in.
+     Deliberately dark in both themes: sign-in is always the dark front door. */
+  --auth-canvas: oklch(0.11 0.006 268);
+  --auth-card: oklch(0.165 0.008 268 / 88%);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.145 0.004 268);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.196 0.005 268);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.196 0.005 268);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --secondary: oklch(0.269 0.004 268);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
+  --muted: oklch(0.269 0.004 268);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --accent: oklch(0.269 0.004 268);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
+
+  --brand: oklch(0.72 0.17 295);
+  --brand-foreground: oklch(0.145 0 0);
+  --brand-muted: oklch(0.72 0.17 295 / 12%);
+
+  --success: oklch(0.79 0.16 163);
+  --warning: oklch(0.83 0.16 84);
+  --danger: oklch(0.72 0.18 15);
+  --info: oklch(0.75 0.14 233);
+
+  --surface: oklch(0.196 0.005 268);
+  --surface-subtle: oklch(0.155 0.005 268);
+
+  --chart-1: var(--brand);
+  --chart-2: var(--info);
+  --chart-3: var(--success);
+  --chart-4: var(--warning);
+  --chart-5: var(--danger);
+
+  --sidebar: oklch(0.155 0.006 268);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(1 0 0 / 6%);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-border: oklch(1 0 0 / 7%);
+  --sidebar-ring: var(--brand);
 }
 
 @layer base {
@@ -126,5 +179,114 @@
   }
   html {
     @apply font-sans;
+  }
+  ::selection {
+    background-color: color-mix(in oklch, var(--brand), transparent 70%);
+  }
+  /* One scrollbar treatment for the whole product. */
+  * {
+    scrollbar-color: color-mix(in oklch, var(--foreground), transparent 80%)
+      transparent;
+    scrollbar-width: thin;
+  }
+}
+
+@layer components {
+  /*
+   * One tinted-surface recipe for every status colour in the product.
+   * Set --tone with a tone-* class, then compose: `tone-success tone-surface`.
+   */
+  .tone-brand {
+    --tone: var(--brand);
+  }
+  .tone-success {
+    --tone: var(--success);
+  }
+  .tone-warning {
+    --tone: var(--warning);
+  }
+  .tone-danger {
+    --tone: var(--danger);
+  }
+  .tone-info {
+    --tone: var(--info);
+  }
+  .tone-neutral {
+    --tone: var(--muted-foreground);
+  }
+
+  /*
+   * Frame only. Text colour is opt-in via `tone-text`, so a tinted panel can
+   * still hold neutral copy and standard buttons.
+   */
+  .tone-surface {
+    background-color: color-mix(in oklch, var(--tone), transparent 88%);
+    border-color: color-mix(in oklch, var(--tone), transparent 74%);
+  }
+  .tone-fill {
+    background-color: var(--tone);
+  }
+  .tone-text {
+    color: var(--tone);
+  }
+}
+
+@keyframes aurora {
+  0% {
+    opacity: 0.8;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.04) translateY(-8px);
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  40%,
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-aurora,
+  .animate-card-in,
+  .animate-shimmer,
+  .animate-shake {
+    animation: none !important;
   }
 }

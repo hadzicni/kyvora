@@ -24,7 +24,7 @@ export function NotAuthorized({
     <Card>
       <CardHeader className="border-b">
         <CardTitle className="flex items-center gap-2">
-          <ShieldAlert className="size-4 text-amber-300" />
+          <ShieldAlert className="tone-warning tone-text size-4" />
           {t("authz.notAuthorized")}
         </CardTitle>
         <CardDescription>

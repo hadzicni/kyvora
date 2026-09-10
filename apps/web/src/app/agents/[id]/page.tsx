@@ -1,12 +1,12 @@
 "use client";
 
-import { ArrowLeft, Bot, Cpu, HardDrive, Network, RefreshCw } from "lucide-react";
-import Link from "next/link";
+import { Cpu, HardDrive, Network, RefreshCw } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { type ReactNode } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
+import { PageHeader, PageHeaderBackLink } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -92,47 +92,35 @@ export default function AgentDetailPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-3">
-            <Button asChild variant="ghost" size="sm" className="w-fit">
-              <Link href="/agents">
-                <ArrowLeft className="size-4" />
-                Back to agents
-              </Link>
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="flex size-11 items-center justify-center rounded-md border bg-muted/30">
-                <Bot className="size-5" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold tracking-normal">
-                  {agent?.name ?? (agentQuery.isLoading ? "Loading agent..." : "Agent")}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Pull-based agent connection and latest collected host facts.
-                </p>
-              </div>
-            </div>
-          </div>
-          {agent ? (
-            <div className="flex gap-2">
-              {canPullAgents(session?.user.permissions) ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={pullAgent.isPending}
-                  onClick={() => void pullNow()}
-                >
-                  <RefreshCw className={cn("size-4", pullAgent.isPending && "animate-spin")} />
-                  Pull now
-                </Button>
-              ) : null}
-              {canRemoveAgents(session?.user.permissions) ? (
-                <RemoveAgentDialog agent={agent} redirectTo="/agents" />
-              ) : null}
-            </div>
-          ) : null}
-        </div>
+        <PageHeader
+          actions={
+            agent ? (
+              <>
+                {canPullAgents(session?.user.permissions) ? (
+                  <Button
+                    disabled={pullAgent.isPending}
+                    onClick={() => void pullNow()}
+                    type="button"
+                    variant="outline"
+                  >
+                    <RefreshCw
+                      className={cn("size-4", pullAgent.isPending && "animate-spin")}
+                    />
+                    Pull now
+                  </Button>
+                ) : null}
+                {canRemoveAgents(session?.user.permissions) ? (
+                  <RemoveAgentDialog agent={agent} redirectTo="/agents" />
+                ) : null}
+              </>
+            ) : null
+          }
+          eyebrow={
+            <PageHeaderBackLink href="/agents">Back to agents</PageHeaderBackLink>
+          }
+          subtitle="Pull-based agent connection and latest collected host facts."
+          title={agent?.name ?? (agentQuery.isLoading ? "Loading agent..." : "Agent")}
+        />
 
         {agentQuery.isLoading ? (
           <Skeleton className="h-96 w-full" />

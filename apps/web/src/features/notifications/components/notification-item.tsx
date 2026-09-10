@@ -46,7 +46,7 @@ export function NotificationItem({
               </p>
             </div>
             {!notification.read ? (
-              <span className="mt-1 size-2 shrink-0 rounded-full bg-violet-400">
+              <span className="mt-1 size-2 shrink-0 rounded-full bg-brand">
                 <span className="sr-only">Unread</span>
               </span>
             ) : null}

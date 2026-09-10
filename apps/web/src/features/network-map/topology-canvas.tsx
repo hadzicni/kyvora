@@ -25,10 +25,11 @@ import type {
 import type { ServerStatus } from "@/lib/api/servers";
 import { cn } from "@/lib/utils";
 
+/** Nodes borrow the product-wide status tones so the map matches every table. */
 const nodeStatusClasses: Record<ServerStatus, string> = {
-  ONLINE: "border-emerald-400/50 bg-emerald-500/10 shadow-emerald-950/20",
-  OFFLINE: "border-rose-400/50 bg-rose-500/10 shadow-rose-950/20",
-  UNKNOWN: "border-amber-400/50 bg-amber-500/10 shadow-amber-950/20",
+  ONLINE: "tone-success tone-surface",
+  OFFLINE: "tone-danger tone-surface",
+  UNKNOWN: "tone-warning tone-surface",
 };
 
 const nodeTypes = {
@@ -189,7 +190,7 @@ function GatewayFlowNode({ data }: NodeProps<FlowNodeData>) {
   return (
     <div
       className={cn(
-        "h-full w-full overflow-hidden rounded-md border border-sky-400/40 bg-sky-500/10 p-3 text-left shadow-sm transition",
+        "tone-info tone-surface h-full w-full overflow-hidden rounded-md border p-3 text-left shadow-sm transition",
         data.selected && "ring-2 ring-primary/70"
       )}
     >

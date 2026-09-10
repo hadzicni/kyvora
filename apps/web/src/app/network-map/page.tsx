@@ -23,6 +23,7 @@ import { useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { AppShell } from "@/components/app/app-shell";
+import { StatusDot } from "@/components/app/status-badge";
 import { SectionState } from "@/components/app/section-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ import type {
   NetworkMapSubnet,
 } from "@/lib/api/network-map";
 import type { ServerStatus } from "@/lib/api/servers";
+import type { Tone } from "@/lib/tone";
 import { cn } from "@/lib/utils";
 
 const statuses = ["ONLINE", "OFFLINE", "UNKNOWN"] as const;
@@ -213,7 +215,7 @@ export default function NetworkMapPage() {
             <WorkspaceState>
               <SectionState
                 description={t("networkMap.loadingDescription")}
-                icon={<Network className="size-6" />}
+                icon={<Network className="size-5" />}
                 title={`${t("common.loading")}...`}
               />
             </WorkspaceState>
@@ -236,9 +238,9 @@ export default function NetworkMapPage() {
                     ? networkMapQuery.error.message
                     : t("networkMap.unexpectedError")
                 }
-                icon={<Network className="size-6" />}
+                icon={<Network className="size-5" />}
                 title={t("networkMap.errorTitle")}
-                tone="destructive"
+                tone="danger"
               />
             </WorkspaceState>
           ) : null}
@@ -247,7 +249,7 @@ export default function NetworkMapPage() {
             <WorkspaceState>
               <SectionState
                 description={t("networkMap.emptyDescription")}
-                icon={<Network className="size-6" />}
+                icon={<Network className="size-5" />}
                 title={t("networkMap.emptyTitle")}
               />
             </WorkspaceState>
@@ -666,9 +668,9 @@ function NetworkMapLegend() {
 
   return (
     <div className="absolute bottom-3 left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-3 rounded-md border bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur md:left-48">
-      <LegendItem className="bg-emerald-400" label={t("statuses.ONLINE")} />
-      <LegendItem className="bg-rose-400" label={t("statuses.OFFLINE")} />
-      <LegendItem className="bg-amber-400" label={t("statuses.UNKNOWN")} />
+      <LegendItem label={t("statuses.ONLINE")} tone="success" />
+      <LegendItem label={t("statuses.OFFLINE")} tone="danger" />
+      <LegendItem label={t("statuses.UNKNOWN")} tone="warning" />
       <span className="inline-flex min-w-0 items-center gap-1">
         <Cable className="size-3.5 shrink-0" />
         <span className="truncate">{t("networkMap.inferredGateway")}</span>
@@ -677,10 +679,10 @@ function NetworkMapLegend() {
   );
 }
 
-function LegendItem({ className, label }: { className: string; label: string }) {
+function LegendItem({ label, tone }: { label: string; tone: Tone }) {
   return (
     <span className="inline-flex items-center gap-1">
-      <span className={cn("size-2 rounded-full", className)} />
+      <StatusDot tone={tone} />
       {label}
     </span>
   );

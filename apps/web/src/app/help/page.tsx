@@ -21,6 +21,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
+import { StatusBadge } from "@/components/app/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,7 +113,7 @@ export default function HelpPage() {
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <div className="space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="size-4" />
                   {t("help.about", { name: instance.name })}
@@ -121,7 +122,7 @@ export default function HelpPage() {
                   {instance.description}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-3 sm:grid-cols-2">
+              <CardContent className="pt-4 grid gap-3 sm:grid-cols-2">
                 <InfoRow
                   label={t("help.product")}
                   value={instance.name}
@@ -142,7 +143,7 @@ export default function HelpPage() {
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle className="flex items-center gap-2">
                   <Terminal className="size-4" />
                   {t("help.agentSetup")}
@@ -151,7 +152,7 @@ export default function HelpPage() {
                   {t("help.agentSetupDescription")}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="pt-4 space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <GuidanceItem icon={Server}>
                     Create or select a server, then configure the agent base
@@ -184,7 +185,7 @@ KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
 
             <div className="grid gap-4 xl:grid-cols-2">
               <Card>
-                <CardHeader>
+                <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2">
                     <Server className="size-4" />
                   Server Status Guide
@@ -194,26 +195,22 @@ KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
                     agent.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="pt-4 space-y-3">
                   <div className="rounded-md border bg-muted/20 p-3">
-                    <Badge variant="outline">UNKNOWN</Badge>
+                    <StatusBadge tone="warning">UNKNOWN</StatusBadge>
                     <p className="mt-2 text-sm text-muted-foreground">
                       No successful agent pull has completed yet, or operational
                       state is not known.
                     </p>
                   </div>
                   <div className="rounded-md border bg-muted/20 p-3">
-                    <Badge className="border-emerald-500/30 text-emerald-300" variant="outline">
-                      ONLINE
-                    </Badge>
+                    <StatusBadge tone="success">ONLINE</StatusBadge>
                     <p className="mt-2 text-sm text-muted-foreground">
                       A linked agent is reachable and returning current data.
                     </p>
                   </div>
                   <div className="rounded-md border bg-muted/20 p-3">
-                    <Badge className="border-red-500/30 text-red-300" variant="outline">
-                      OFFLINE
-                    </Badge>
+                    <StatusBadge tone="danger">OFFLINE</StatusBadge>
                     <p className="mt-2 text-sm text-muted-foreground">
                       Agent pulls are failing, or the server or agent is down.
                     </p>
@@ -222,7 +219,7 @@ KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
               </Card>
 
               <Card>
-                <CardHeader>
+                <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="size-4" />
                     Activity / Audit
@@ -231,7 +228,7 @@ KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
                     Lifecycle and security-relevant events for operators.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="pt-4 space-y-3">
                   <GuidanceItem icon={Activity}>
                     Activity records server, agent, pull, and lifecycle events
                     for operational review.
@@ -251,7 +248,7 @@ KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
               </Card>
 
               <Card>
-                <CardHeader>
+                <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2">
                     <Users className="size-4" />
                     User Access
@@ -260,7 +257,7 @@ KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
                     Local accounts use Kyvora credentials and permission-based access.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="pt-4 space-y-3">
                   <GuidanceItem icon={ShieldCheck}>
                     Admin is a preset for full administration permissions,
                     including users, settings, servers, agents, and activity.
@@ -283,7 +280,7 @@ KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
 
           <div className="space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle className="flex items-center gap-2">
                   <HeartPulse className="size-4" />
                     {t("help.systemStatus")}
@@ -292,13 +289,13 @@ KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
                   {t("help.systemStatusDescription")}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="pt-4 space-y-3">
                 <div className="flex items-center gap-3 rounded-md border bg-muted/20 p-3">
                   <BadgeCheck
                     className={
                       statusQuery.isError
-                        ? "size-4 text-destructive"
-                        : "size-4 text-emerald-400"
+                        ? "tone-danger tone-text size-4"
+                        : "tone-success tone-text size-4"
                     }
                   />
                   <div>
@@ -342,7 +339,7 @@ KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="border-b">
                 <CardTitle className="flex items-center gap-2">
                   <GitBranch className="size-4" />
                   {t("help.releaseLinks")}
@@ -351,7 +348,7 @@ KYVORA_AGENT_SHARED_SECRET=<shared-secret>`}</CodeBlock>
                   {t("help.releaseLinksDescription")}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="pt-4 space-y-3">
                 <Button asChild className="w-full justify-between" variant="outline">
                   <a href={repositoryUrl} rel="noreferrer" target="_blank">
                     {t("help.githubRepository")}

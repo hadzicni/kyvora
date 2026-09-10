@@ -1,29 +1,26 @@
-import { AlertTriangle } from "lucide-react";
-import { useTranslations } from "next-intl";
+"use client"
 
-import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react"
+import { useTranslations } from "next-intl"
+
+import { RetryButton, SectionState } from "@/components/app/section-state"
 
 export function ServiceErrorState({
   message,
   onRetry,
 }: {
-  message: string;
-  onRetry: () => void;
+  message: string
+  onRetry: () => void
 }) {
-  const t = useTranslations();
+  const t = useTranslations()
 
   return (
-    <div className="grid gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4">
-      <div className="flex items-start gap-3">
-        <AlertTriangle className="mt-0.5 size-4 text-destructive" />
-        <div>
-          <h3 className="font-semibold">{t("services.errorTitle")}</h3>
-          <p className="text-sm text-muted-foreground">{message}</p>
-        </div>
-      </div>
-      <Button className="w-fit" onClick={onRetry} variant="outline">
-        {t("actions.retry")}
-      </Button>
-    </div>
-  );
+    <SectionState
+      action={<RetryButton label={t("actions.retry")} onRetry={onRetry} />}
+      description={message}
+      icon={<AlertTriangle className="size-5" />}
+      title={t("services.errorTitle")}
+      tone="danger"
+    />
+  )
 }

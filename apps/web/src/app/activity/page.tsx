@@ -1,32 +1,22 @@
 "use client";
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  AlertTriangle,
-  Eye,
-  History,
-  RefreshCw,
-  Search,
-  X,
-} from "lucide-react";
+import { AlertTriangle, Eye, History, RefreshCw, Search } from "lucide-react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
-import { PageHeader } from "@/components/app/page-header";
+import {
+  DataToolbar,
+  ToolbarField,
+  ToolbarSearch,
+} from "@/components/app/data-toolbar";
+import { PageHeader, PageHeaderCount } from "@/components/app/page-header";
+import { PaginationBar } from "@/components/app/pagination-bar";
+import { SectionCard } from "@/components/app/section-card";
+import { RetryButton, SectionState } from "@/components/app/section-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -57,7 +47,6 @@ import {
   formatTimestamp,
 } from "@/features/audit-logs/format";
 import { useAuditLogs } from "@/features/audit-logs/use-audit-logs";
-import { formatNumber } from "@/features/servers/format";
 import type { AuditEventType, AuditLog } from "@/lib/api/audit-logs";
 import { cn } from "@/lib/utils";
 
@@ -65,14 +54,11 @@ const pageSizeOptions = [10, 20, 50] as const;
 
 export default function ActivityPage() {
   const t = useTranslations();
-  const locale = useLocale();
   const [aggregateType, setAggregateType] = useState<string>("ALL");
   const [eventType, setEventType] = useState<AuditEventType | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState<(typeof pageSizeOptions)[number]>(
-    20
-  );
+  const [pageSize, setPageSize] = useState<number>(20);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
   const auditLogsQuery = useAuditLogs({
@@ -99,238 +85,169 @@ export default function ActivityPage() {
     });
   }, [auditLogs, normalizedSearch]);
   const totalElements = auditLogsQuery.data?.totalElements ?? 0;
-  const totalPages = auditLogsQuery.data?.totalPages ?? 0;
-  const displayedPage = auditLogsQuery.data?.page ?? page;
-  const rangeStart = totalElements === 0 ? 0 : displayedPage * pageSize + 1;
-  const rangeEnd =
-    totalElements === 0
-      ? 0
-      : Math.min(rangeStart + auditLogs.length - 1, totalElements);
   const hasActiveFilters =
     aggregateType !== "ALL" || eventType !== "ALL" || search.trim().length > 0;
-  const canGoBack = page > 0 && !auditLogsQuery.isFetching;
-  const canGoForward =
-    totalPages > 0 && page + 1 < totalPages && !auditLogsQuery.isFetching;
 
   return (
     <AppShell>
       <div className="space-y-6">
         <PageHeader
+          actions={
+            <Button
+              disabled={auditLogsQuery.isFetching}
+              onClick={() => void auditLogsQuery.refetch()}
+              variant="outline"
+            >
+              <RefreshCw
+                className={cn("size-4", auditLogsQuery.isFetching && "animate-spin")}
+              />
+              {t("actions.refresh")}
+            </Button>
+          }
+          badge={
+            auditLogsQuery.data ? (
+              <PageHeaderCount>
+                {t("activity.recordedEvents", { count: totalElements })}
+              </PageHeaderCount>
+            ) : null
+          }
           subtitle={t("activity.subtitle")}
           title={t("activity.title")}
-          actions={
-          <Button
-            disabled={auditLogsQuery.isFetching}
-            onClick={() => void auditLogsQuery.refetch()}
-            variant="outline"
-          >
-            <RefreshCw
-              className={cn(
-                "size-4",
-                auditLogsQuery.isFetching && "animate-spin"
-              )}
-            />
-            {t("actions.refresh")}
-          </Button>
-          }
         />
 
-        <Card>
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <History className="size-4" />
-              {t("activity.auditLogs")}
-            </CardTitle>
-            <CardDescription>
-              {auditLogsQuery.data
-                ? t("activity.recordedEvents", { count: totalElements })
-                : t("activity.loadingActivity")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4">
-            <div className="grid gap-3 rounded-md border bg-muted/10 p-3 xl:grid-cols-[minmax(16rem,1fr)_12rem_16rem_auto] xl:items-end">
-              <div className="grid gap-2">
-                <Label htmlFor="activity-search">{t("forms.search")}</Label>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="activity-search"
-                    className="pl-8"
-                    placeholder={t("forms.messageOrActor")}
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                  />
-                </div>
-              </div>
+        <SectionCard
+          contentClassName="space-y-4 pt-4"
+          description={
+            auditLogsQuery.data
+              ? t("activity.recordedEvents", { count: totalElements })
+              : t("activity.loadingActivity")
+          }
+          icon={<History />}
+          title={t("activity.auditLogs")}
+        >
+          <DataToolbar
+            onReset={() => {
+              setAggregateType("ALL");
+              setEventType("ALL");
+              setSearch("");
+              setPage(0);
+            }}
+            resetDisabled={!hasActiveFilters}
+          >
+            <ToolbarField
+              className="lg:min-w-64 lg:flex-1"
+              htmlFor="activity-search"
+              label={t("forms.search")}
+            >
+              <ToolbarSearch
+                id="activity-search"
+                onChange={setSearch}
+                placeholder={t("forms.messageOrActor")}
+                value={search}
+              />
+            </ToolbarField>
 
-              <div className="grid gap-2">
-                <Label htmlFor="activity-aggregate-type">{t("activity.aggregate")}</Label>
-                <Select
-                  value={aggregateType}
-                  onValueChange={(value) => {
-                    setAggregateType(value);
-                    setPage(0);
-                  }}
-                >
-                  <SelectTrigger
-                    id="activity-aggregate-type"
-                    className="w-full"
-                  >
-                    <SelectValue placeholder={t("forms.allAggregates")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectItem value="ALL">{t("forms.allAggregates")}</SelectItem>
-                    {aggregateTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="activity-event-type">{t("activity.eventType")}</Label>
-                <Select
-                  value={eventType}
-                  onValueChange={(value) => {
-                    setEventType(value as AuditEventType | "ALL");
-                    setPage(0);
-                  }}
-                >
-                  <SelectTrigger id="activity-event-type" className="w-full">
-                    <SelectValue placeholder={t("forms.allEvents")} />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectItem value="ALL">{t("forms.allEvents")}</SelectItem>
-                    {auditEventTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {formatAuditEventType(type)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!hasActiveFilters}
-                onClick={() => {
-                  setAggregateType("ALL");
-                  setEventType("ALL");
-                  setSearch("");
+            <ToolbarField
+              className="lg:w-48"
+              htmlFor="activity-aggregate-type"
+              label={t("activity.aggregate")}
+            >
+              <Select
+                onValueChange={(value) => {
+                  setAggregateType(value);
                   setPage(0);
                 }}
+                value={aggregateType}
               >
-                <X className="size-4" />
-                {t("actions.clear")}
-              </Button>
-            </div>
+                <SelectTrigger className="w-full" id="activity-aggregate-type">
+                  <SelectValue placeholder={t("forms.allAggregates")} />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectItem value="ALL">{t("forms.allAggregates")}</SelectItem>
+                  {aggregateTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </ToolbarField>
 
-            {auditLogsQuery.isLoading ? <ActivityTableSkeleton /> : null}
-            {auditLogsQuery.isError ? (
-              <ActivityErrorState
-                message={
-                  auditLogsQuery.error instanceof Error
-                    ? auditLogsQuery.error.message
-                    : t("activity.unexpectedError")
-                }
-                onRetry={() => void auditLogsQuery.refetch()}
-              />
-            ) : null}
-            {auditLogsQuery.isSuccess && auditLogs.length === 0 ? (
-              <ActivityEmptyState />
-            ) : null}
-            {auditLogsQuery.isSuccess &&
-            auditLogs.length > 0 &&
-            visibleLogs.length === 0 ? (
-              <ActivityEmptySearchState />
-            ) : null}
-            {auditLogsQuery.isSuccess && visibleLogs.length > 0 ? (
-              <ActivityTable
-                auditLogs={visibleLogs}
-                onInspect={(auditLog) => setSelectedLog(auditLog)}
-              />
-            ) : null}
-            {auditLogsQuery.isSuccess ? (
-              <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-muted-foreground">
-                  {t("actions.showingRange", {
-                    start: formatNumber(rangeStart, locale),
-                    end: formatNumber(rangeEnd, locale),
-                    total: formatNumber(totalElements, locale),
-                  })}
-                  {normalizedSearch ? (
-                    <span className="ml-2 text-xs">
-                      {t("activity.matchingRows", { count: visibleLogs.length })}
-                    </span>
-                  ) : null}
-                  <span className="ml-2 text-xs">
-                    {t("actions.pageOf", {
-                      page: totalPages === 0 ? 0 : displayedPage + 1,
-                      total: totalPages,
-                    })}
-                    {auditLogsQuery.isFetching ? ` - ${t("actions.updating")}` : ""}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label
-                    className="text-xs font-medium text-muted-foreground"
-                    htmlFor="activity-page-size"
-                  >
-                    {t("actions.rows")}
-                  </Label>
-                  <Select
-                    value={String(pageSize)}
-                    disabled={auditLogsQuery.isFetching}
-                    onValueChange={(value) => {
-                      setPageSize(
-                        Number(value) as (typeof pageSizeOptions)[number]
-                      );
-                      setPage(0);
-                    }}
-                  >
-                    <SelectTrigger
-                      id="activity-page-size"
-                      aria-label={t("actions.rows")}
-                      className="w-[7.5rem]"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      {pageSizeOptions.map((size) => (
-                        <SelectItem key={size} value={String(size)}>
-                          {t("actions.rowsCount", { count: size })}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    aria-label={t("actions.previousPage")}
-                    disabled={!canGoBack}
-                    onClick={() =>
-                      setPage((currentPage) => Math.max(0, currentPage - 1))
-                    }
-                    size="icon"
-                    variant="outline"
-                  >
-                    <ChevronLeft className="size-4" />
-                  </Button>
-                  <Button
-                    aria-label={t("actions.nextPage")}
-                    disabled={!canGoForward}
-                    onClick={() => setPage((currentPage) => currentPage + 1)}
-                    size="icon"
-                    variant="outline"
-                  >
-                    <ChevronRight className="size-4" />
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+            <ToolbarField
+              className="lg:w-56"
+              htmlFor="activity-event-type"
+              label={t("activity.eventType")}
+            >
+              <Select
+                onValueChange={(value) => {
+                  setEventType(value as AuditEventType | "ALL");
+                  setPage(0);
+                }}
+                value={eventType}
+              >
+                <SelectTrigger className="w-full" id="activity-event-type">
+                  <SelectValue placeholder={t("forms.allEvents")} />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectItem value="ALL">{t("forms.allEvents")}</SelectItem>
+                  {auditEventTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {formatAuditEventType(type)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </ToolbarField>
+          </DataToolbar>
+
+          {auditLogsQuery.isLoading ? <ActivityTableSkeleton /> : null}
+          {auditLogsQuery.isError ? (
+            <ActivityErrorState
+              message={
+                auditLogsQuery.error instanceof Error
+                  ? auditLogsQuery.error.message
+                  : t("activity.unexpectedError")
+              }
+              onRetry={() => void auditLogsQuery.refetch()}
+            />
+          ) : null}
+          {auditLogsQuery.isSuccess && auditLogs.length === 0 ? (
+            <ActivityEmptyState />
+          ) : null}
+          {auditLogsQuery.isSuccess &&
+          auditLogs.length > 0 &&
+          visibleLogs.length === 0 ? (
+            <ActivityEmptySearchState />
+          ) : null}
+          {auditLogsQuery.isSuccess && visibleLogs.length > 0 ? (
+            <ActivityTable
+              auditLogs={visibleLogs}
+              onInspect={(auditLog) => setSelectedLog(auditLog)}
+            />
+          ) : null}
+          {auditLogsQuery.isSuccess ? (
+            <PaginationBar
+              id="activity"
+              isFetching={auditLogsQuery.isFetching}
+              note={
+                normalizedSearch
+                  ? t("activity.matchingRows", { count: visibleLogs.length })
+                  : undefined
+              }
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(0);
+              }}
+              page={auditLogsQuery.data?.page ?? page}
+              pageSize={pageSize}
+              pageSizeOptions={pageSizeOptions}
+              totalElements={totalElements}
+              totalPages={auditLogsQuery.data?.totalPages ?? 0}
+              visibleCount={auditLogs.length}
+            />
+          ) : null}
+        </SectionCard>
       </div>
 
       <ActivityDetailSheet
@@ -538,15 +455,11 @@ function ActivityEmptyState() {
   const t = useTranslations("activity");
 
   return (
-    <div className="flex min-h-72 flex-col items-center justify-center rounded-md border border-dashed bg-muted/20 p-8 text-center">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-muted">
-        <History className="size-5 text-muted-foreground" />
-      </div>
-      <h2 className="text-base font-medium">{t("emptyTitle")}</h2>
-      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        {t("emptyDescription")}
-      </p>
-    </div>
+    <SectionState
+      description={t("emptyDescription")}
+      icon={<History className="size-5" />}
+      title={t("emptyTitle")}
+    />
   );
 }
 
@@ -554,15 +467,11 @@ function ActivityEmptySearchState() {
   const t = useTranslations("activity");
 
   return (
-    <div className="flex min-h-72 flex-col items-center justify-center rounded-md border border-dashed bg-muted/20 p-8 text-center">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-muted">
-        <Search className="size-5 text-muted-foreground" />
-      </div>
-      <h2 className="text-base font-medium">{t("emptySearchTitle")}</h2>
-      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        {t("emptySearchDescription")}
-      </p>
-    </div>
+    <SectionState
+      description={t("emptySearchDescription")}
+      icon={<Search className="size-5" />}
+      title={t("emptySearchTitle")}
+    />
   );
 }
 
@@ -576,16 +485,13 @@ function ActivityErrorState({
   const t = useTranslations();
 
   return (
-    <div className="flex min-h-72 flex-col items-center justify-center rounded-md border border-destructive/30 bg-destructive/5 p-8 text-center">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-destructive/10 text-destructive">
-        <AlertTriangle className="size-5" />
-      </div>
-      <h2 className="text-base font-medium">{t("activity.errorTitle")}</h2>
-      <p className="mt-2 max-w-md text-sm text-muted-foreground">{message}</p>
-      <Button className="mt-5" onClick={onRetry} variant="outline">
-        {t("actions.retry")}
-      </Button>
-    </div>
+    <SectionState
+      action={<RetryButton label={t("actions.retry")} onRetry={onRetry} />}
+      description={message}
+      icon={<AlertTriangle className="size-5" />}
+      title={t("activity.errorTitle")}
+      tone="danger"
+    />
   );
 }
 
