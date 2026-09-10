@@ -54,15 +54,15 @@ export function PaginationBar({
   const canGoForward = totalPages > 0 && page + 1 < totalPages && !isFetching
 
   return (
-    <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs text-muted-foreground tabular-nums">
         {t("actions.showingRange", {
           start: formatNumber(rangeStart, locale),
           end: formatNumber(rangeEnd, locale),
           total: formatNumber(totalElements, locale),
         })}
-        {note ? <span className="ml-2 text-xs">{note}</span> : null}
-        <span className="ml-2 text-xs">
+        {note ? <span className="ml-2 text-muted-foreground/70">{note}</span> : null}
+        <span className="ml-2 text-muted-foreground/70">
           {t("actions.pageOf", {
             page: totalPages === 0 ? 0 : page + 1,
             total: totalPages,
@@ -85,7 +85,7 @@ export function PaginationBar({
         >
           <SelectTrigger
             aria-label={t("actions.rows")}
-            className="w-28"
+            className="h-7 w-24 text-xs"
             id={`${id}-page-size`}
           >
             <SelectValue />
@@ -102,7 +102,7 @@ export function PaginationBar({
           aria-label={t("actions.previousPage")}
           disabled={!canGoBack}
           onClick={() => onPageChange(Math.max(0, page - 1))}
-          size="icon"
+          size="icon-sm"
           variant="outline"
         >
           <ChevronLeft className="size-4" />
@@ -111,7 +111,7 @@ export function PaginationBar({
           aria-label={t("actions.nextPage")}
           disabled={!canGoForward}
           onClick={() => onPageChange(page + 1)}
-          size="icon"
+          size="icon-sm"
           variant="outline"
         >
           <ChevronRight className="size-4" />

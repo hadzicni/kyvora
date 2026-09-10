@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
 /**
- * Shared filter bar for every list view. Keeps the panel chrome, field spacing
- * and reset affordance identical across servers, services, users and activity.
+ * Shared filter row for every list view. It is a band inside the list card,
+ * not a panel of its own, so a list reads as one frame rather than a box in a
+ * box.
  */
 export function DataToolbar({
   children,
@@ -29,7 +30,7 @@ export function DataToolbar({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-lg border border-border bg-surface-subtle/40 p-3 lg:flex-row lg:flex-wrap lg:items-end",
+        "flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:flex-wrap lg:items-center",
         className,
       )}
     >
@@ -39,8 +40,9 @@ export function DataToolbar({
           className="lg:ml-auto"
           disabled={resetDisabled}
           onClick={onReset}
+          size="sm"
           type="button"
-          variant="outline"
+          variant="ghost"
         >
           <X className="size-4" />
           {t("actions.clear")}
@@ -50,7 +52,10 @@ export function DataToolbar({
   )
 }
 
-/** A single labelled control inside the toolbar. */
+/**
+ * A single control in the toolbar. The label is visually hidden by default so
+ * the row stays one line tall; screen readers still get it.
+ */
 export function ToolbarField({
   children,
   className,
@@ -63,11 +68,8 @@ export function ToolbarField({
   label: ReactNode
 }) {
   return (
-    <div className={cn("grid min-w-0 gap-1.5", className)}>
-      <Label
-        className="text-xs font-medium text-muted-foreground"
-        htmlFor={htmlFor}
-      >
+    <div className={cn("min-w-0", className)}>
+      <Label className="sr-only" htmlFor={htmlFor}>
         {label}
       </Label>
       {children}

@@ -92,7 +92,13 @@ export function DeleteServerDialog({
               : t("servers.deleteAria", { name: server.name })
           }
         >
-          <Trash2 className={triggerLabel ? "size-4" : "size-4 text-destructive"} />
+          <Trash2
+            className={
+              triggerLabel
+                ? "size-4"
+                : "size-4 text-muted-foreground transition-colors group-hover/button:text-destructive"
+            }
+          />
           {triggerLabel}
         </Button>
       </DialogTrigger>

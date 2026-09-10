@@ -23,7 +23,7 @@ import { z } from "zod"
 import { AppShell } from "@/components/app/app-shell"
 import { NotAuthorized } from "@/components/app/not-authorized"
 import { PageHeader, PageHeaderCount } from "@/components/app/page-header"
-import { SectionCard } from "@/components/app/section-card"
+import { SectionCard, SectionCardBand } from "@/components/app/section-card"
 import { RetryButton, SectionState } from "@/components/app/section-state"
 import { StatusBadge } from "@/components/app/status-badge"
 import { Badge } from "@/components/ui/badge"
@@ -366,32 +366,41 @@ export default function UsersPage() {
 
         <SectionCard
           description={t("users.accountsDescription")}
+          flush
           icon={<Users />}
           title={t("users.accountsTitle")}
         >
-          {usersQuery.isLoading ? <UserTableSkeleton /> : null}
+          {usersQuery.isLoading ? (
+            <SectionCardBand>
+              <UserTableSkeleton />
+            </SectionCardBand>
+          ) : null}
 
           {usersQuery.isError ? (
-            <SectionState
-              action={
-                <RetryButton
-                  label={t("actions.retry")}
-                  onRetry={() => void usersQuery.refetch()}
-                />
-              }
-              description={errorMessage(usersQuery.error)}
-              icon={<AlertTriangle className="size-5" />}
-              title={t("users.unableToLoad")}
-              tone="danger"
-            />
+            <SectionCardBand>
+              <SectionState
+                action={
+                  <RetryButton
+                    label={t("actions.retry")}
+                    onRetry={() => void usersQuery.refetch()}
+                  />
+                }
+                description={errorMessage(usersQuery.error)}
+                icon={<AlertTriangle className="size-5" />}
+                title={t("users.unableToLoad")}
+                tone="danger"
+              />
+            </SectionCardBand>
           ) : null}
 
           {usersQuery.isSuccess && users.length === 0 ? (
-            <SectionState
-              description={t("users.emptyDescription")}
-              icon={<Users className="size-5" />}
-              title={t("users.emptyTitle")}
-            />
+            <SectionCardBand>
+              <SectionState
+                description={t("users.emptyDescription")}
+                icon={<Users className="size-5" />}
+                title={t("users.emptyTitle")}
+              />
+            </SectionCardBand>
           ) : null}
 
           {usersQuery.isSuccess && users.length > 0 ? (

@@ -57,7 +57,7 @@ export function ServerTable({
       <TableBody>
         {servers.map((server) => (
           <TableRow
-            className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="group/row cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             key={server.id}
             onClick={() => openServer(server.id)}
             onKeyDown={(event) => {
@@ -76,21 +76,23 @@ export function ServerTable({
               </div>
             </TableCell>
             <TableCell>
-              <div className="max-w-48 truncate font-mono text-xs">
+              <div className="max-w-48 truncate font-mono text-xs text-muted-foreground">
                 {server.hostname}
               </div>
             </TableCell>
-            <TableCell className="font-mono text-xs">{server.ipAddress}</TableCell>
+            <TableCell className="font-mono text-xs text-muted-foreground">
+              {server.ipAddress}
+            </TableCell>
             <TableCell>
               <div className="grid gap-1">
                 <ServerStatusBadge status={server.status} />
                 {server.status === "OFFLINE" ? (
-                  <span className="tone-danger tone-text text-xs">
+                  <span className="text-xs text-muted-foreground">
                     {t("servers.noRecentHeartbeat")}
                   </span>
                 ) : null}
                 {server.status === "UNKNOWN" ? (
-                  <span className="tone-warning tone-text text-xs">
+                  <span className="text-xs text-muted-foreground">
                     {t("servers.awaitingSignal")}
                   </span>
                 ) : null}
@@ -108,7 +110,7 @@ export function ServerTable({
                 {server.tags.length > 0 ? (
                   server.tags.map((tag) => (
                     <span
-                      className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
+                      className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted-foreground"
                       key={tag}
                     >
                       {tag}
@@ -136,7 +138,7 @@ export function ServerTable({
                 onClick={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}
               >
-                <div className="flex justify-end gap-1">
+                <div className="flex justify-end gap-0.5 opacity-70 transition-opacity group-hover/row:opacity-100">
                   {canEdit ? <EditServerDialog server={server} /> : null}
                   {canDelete ? <DeleteServerDialog server={server} /> : null}
                 </div>

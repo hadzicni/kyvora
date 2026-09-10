@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl"
 
 import { AppShell } from "@/components/app/app-shell"
 import { PageHeader, PageHeaderCount } from "@/components/app/page-header"
-import { SectionCard } from "@/components/app/section-card"
+import { SectionCard, SectionCardBand } from "@/components/app/section-card"
 import { Button } from "@/components/ui/button"
 import { AgentEmptyState } from "@/features/agents/agent-empty-state"
 import { AgentErrorState } from "@/features/agents/agent-error-state"
@@ -61,21 +61,32 @@ export default function AgentsPage() {
               ? t("agents.registeredAgents", { count: totalElements })
               : t("agents.loadingAgents")
           }
+          flush
           icon={<Bot />}
           title={t("agents.registry")}
         >
-          {agentsQuery.isLoading ? <AgentTableSkeleton /> : null}
-          {agentsQuery.isError ? (
-            <AgentErrorState
-              message={
-                agentsQuery.error instanceof Error
-                  ? agentsQuery.error.message
-                  : t("agents.unexpectedError")
-              }
-              onRetry={() => void agentsQuery.refetch()}
-            />
+          {agentsQuery.isLoading ? (
+            <SectionCardBand>
+              <AgentTableSkeleton />
+            </SectionCardBand>
           ) : null}
-          {agentsQuery.isSuccess && agents.length === 0 ? <AgentEmptyState /> : null}
+          {agentsQuery.isError ? (
+            <SectionCardBand>
+              <AgentErrorState
+                message={
+                  agentsQuery.error instanceof Error
+                    ? agentsQuery.error.message
+                    : t("agents.unexpectedError")
+                }
+                onRetry={() => void agentsQuery.refetch()}
+              />
+            </SectionCardBand>
+          ) : null}
+          {agentsQuery.isSuccess && agents.length === 0 ? (
+            <SectionCardBand>
+              <AgentEmptyState />
+            </SectionCardBand>
+          ) : null}
           {agentsQuery.isSuccess && agents.length > 0 ? (
             <AgentTable agents={agents} />
           ) : null}

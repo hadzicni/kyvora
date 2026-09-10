@@ -93,19 +93,14 @@ export function NotificationBell() {
       </SheetTrigger>
       <SheetContent className="w-full gap-0 p-0 sm:max-w-md" side="right">
         <SheetHeader className="border-b px-4 py-3">
-          <div className="flex items-start justify-between gap-3 pr-10">
-            <div>
-              <SheetTitle>Notifications</SheetTitle>
-              <SheetDescription>
-                Review important application and infrastructure events.
-              </SheetDescription>
-            </div>
+          <div className="flex items-center justify-between gap-3 pr-10">
+            <SheetTitle>Notifications</SheetTitle>
             <Button
-              type="button"
-              variant="outline"
-              size="sm"
               disabled={unreadCount === 0 || markAllRead.isPending}
               onClick={() => void handleMarkAllRead()}
+              size="sm"
+              type="button"
+              variant="outline"
             >
               {markAllRead.isPending ? (
                 <Loader2 className="size-3.5 animate-spin" />
@@ -115,6 +110,9 @@ export function NotificationBell() {
               Mark all read
             </Button>
           </div>
+          <SheetDescription>
+            Review important application and infrastructure events.
+          </SheetDescription>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <NotificationList

@@ -13,7 +13,7 @@ import {
 } from "@/components/app/data-toolbar"
 import { PageHeader, PageHeaderCount } from "@/components/app/page-header"
 import { PaginationBar } from "@/components/app/pagination-bar"
-import { SectionCard } from "@/components/app/section-card"
+import { SectionCard, SectionCardBand } from "@/components/app/section-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -96,7 +96,6 @@ export default function ServerInventoryPage() {
         />
 
         <SectionCard
-          contentClassName="space-y-4 pt-4"
           description={
             serversQuery.data
               ? hasActiveFilters
@@ -104,6 +103,7 @@ export default function ServerInventoryPage() {
                 : t("servers.serverCount", { count: totalElements })
               : t("servers.loadingInventory")
           }
+          flush
           icon={<Server />}
           title={t("servers.inventory")}
         >
@@ -117,7 +117,7 @@ export default function ServerInventoryPage() {
             resetDisabled={!canReset}
           >
             <ToolbarField
-              className="lg:min-w-64 lg:flex-1"
+              className="lg:min-w-72 lg:flex-1"
               htmlFor="server-search"
               label={t("forms.search")}
             >
@@ -159,7 +159,7 @@ export default function ServerInventoryPage() {
             </ToolbarField>
 
             <ToolbarField
-              className="lg:w-56"
+              className="lg:w-52"
               htmlFor="server-tags"
               label={t("forms.tags")}
             >
@@ -169,24 +169,34 @@ export default function ServerInventoryPage() {
                   setTags(event.target.value)
                   setPage(0)
                 }}
-                placeholder="prod, api"
+                placeholder={`${t("forms.tags")}: prod, api`}
                 value={tags}
               />
             </ToolbarField>
           </DataToolbar>
 
-          {serversQuery.isLoading ? <ServerTableSkeleton /> : null}
-          {serversQuery.isError ? (
-            <ServerErrorState
-              message={
-                serversQuery.error instanceof Error
-                  ? serversQuery.error.message
-                  : t("servers.unexpectedError")
-              }
-              onRetry={() => void serversQuery.refetch()}
-            />
+          {serversQuery.isLoading ? (
+            <SectionCardBand>
+              <ServerTableSkeleton />
+            </SectionCardBand>
           ) : null}
-          {serversQuery.isSuccess && servers.length === 0 ? <ServerEmptyState /> : null}
+          {serversQuery.isError ? (
+            <SectionCardBand>
+              <ServerErrorState
+                message={
+                  serversQuery.error instanceof Error
+                    ? serversQuery.error.message
+                    : t("servers.unexpectedError")
+                }
+                onRetry={() => void serversQuery.refetch()}
+              />
+            </SectionCardBand>
+          ) : null}
+          {serversQuery.isSuccess && servers.length === 0 ? (
+            <SectionCardBand>
+              <ServerEmptyState />
+            </SectionCardBand>
+          ) : null}
           {serversQuery.isSuccess && servers.length > 0 ? (
             <ServerTable
               canDelete={mayDeleteServers}

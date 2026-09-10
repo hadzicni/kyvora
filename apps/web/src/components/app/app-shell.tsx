@@ -21,7 +21,7 @@ import { useTranslations } from "next-intl"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 
 import { UserMenu } from "@/components/app/user-menu"
 import { Button } from "@/components/ui/button"
@@ -128,26 +128,46 @@ const navItems: NavItem[] = [
 const bottomNavKeys = new Set(["settings", "help", "profile"])
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "kyvora.sidebar.collapsed"
+const sidebarListeners = new Set<() => void>()
 let sidebarCollapsedCache: boolean | undefined
 
 function readStoredSidebarCollapsed() {
   if (sidebarCollapsedCache !== undefined) return sidebarCollapsedCache
-  if (typeof window === "undefined") return false
   try {
     sidebarCollapsedCache =
       window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true"
-    return sidebarCollapsedCache
   } catch {
-    return false
+    sidebarCollapsedCache = false
+  }
+  return sidebarCollapsedCache
+}
+
+function subscribeSidebarCollapsed(onStoreChange: () => void) {
+  sidebarListeners.add(onStoreChange)
+  return () => {
+    sidebarListeners.delete(onStoreChange)
   }
 }
 
 function storeSidebarCollapsed(collapsed: boolean) {
   sidebarCollapsedCache = collapsed
-  if (typeof window === "undefined") return
   try {
     window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(collapsed))
   } catch {}
+  for (const listener of sidebarListeners) listener()
+}
+
+/**
+ * The collapsed preference lives in localStorage, which the server cannot see.
+ * Reading it through an external store lets the server render the expanded
+ * shell and React swap in the stored value on hydration, with no mismatch.
+ */
+function useSidebarCollapsed() {
+  return useSyncExternalStore(
+    subscribeSidebarCollapsed,
+    readStoredSidebarCollapsed,
+    () => false,
+  )
 }
 
 // ─── Nav link ─────────────────────────────────────────────────────────────────
@@ -552,14 +572,10 @@ export function AppShell({
   const mayReadSettings = canReadSettings(session?.user.permissions)
   const settingsQuery = useSettings(mayReadSettings)
   const instance = getInstanceSettings(settingsQuery.data)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(readStoredSidebarCollapsed)
+  const sidebarCollapsed = useSidebarCollapsed()
 
   function toggleSidebarCollapsed() {
-    setSidebarCollapsed((current) => {
-      const next = !current
-      storeSidebarCollapsed(next)
-      return next
-    })
+    storeSidebarCollapsed(!sidebarCollapsed)
   }
 
   return (

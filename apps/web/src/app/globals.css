@@ -26,6 +26,7 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -85,6 +86,7 @@
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
+  --border-strong: oklch(0.87 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
 
@@ -123,36 +125,42 @@
 }
 
 .dark {
-  --background: oklch(0.145 0.004 268);
+  /*
+   * Three surface levels, deliberately far enough apart to read as depth:
+   * canvas (background) < card < raised popovers; wells sit below the card.
+   */
+  --background: oklch(0.128 0.005 268);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.196 0.005 268);
+  --card: oklch(0.181 0.006 268);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.196 0.005 268);
+  --popover: oklch(0.196 0.006 268);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0.004 268);
+  --primary: oklch(0.94 0 0);
+  --primary-foreground: oklch(0.18 0 0);
+  --secondary: oklch(0.245 0.005 268);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0.004 268);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0.004 268);
+  --muted: oklch(0.245 0.005 268);
+  --muted-foreground: oklch(0.715 0.008 268);
+  --accent: oklch(0.245 0.005 268);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: oklch(1 0 0 / 9%);
+  --border-strong: oklch(1 0 0 / 15%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.62 0 0);
 
-  --brand: oklch(0.72 0.17 295);
-  --brand-foreground: oklch(0.145 0 0);
-  --brand-muted: oklch(0.72 0.17 295 / 12%);
+  /* Status hues are pulled back from neon so they read as UI, not alarm. */
+  --brand: oklch(0.7 0.15 292);
+  --brand-foreground: oklch(0.16 0 0);
+  --brand-muted: oklch(0.7 0.15 292 / 14%);
 
-  --success: oklch(0.79 0.16 163);
-  --warning: oklch(0.83 0.16 84);
-  --danger: oklch(0.72 0.18 15);
-  --info: oklch(0.75 0.14 233);
+  --success: oklch(0.78 0.13 165);
+  --warning: oklch(0.82 0.13 82);
+  --danger: oklch(0.71 0.16 18);
+  --info: oklch(0.74 0.12 235);
 
-  --surface: oklch(0.196 0.005 268);
-  --surface-subtle: oklch(0.155 0.005 268);
+  --surface: oklch(0.181 0.006 268);
+  --surface-subtle: oklch(0.152 0.005 268);
 
   --chart-1: var(--brand);
   --chart-2: var(--info);
@@ -160,7 +168,8 @@
   --chart-4: var(--warning);
   --chart-5: var(--danger);
 
-  --sidebar: oklch(0.155 0.006 268);
+  /* Chrome shares the canvas; its right border does the separating. */
+  --sidebar: oklch(0.112 0.005 268);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: var(--brand);
   --sidebar-primary-foreground: oklch(0.145 0 0);

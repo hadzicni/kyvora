@@ -31,7 +31,7 @@ export function SectionState({
     <div
       className={cn(
         "flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface-subtle/40 px-6 text-center",
-        size === "sm" ? "min-h-44 py-8" : "min-h-64 py-12",
+        size === "sm" ? "min-h-40 py-8" : "min-h-52 py-10",
         // A toned state tints its own frame, but the copy and action stay neutral.
         tone !== "neutral" && cn("border-solid tone-surface", toneClass(tone)),
         className,

@@ -13,7 +13,7 @@ import {
 } from "@/components/app/data-toolbar";
 import { PageHeader, PageHeaderCount } from "@/components/app/page-header";
 import { PaginationBar } from "@/components/app/pagination-bar";
-import { SectionCard } from "@/components/app/section-card";
+import { SectionCard, SectionCardBand } from "@/components/app/section-card";
 import { RetryButton, SectionState } from "@/components/app/section-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -116,12 +116,12 @@ export default function ActivityPage() {
         />
 
         <SectionCard
-          contentClassName="space-y-4 pt-4"
           description={
             auditLogsQuery.data
               ? t("activity.recordedEvents", { count: totalElements })
               : t("activity.loadingActivity")
           }
+          flush
           icon={<History />}
           title={t("activity.auditLogs")}
         >
@@ -135,7 +135,7 @@ export default function ActivityPage() {
             resetDisabled={!hasActiveFilters}
           >
             <ToolbarField
-              className="lg:min-w-64 lg:flex-1"
+              className="lg:min-w-72 lg:flex-1"
               htmlFor="activity-search"
               label={t("forms.search")}
             >
@@ -200,24 +200,34 @@ export default function ActivityPage() {
             </ToolbarField>
           </DataToolbar>
 
-          {auditLogsQuery.isLoading ? <ActivityTableSkeleton /> : null}
+          {auditLogsQuery.isLoading ? (
+            <SectionCardBand>
+              <ActivityTableSkeleton />
+            </SectionCardBand>
+          ) : null}
           {auditLogsQuery.isError ? (
-            <ActivityErrorState
-              message={
-                auditLogsQuery.error instanceof Error
-                  ? auditLogsQuery.error.message
-                  : t("activity.unexpectedError")
-              }
-              onRetry={() => void auditLogsQuery.refetch()}
-            />
+            <SectionCardBand>
+              <ActivityErrorState
+                message={
+                  auditLogsQuery.error instanceof Error
+                    ? auditLogsQuery.error.message
+                    : t("activity.unexpectedError")
+                }
+                onRetry={() => void auditLogsQuery.refetch()}
+              />
+            </SectionCardBand>
           ) : null}
           {auditLogsQuery.isSuccess && auditLogs.length === 0 ? (
-            <ActivityEmptyState />
+            <SectionCardBand>
+              <ActivityEmptyState />
+            </SectionCardBand>
           ) : null}
           {auditLogsQuery.isSuccess &&
           auditLogs.length > 0 &&
           visibleLogs.length === 0 ? (
-            <ActivityEmptySearchState />
+            <SectionCardBand>
+              <ActivityEmptySearchState />
+            </SectionCardBand>
           ) : null}
           {auditLogsQuery.isSuccess && visibleLogs.length > 0 ? (
             <ActivityTable

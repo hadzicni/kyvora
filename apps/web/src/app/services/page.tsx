@@ -13,7 +13,7 @@ import {
 } from "@/components/app/data-toolbar"
 import { PageHeader, PageHeaderCount } from "@/components/app/page-header"
 import { PaginationBar } from "@/components/app/pagination-bar"
-import { SectionCard } from "@/components/app/section-card"
+import { SectionCard, SectionCardBand } from "@/components/app/section-card"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -103,7 +103,6 @@ export default function ServicesPage() {
         />
 
         <SectionCard
-          contentClassName="space-y-4 pt-4"
           description={
             servicesQuery.data
               ? hasActiveFilters
@@ -111,6 +110,7 @@ export default function ServicesPage() {
                 : t("services.registeredServices", { count: totalElements })
               : t("services.loadingServices")
           }
+          flush
           icon={<Cable />}
           title={t("services.registry")}
         >
@@ -123,7 +123,7 @@ export default function ServicesPage() {
             resetDisabled={!hasActiveFilters && search.length === 0}
           >
             <ToolbarField
-              className="lg:min-w-64 lg:flex-1"
+              className="lg:min-w-72 lg:flex-1"
               htmlFor="service-search"
               label={t("forms.search")}
             >
@@ -177,6 +177,7 @@ export default function ServicesPage() {
                 value={sort}
               >
                 <SelectTrigger className="w-full" id="service-sort">
+                  <span className="text-muted-foreground">{t("services.sort")}:</span>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper">
@@ -190,19 +191,27 @@ export default function ServicesPage() {
             </ToolbarField>
           </DataToolbar>
 
-          {servicesQuery.isLoading ? <ServiceTableSkeleton /> : null}
+          {servicesQuery.isLoading ? (
+            <SectionCardBand>
+              <ServiceTableSkeleton />
+            </SectionCardBand>
+          ) : null}
           {servicesQuery.isError ? (
-            <ServiceErrorState
-              message={
-                servicesQuery.error instanceof Error
-                  ? servicesQuery.error.message
-                  : t("services.unexpectedError")
-              }
-              onRetry={() => void servicesQuery.refetch()}
-            />
+            <SectionCardBand>
+              <ServiceErrorState
+                message={
+                  servicesQuery.error instanceof Error
+                    ? servicesQuery.error.message
+                    : t("services.unexpectedError")
+                }
+                onRetry={() => void servicesQuery.refetch()}
+              />
+            </SectionCardBand>
           ) : null}
           {servicesQuery.isSuccess && services.length === 0 ? (
-            <ServiceEmptyState />
+            <SectionCardBand>
+              <ServiceEmptyState />
+            </SectionCardBand>
           ) : null}
           {servicesQuery.isSuccess && services.length > 0 ? (
             <ServiceTable

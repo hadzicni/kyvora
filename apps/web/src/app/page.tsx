@@ -9,12 +9,11 @@ import { HealthBar, type HealthSegment } from "@/components/app/health-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { SectionCard } from "@/components/app/section-card"
 import { SectionState } from "@/components/app/section-state"
-import { StatusBadge } from "@/components/app/status-badge"
+import { StatusBadge, StatusDot } from "@/components/app/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AgentEmptyState } from "@/features/agents/agent-empty-state"
 import { AgentErrorState } from "@/features/agents/agent-error-state"
-import { AgentStatusBadge } from "@/features/agents/agent-status-badge"
 import { AgentTable } from "@/features/agents/agent-table"
 import { useAgents } from "@/features/agents/use-agents"
 import { RecentActivityWidget } from "@/features/audit-logs/recent-activity-widget"
@@ -22,7 +21,6 @@ import { useDashboardSummary } from "@/features/dashboard/use-dashboard-summary"
 import { formatNumber } from "@/features/servers/format"
 import { ServerEmptyState } from "@/features/servers/server-empty-state"
 import { ServerErrorState } from "@/features/servers/server-error-state"
-import { ServerStatusBadge } from "@/features/servers/server-status-badge"
 import { ServerTable } from "@/features/servers/server-table"
 import { useServers } from "@/features/servers/use-servers"
 import { getInstanceSettings } from "@/lib/api/settings"
@@ -50,36 +48,33 @@ function StatCard({
   return (
     <Card
       className={cn(
-        "relative overflow-hidden transition-colors duration-200 hover:ring-foreground/20",
+        "gap-0 transition-colors duration-200 hover:border-border-strong",
         toneClass(tone),
       )}
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full opacity-40 blur-2xl tone-fill"
-      />
-      <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
-        <div className="min-w-0 space-y-1.5">
+      {/* A single hairline of colour carries the tone — no wash, no glow. */}
+      <span aria-hidden="true" className="-mt-4 h-0.5 w-full tone-fill" />
+      <CardHeader className="pt-4">
+        <div className="flex items-center gap-2">
+          <Icon className="size-3.5 shrink-0 tone-text" />
           <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {title}
           </CardTitle>
-          {loading ? (
-            <Skeleton className="h-8 w-20" />
-          ) : (
-            <div className="text-2xl font-semibold tracking-tight tabular-nums">
+        </div>
+      </CardHeader>
+      <CardContent className="pt-2">
+        {loading ? (
+          <>
+            <Skeleton className="h-8 w-16" />
+            <Skeleton className="mt-2 h-3.5 w-36" />
+          </>
+        ) : (
+          <>
+            <div className="text-3xl font-semibold leading-none tracking-tight tabular-nums">
               {value}
             </div>
-          )}
-        </div>
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border tone-surface tone-text">
-          <Icon className="size-4" />
-        </span>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <Skeleton className="h-3.5 w-36" />
-        ) : (
-          <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p>
+          </>
         )}
       </CardContent>
     </Card>
@@ -113,9 +108,9 @@ function HealthSummary({
         <>
           <Skeleton className="h-1.5 w-full rounded-full" />
           <div className="grid gap-3 sm:grid-cols-3">
-            <Skeleton className="h-[4.5rem] w-full" />
-            <Skeleton className="h-[4.5rem] w-full" />
-            <Skeleton className="h-[4.5rem] w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         </>
       ) : error ? (
@@ -125,7 +120,7 @@ function HealthSummary({
       ) : (
         <>
           <HealthBar segments={segments} total={total} />
-          <div className="grid gap-3 sm:grid-cols-3">{items}</div>
+          <div className="grid gap-5 sm:grid-cols-3">{items}</div>
         </>
       )}
     </SectionCard>
@@ -135,23 +130,26 @@ function HealthSummary({
 function HealthMetric({
   count,
   helper,
-  status,
+  label,
+  tone,
 }: {
   count: number
   helper: string
-  status: React.ReactNode
+  label: string
+  tone: Tone
 }) {
   const locale = useLocale()
 
   return (
-    <div className="rounded-lg border border-border bg-surface-subtle/40 p-3">
-      <div className="flex items-center justify-between gap-2">
-        {status}
-        <span className="text-sm font-semibold tabular-nums">
+    <div className={cn("min-w-0", toneClass(tone))}>
+      <div className="flex items-baseline gap-2">
+        <StatusDot className="self-center" tone={tone} />
+        <span className="truncate text-xs font-medium text-foreground">{label}</span>
+        <span className="ml-auto text-sm font-semibold tabular-nums">
           {formatNumber(count, locale)}
         </span>
       </div>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">{helper}</p>
+      <p className="mt-1 pl-3.5 text-xs leading-5 text-muted-foreground">{helper}</p>
     </div>
   )
 }
@@ -276,17 +274,20 @@ export default function DashboardOverviewPage() {
                 <HealthMetric
                   count={onlineCount}
                   helper={t("dashboard.acceptingHeartbeats")}
-                  status={<ServerStatusBadge status="ONLINE" />}
+                  label={t("statuses.ONLINE")}
+                  tone="success"
                 />
                 <HealthMetric
                   count={offlineCount}
                   helper={t("dashboard.noRecentHeartbeat")}
-                  status={<ServerStatusBadge status="OFFLINE" />}
+                  label={t("statuses.OFFLINE")}
+                  tone="danger"
                 />
                 <HealthMetric
                   count={unknownCount}
                   helper={t("dashboard.noClearState")}
-                  status={<ServerStatusBadge status="UNKNOWN" />}
+                  label={t("statuses.UNKNOWN")}
+                  tone="warning"
                 />
               </>
             }
@@ -316,17 +317,20 @@ export default function DashboardOverviewPage() {
                 <HealthMetric
                   count={onlineAgents}
                   helper={t("dashboard.agentsReporting")}
-                  status={<AgentStatusBadge status="ONLINE" />}
+                  label={t("statuses.ONLINE")}
+                  tone="success"
                 />
                 <HealthMetric
                   count={offlineAgents}
                   helper={t("dashboard.agentsMissing")}
-                  status={<AgentStatusBadge status="OFFLINE" />}
+                  label={t("statuses.OFFLINE")}
+                  tone="danger"
                 />
                 <HealthMetric
                   count={unknownAgents}
                   helper={t("dashboard.pendingUnknownAgents")}
-                  status={<AgentStatusBadge status="UNKNOWN" />}
+                  label={t("statuses.UNKNOWN")}
+                  tone="warning"
                 />
               </>
             }
