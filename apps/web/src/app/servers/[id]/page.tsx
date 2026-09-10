@@ -64,7 +64,7 @@ function Field({
       </dt>
       <dd
         className={cn(
-          "mt-2 min-h-5 break-words text-sm text-foreground",
+          "mt-2 min-h-5 wrap-break-word text-sm text-foreground",
           mono && "font-mono text-xs",
           muted && "text-muted-foreground"
         )}

@@ -69,7 +69,7 @@ export function BackendHealthGate({
         <div className="flex items-center gap-3 rounded-xl border border-red-500/25 bg-red-600/10 px-3.5 py-3 text-red-200">
           <ServerCrash aria-hidden="true" className="size-5 shrink-0" />
           <div className="min-w-0">
-            <div className="text-[11px] font-medium uppercase tracking-[0.1em] text-red-200/70">
+            <div className="text-[11px] font-medium uppercase tracking-widest text-red-200/70">
               Expected API
             </div>
             <div className="mt-0.5 break-all font-mono text-xs">

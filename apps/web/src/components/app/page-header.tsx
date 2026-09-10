@@ -39,7 +39,7 @@ export function PageHeader({
           </div>
         ) : null}
         <div className="flex flex-wrap items-center gap-2.5">
-          <h1 className="break-words text-xl font-semibold tracking-tight">{title}</h1>
+          <h1 className="wrap-break-word text-xl font-semibold tracking-tight">{title}</h1>
           {badge}
         </div>
         {subtitle ? (
